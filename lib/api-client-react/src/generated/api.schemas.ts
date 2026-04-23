@@ -158,6 +158,7 @@ export interface ConsultationStatusUpdate {
 }
 
 export interface AdminLoginInput {
+  username: string;
   password: string;
 }
 

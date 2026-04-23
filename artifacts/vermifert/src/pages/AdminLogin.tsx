@@ -8,6 +8,7 @@ import { Sprout } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminLogin() {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [, setLocation] = useLocation();
   const login = useAdminLogin();
@@ -15,17 +16,17 @@ export default function AdminLogin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password) return;
+    if (!username || !password) return;
 
-    login.mutate({ data: { password } }, {
+    login.mutate({ data: { username, password } }, {
       onSuccess: (res) => {
         localStorage.setItem("adminToken", res.token);
-        setLocation("/admin");
+        setLocation("/admin/products");
       },
       onError: () => {
         toast({
           title: "خطأ في تسجيل الدخول",
-          description: "كلمة المرور غير صحيحة",
+          description: "اسم المستخدم أو كلمة المرور غير صحيحة",
           variant: "destructive"
         });
       }
@@ -43,7 +44,20 @@ export default function AdminLogin() {
           <p className="text-muted-foreground mt-2">متجر سماد الديدان</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="username">اسم المستخدم</Label>
+            <Input
+              id="username"
+              type="text"
+              dir="ltr"
+              className="text-right"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="admin"
+              autoComplete="username"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="password">كلمة المرور</Label>
             <Input
@@ -54,11 +68,15 @@ export default function AdminLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              autoComplete="current-password"
             />
           </div>
           <Button type="submit" className="w-full h-12" disabled={login.isPending}>
             {login.isPending ? "جاري الدخول..." : "دخول"}
           </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            هذه الصفحة مخصّصة لمسؤول المتجر فقط.
+          </p>
         </form>
       </div>
     </div>

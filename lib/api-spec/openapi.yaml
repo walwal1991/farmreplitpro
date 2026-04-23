@@ -389,8 +389,9 @@ components:
     AdminLoginInput:
       type: object
       properties:
+        username: { type: string }
         password: { type: string }
-      required: [password]
+      required: [username, password]
     AdminLoginResult:
       type: object
       properties:

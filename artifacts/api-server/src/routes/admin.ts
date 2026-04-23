@@ -18,13 +18,17 @@ router.post("/admin/login", async (req, res): Promise<void> => {
     return;
   }
   const password = process.env["ADMIN_PASSWORD"];
+  const username = process.env["ADMIN_USERNAME"] ?? "admin";
   if (!password) {
     req.log.error("ADMIN_PASSWORD env var not configured");
     res.status(500).json({ error: "Server misconfigured" });
     return;
   }
-  if (parsed.data.password !== password) {
-    res.status(401).json({ error: "كلمة المرور غير صحيحة" });
+  if (
+    parsed.data.username !== username ||
+    parsed.data.password !== password
+  ) {
+    res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
     return;
   }
   res.json(AdminLoginResponse.parse({ token: password }));

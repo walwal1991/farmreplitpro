@@ -246,6 +246,7 @@ export const UpdateConsultationStatusResponse = zod.object({
  * @summary Admin login (returns a token)
  */
 export const AdminLoginBody = zod.object({
+  username: zod.string(),
   password: zod.string(),
 });
 
