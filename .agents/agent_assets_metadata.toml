@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "NV3hMIl_EYiYrRFs1F_Jl"
+uri = "file://attached_assets/generated_images/vermicompost-bag.png"
+type = "image"
+title = "vermicompost bag"
+
+[[generated]]
+id = "NBFECIgYcylj3m3ndBKbs"
+uri = "file://attached_assets/generated_images/worm-tea-bottle.png"
+type = "image"
+title = "worm tea bottle"
+
+[[generated]]
+id = "1vanoiZ6Q4KntxbdW40PC"
+uri = "file://attached_assets/generated_images/worm-castings-bag.png"
+type = "image"
+title = "worm castings bag"

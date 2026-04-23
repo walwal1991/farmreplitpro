@@ -1,27 +1,27 @@
-# Workspace
+# Vermifert — متجر سماد الديدان
 
-## Overview
-
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+Arabic/RTL e-commerce platform selling worm-castings fertilizer (vermicompost).
 
 ## Stack
+- **Monorepo**: pnpm workspace
+- **Web**: React + Vite (`artifacts/vermifert`) — Arabic RTL, Tajawal font, earthy palette
+- **API**: Express + Drizzle (`artifacts/api-server`)
+- **DB**: Postgres (Replit-managed) with `products`, `orders`, `consultations` tables
+- **API contract**: OpenAPI in `lib/api-spec`, codegen → `lib/api-client-react`, `lib/api-zod`
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+## Features
+- Public storefront: product catalog, product detail, guest checkout (cash on delivery)
+- Agronomy consultation form
+- Admin dashboard at `/admin` (password gate via `ADMIN_PASSWORD`): stats, recent activity, products CRUD, orders management, consultations management
+- Generated product images served from `/api/img/<file>.png` (api-server static mount)
 
-## Key Commands
+## Notable conventions
+- Currency: Algerian Dinar (د.ج)
+- Admin auth: `requireAdmin` middleware accepts `x-admin-token` header or `Authorization: Bearer`
+- Images live in `attached_assets/generated_images/`, exposed via `app.use("/api/img", static(...))`
+- All admin endpoints under `/api/admin/*`
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
-
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+## Env
+- `DATABASE_URL` (auto)
+- `ADMIN_PASSWORD` (set to `admin123`)
+- `SESSION_SECRET` (auto)

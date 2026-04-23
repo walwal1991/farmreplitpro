@@ -3,34 +3,428 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API for worm-fertilizer e-commerce + consultations
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: products
+  - name: orders
+  - name: consultations
+  - name: admin
+  - name: stats
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List active products
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                type: array
+                items: { $ref: "#/components/schemas/Product" }
+    post:
+      operationId: createProduct
+      tags: [admin, products]
+      summary: Create a new product (admin)
+      parameters:
+        - $ref: "#/components/parameters/AdminToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    patch:
+      operationId: updateProduct
+      tags: [admin, products]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - $ref: "#/components/parameters/AdminToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+    delete:
+      operationId: deleteProduct
+      tags: [admin, products]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - $ref: "#/components/parameters/AdminToken"
+      responses:
+        "204":
+          description: Deleted
+
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place an order (guest checkout, cash on delivery)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+  /admin/orders:
+    get:
+      operationId: listOrders
+      tags: [admin, orders]
+      summary: List all orders (admin)
+      parameters:
+        - $ref: "#/components/parameters/AdminToken"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Order" }
+  /admin/orders/{id}:
+    patch:
+      operationId: updateOrderStatus
+      tags: [admin, orders]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - $ref: "#/components/parameters/AdminToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderStatusUpdate" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+
+  /consultations:
+    post:
+      operationId: createConsultation
+      tags: [consultations]
+      summary: Submit a consultation request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConsultationInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Consultation" }
+  /admin/consultations:
+    get:
+      operationId: listConsultations
+      tags: [admin, consultations]
+      parameters:
+        - $ref: "#/components/parameters/AdminToken"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Consultation" }
+  /admin/consultations/{id}:
+    patch:
+      operationId: updateConsultationStatus
+      tags: [admin, consultations]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - $ref: "#/components/parameters/AdminToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConsultationStatusUpdate" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Consultation" }
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login (returns a token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminLoginInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminLoginResult" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin, stats]
+      summary: Dashboard summary
+      parameters:
+        - $ref: "#/components/parameters/AdminToken"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminStats" }
+
+  /admin/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [admin, stats]
+      summary: Recent orders + consultations feed
+      parameters:
+        - $ref: "#/components/parameters/AdminToken"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ActivityItem" }
+
 components:
+  parameters:
+    AdminToken:
+      in: header
+      name: x-admin-token
+      required: true
+      schema: { type: string }
   schemas:
     HealthStatus:
       type: object
       properties:
+        status: { type: string }
+      required: [status]
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+
+    Product:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string }
+        price: { type: number }
+        unit: { type: string, description: "e.g. kg, bag" }
+        weightKg: { type: number }
+        imageUrl: { type: string }
+        stock: { type: integer }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, description, price, unit, weightKg, imageUrl, stock, active, createdAt]
+    ProductInput:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        price: { type: number }
+        unit: { type: string }
+        weightKg: { type: number }
+        imageUrl: { type: string }
+        stock: { type: integer }
+        active: { type: boolean }
+      required: [name, description, price, unit, weightKg, imageUrl, stock]
+
+    Order:
+      type: object
+      properties:
+        id: { type: integer }
+        customerName: { type: string }
+        phone: { type: string }
+        address: { type: string }
+        city: { type: string }
+        notes: { type: ["string", "null"] }
+        productId: { type: integer }
+        productName: { type: string }
+        unitPrice: { type: number }
+        quantity: { type: integer }
+        totalPrice: { type: number }
         status:
           type: string
-      required:
-        - status
+          enum: [pending, confirmed, shipped, delivered, cancelled]
+        createdAt: { type: string, format: date-time }
+      required: [id, customerName, phone, address, city, notes, productId, productName, unitPrice, quantity, totalPrice, status, createdAt]
+    OrderInput:
+      type: object
+      properties:
+        customerName: { type: string }
+        phone: { type: string }
+        address: { type: string }
+        city: { type: string }
+        notes: { type: ["string", "null"] }
+        productId: { type: integer }
+        quantity: { type: integer, minimum: 1 }
+      required: [customerName, phone, address, city, productId, quantity]
+    OrderStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, shipped, delivered, cancelled]
+      required: [status]
 
+    Consultation:
+      type: object
+      properties:
+        id: { type: integer }
+        customerName: { type: string }
+        phone: { type: string }
+        soilType:
+          type: string
+          enum: [sandy, clay, silt, loam, rocky, other]
+        crop: { type: string }
+        problem: { type: string }
+        status:
+          type: string
+          enum: [new, in_progress, answered]
+        createdAt: { type: string, format: date-time }
+      required: [id, customerName, phone, soilType, crop, problem, status, createdAt]
+    ConsultationInput:
+      type: object
+      properties:
+        customerName: { type: string }
+        phone: { type: string }
+        soilType:
+          type: string
+          enum: [sandy, clay, silt, loam, rocky, other]
+        crop: { type: string }
+        problem: { type: string }
+      required: [customerName, phone, soilType, crop, problem]
+    ConsultationStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [new, in_progress, answered]
+      required: [status]
+
+    AdminLoginInput:
+      type: object
+      properties:
+        password: { type: string }
+      required: [password]
+    AdminLoginResult:
+      type: object
+      properties:
+        token: { type: string }
+      required: [token]
+
+    AdminStats:
+      type: object
+      properties:
+        totalOrders: { type: integer }
+        pendingOrders: { type: integer }
+        deliveredOrders: { type: integer }
+        totalRevenue: { type: number }
+        totalConsultations: { type: integer }
+        newConsultations: { type: integer }
+        totalProducts: { type: integer }
+        ordersByStatus:
+          type: array
+          items:
+            type: object
+            properties:
+              status: { type: string }
+              count: { type: integer }
+            required: [status, count]
+      required: [totalOrders, pendingOrders, deliveredOrders, totalRevenue, totalConsultations, newConsultations, totalProducts, ordersByStatus]
+
+    ActivityItem:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [order, consultation]
+        id: { type: integer }
+        title: { type: string }
+        subtitle: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [kind, id, title, subtitle, createdAt]

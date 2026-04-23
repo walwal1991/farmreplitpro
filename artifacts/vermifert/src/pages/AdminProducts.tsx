@@ -1,0 +1,321 @@
+import AdminSidebar from "@/components/AdminSidebar";
+import { useListProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, getListProductsQueryKey } from "@workspace/api-client-react";
+import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Plus, Edit, Trash2, Image as ImageIcon } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { Product } from "@workspace/api-client-react";
+import { Switch } from "@/components/ui/switch";
+
+const productSchema = z.object({
+  name: z.string().min(2, "الاسم مطلوب"),
+  description: z.string().min(5, "الوصف مطلوب"),
+  price: z.coerce.number().min(0, "السعر غير صالح"),
+  unit: z.string().min(1, "الوحدة مطلوبة"),
+  weightKg: z.coerce.number().min(0, "الوزن غير صالح"),
+  imageUrl: z.string().url("رابط الصورة غير صالح").or(z.literal("")),
+  stock: z.coerce.number().min(0, "المخزون غير صالح"),
+  active: z.boolean().default(true),
+});
+
+type ProductForm = z.infer<typeof productSchema>;
+
+export default function AdminProducts() {
+  const [, setLocation] = useLocation();
+  const token = localStorage.getItem("adminToken");
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    if (!token) setLocation("/admin/login");
+  }, [token, setLocation]);
+
+  const { data: products, isLoading } = useListProducts();
+
+  const createProduct = useCreateProduct({ request: { headers: { "x-admin-token": token || "" } } });
+  const updateProduct = useUpdateProduct({ request: { headers: { "x-admin-token": token || "" } } });
+  const deleteProduct = useDeleteProduct({ request: { headers: { "x-admin-token": token || "" } } });
+
+  const form = useForm<ProductForm>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      unit: "كغ",
+      weightKg: 1,
+      imageUrl: "",
+      stock: 100,
+      active: true,
+    }
+  });
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    form.reset({
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      unit: product.unit,
+      weightKg: product.weightKg,
+      imageUrl: product.imageUrl,
+      stock: product.stock,
+      active: product.active,
+    });
+  };
+
+  const onSubmit = (data: ProductForm) => {
+    if (editingProduct) {
+      updateProduct.mutate({ id: editingProduct.id, data }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
+          setEditingProduct(null);
+          toast({ title: "تم التحديث", description: "تم تحديث المنتج بنجاح" });
+        },
+        onError: () => {
+          toast({ title: "خطأ", description: "حدث خطأ أثناء التحديث", variant: "destructive" });
+        }
+      });
+    } else {
+      createProduct.mutate({ data }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
+          setIsCreateOpen(false);
+          form.reset();
+          toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح" });
+        },
+        onError: () => {
+          toast({ title: "خطأ", description: "حدث خطأ أثناء الإضافة", variant: "destructive" });
+        }
+      });
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+    deleteProduct.mutate({ id }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
+        toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح" });
+      }
+    });
+  };
+
+  if (!token) return null;
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <AdminSidebar />
+      <main className="flex-1 p-8 overflow-auto">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">المنتجات</h1>
+            
+            <Dialog open={isCreateOpen} onOpenChange={(open) => {
+              setIsCreateOpen(open);
+              if (open) form.reset({ name: "", description: "", price: 0, unit: "كغ", weightKg: 1, imageUrl: "", stock: 100, active: true });
+            }}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  إضافة منتج
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px] rtl">
+                <DialogHeader>
+                  <DialogTitle>إضافة منتج جديد</DialogTitle>
+                </DialogHeader>
+                <form id="product-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>الاسم</Label>
+                      <Input {...form.register("name")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>السعر (د.ج)</Label>
+                      <Input type="number" {...form.register("price")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>الوزن</Label>
+                      <Input type="number" step="0.1" {...form.register("weightKg")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>الوحدة (كغ، لتر...)</Label>
+                      <Input {...form.register("unit")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>المخزون</Label>
+                      <Input type="number" {...form.register("stock")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>رابط الصورة</Label>
+                      <Input dir="ltr" {...form.register("imageUrl")} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الوصف</Label>
+                    <Textarea rows={3} {...form.register("description")} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label>نشط (يظهر في المتجر)</Label>
+                    <Switch 
+                      checked={form.watch("active")} 
+                      onCheckedChange={(val) => form.setValue("active", val)} 
+                    />
+                  </div>
+                </form>
+                <DialogFooter>
+                  <Button type="submit" form="product-form" disabled={createProduct.isPending}>
+                    {createProduct.isPending ? "جاري الحفظ..." : "حفظ المنتج"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-right">
+                <thead className="bg-muted/50 text-muted-foreground border-b border-border">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">المنتج</th>
+                    <th className="px-6 py-4 font-medium">السعر</th>
+                    <th className="px-6 py-4 font-medium">الوزن</th>
+                    <th className="px-6 py-4 font-medium">المخزون</th>
+                    <th className="px-6 py-4 font-medium">الحالة</th>
+                    <th className="px-6 py-4 font-medium text-left">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i}>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-32" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-16" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-16" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-16" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-16" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-8 w-20" /></td>
+                      </tr>
+                    ))
+                  ) : products?.length ? (
+                    products.map((product) => (
+                      <tr key={product.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-muted rounded overflow-hidden flex items-center justify-center">
+                              {product.imageUrl ? (
+                                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                              )}
+                            </div>
+                            <span className="font-medium text-foreground">{product.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 font-medium">{product.price} د.ج</td>
+                        <td className="px-6 py-4 text-muted-foreground">{product.weightKg} {product.unit}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${product.stock > 10 ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
+                            {product.stock}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${product.active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                            {product.active ? 'نشط' : 'غير نشط'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-left">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(product)}>
+                              <Edit className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(product.id)}>
+                              <Trash2 className="w-4 h-4 text-destructive/70 hover:text-destructive" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                        لا توجد منتجات
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
+          <DialogContent className="sm:max-w-[600px] rtl">
+            <DialogHeader>
+              <DialogTitle>تعديل المنتج</DialogTitle>
+            </DialogHeader>
+            <form id="edit-product-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>الاسم</Label>
+                  <Input {...form.register("name")} />
+                </div>
+                <div className="space-y-2">
+                  <Label>السعر (د.ج)</Label>
+                  <Input type="number" {...form.register("price")} />
+                </div>
+                <div className="space-y-2">
+                  <Label>الوزن</Label>
+                  <Input type="number" step="0.1" {...form.register("weightKg")} />
+                </div>
+                <div className="space-y-2">
+                  <Label>الوحدة (كغ، لتر...)</Label>
+                  <Input {...form.register("unit")} />
+                </div>
+                <div className="space-y-2">
+                  <Label>المخزون</Label>
+                  <Input type="number" {...form.register("stock")} />
+                </div>
+                <div className="space-y-2">
+                  <Label>رابط الصورة</Label>
+                  <Input dir="ltr" {...form.register("imageUrl")} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>الوصف</Label>
+                <Textarea rows={3} {...form.register("description")} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>نشط (يظهر في المتجر)</Label>
+                <Switch 
+                  checked={form.watch("active")} 
+                  onCheckedChange={(val) => form.setValue("active", val)} 
+                />
+              </div>
+            </form>
+            <DialogFooter>
+              <Button type="submit" form="edit-product-form" disabled={updateProduct.isPending}>
+                {updateProduct.isPending ? "جاري الحفظ..." : "حفظ التعديلات"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
+    </div>
+  );
+}
