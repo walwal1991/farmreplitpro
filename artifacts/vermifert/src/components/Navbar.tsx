@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
+import { useCart } from "@/lib/cart";
 
 const NAV_LINKS = [
   { href: "/", label: "الرئيسية" },
@@ -23,6 +24,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
   const [dark, setDark] = useState(false);
+  const { count, open: openCart } = useCart();
 
   useEffect(() => {
     if (dark) document.documentElement.classList.add("dark");
@@ -34,8 +36,19 @@ export default function Navbar() {
       <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-4">
         {/* Left side icons (LTR position; on RTL these appear on the visual left) */}
         <div className="hidden md:flex items-center gap-1">
-          <Button variant="ghost" size="icon" aria-label="السلة">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="السلة"
+            onClick={openCart}
+            className="relative"
+          >
             <ShoppingCart className="w-5 h-5" />
+            {count > 0 && (
+              <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                {count}
+              </span>
+            )}
           </Button>
           <Button variant="ghost" size="icon" aria-label="الحساب">
             <User className="w-5 h-5" />
@@ -98,7 +111,21 @@ export default function Navbar() {
         </Link>
 
         {/* Mobile */}
-        <div className="md:hidden flex items-center">
+        <div className="md:hidden flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="السلة"
+            onClick={openCart}
+            className="relative"
+          >
+            <ShoppingCart className="w-5 h-5" />
+            {count > 0 && (
+              <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                {count}
+              </span>
+            )}
+          </Button>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">

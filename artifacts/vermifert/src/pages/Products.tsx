@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { useListProducts } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
+import { useCart } from "@/lib/cart";
 
 export default function Products() {
   const { data: products, isLoading } = useListProducts();
+  const { add } = useCart();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -22,43 +24,63 @@ export default function Products() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-4">
-                <Skeleton className="aspect-square rounded-2xl w-full" />
-                <Skeleton className="h-6 w-2/3" />
+              <div key={i} className="flex flex-col gap-3">
+                <Skeleton className="aspect-square rounded-xl w-full" />
+                <Skeleton className="h-4 w-2/3" />
                 <Skeleton className="h-4 w-1/3" />
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-9 w-full" />
               </div>
             ))
           ) : products?.length ? (
             products.map((product) => (
-              <Card key={product.id} className="group overflow-hidden border-border/50 hover:border-primary transition-colors flex flex-col">
-                <Link href={`/products/${product.id}`} className="block flex-1">
+              <Card
+                key={product.id}
+                className="group overflow-hidden border-border/60 hover:border-primary transition-colors flex flex-col"
+              >
+                <Link href={`/products/${product.id}`} className="block">
                   <div className="aspect-square bg-muted relative overflow-hidden">
-                    <img 
-                      src={product.imageUrl || vermicompostBag} 
+                    <img
+                      src={product.imageUrl || vermicompostBag}
                       alt={product.name}
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors line-clamp-2">{product.name}</h3>
-                    <div className="flex items-center justify-between mb-4 mt-auto">
-                      <span className="text-lg font-bold text-primary">{product.price} د.ج</span>
-                      <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">{product.weightKg} {product.unit}</span>
-                    </div>
-                  </CardContent>
                 </Link>
-                <div className="px-6 pb-6 mt-auto">
-                  <Button asChild className="w-full gap-2">
-                    <Link href={`/order/${product.id}`}>
-                      <ShoppingCart className="w-4 h-4" />
-                      اطلب الآن
-                    </Link>
+                <CardContent className="p-3 flex flex-col gap-2 flex-1">
+                  <Link href={`/products/${product.id}`}>
+                    <h3 className="text-sm font-bold line-clamp-2 group-hover:text-primary transition-colors">
+                      {product.name}
+                    </h3>
+                  </Link>
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-extrabold text-primary tabular-nums">
+                      {product.price} د.ج
+                    </span>
+                    <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      {product.weightKg} {product.unit}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full gap-1.5 mt-auto"
+                    onClick={() =>
+                      add({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        unit: product.unit,
+                        weightKg: product.weightKg,
+                        imageUrl: product.imageUrl,
+                      })
+                    }
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    أضف إلى السلة
                   </Button>
-                </div>
+                </CardContent>
               </Card>
             ))
           ) : (

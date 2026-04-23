@@ -1,16 +1,18 @@
 import Navbar from "@/components/Navbar";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Leaf, Sprout, ShieldCheck, HeartHandshake } from "lucide-react";
+import { Leaf, Sprout, ShieldCheck, HeartHandshake, ShoppingBag } from "lucide-react";
 import { useListProducts } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCart } from "@/lib/cart";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 import heroField from "@assets/generated_images/hero-green-field.png";
 
 export default function Home() {
   const { data: products, isLoading } = useListProducts();
-  const featuredProducts = products?.slice(0, 3) || [];
+  const featuredProducts = products?.slice(0, 4) || [];
+  const { add } = useCart();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -108,37 +110,64 @@ export default function Home() {
             </Button>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
             {isLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex flex-col gap-4">
-                  <Skeleton className="aspect-square rounded-2xl w-full" />
-                  <Skeleton className="h-6 w-2/3" />
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-3">
+                  <Skeleton className="aspect-square rounded-xl w-full" />
+                  <Skeleton className="h-4 w-2/3" />
                   <Skeleton className="h-4 w-1/3" />
-                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-9 w-full" />
                 </div>
               ))
             ) : featuredProducts.length > 0 ? (
               featuredProducts.map((product) => (
-                <Link key={product.id} href={`/products/${product.id}`}>
-                  <Card className="group hover:border-primary transition-colors cursor-pointer overflow-hidden border-border/50">
+                <Card
+                  key={product.id}
+                  className="group overflow-hidden border-border/60 hover:border-primary transition-colors flex flex-col"
+                >
+                  <Link href={`/products/${product.id}`} className="block">
                     <div className="aspect-square bg-muted relative overflow-hidden">
-                      <img 
-                        src={product.imageUrl || vermicompostBag} 
+                      <img
+                        src={product.imageUrl || vermicompostBag}
                         alt={product.name}
                         className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                       />
                     </div>
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-lg font-bold text-primary">{product.price} د.ج</span>
-                        <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">{product.weightKg} كغ</span>
-                      </div>
-                      <Button className="w-full">تفاصيل المنتج</Button>
-                    </CardContent>
-                  </Card>
-                </Link>
+                  </Link>
+                  <CardContent className="p-3 flex-1 flex flex-col gap-2">
+                    <Link href={`/products/${product.id}`}>
+                      <h3 className="text-sm font-bold line-clamp-2 group-hover:text-primary transition-colors">
+                        {product.name}
+                      </h3>
+                    </Link>
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-extrabold text-primary tabular-nums">
+                        {product.price} د.ج
+                      </span>
+                      <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        {product.weightKg} {product.unit}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full gap-1.5 mt-auto"
+                      onClick={() =>
+                        add({
+                          id: product.id,
+                          name: product.name,
+                          price: product.price,
+                          unit: product.unit,
+                          weightKg: product.weightKg,
+                          imageUrl: product.imageUrl,
+                        })
+                      }
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      أضف إلى السلة
+                    </Button>
+                  </CardContent>
+                </Card>
               ))
             ) : (
               <div className="col-span-full text-center py-12 text-muted-foreground bg-card rounded-2xl">

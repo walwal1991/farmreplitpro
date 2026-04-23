@@ -23,7 +23,12 @@ const productSchema = z.object({
   price: z.coerce.number().min(0, "السعر غير صالح"),
   unit: z.string().min(1, "الوحدة مطلوبة"),
   weightKg: z.coerce.number().min(0, "الوزن غير صالح"),
-  imageUrl: z.string().url("رابط الصورة غير صالح").or(z.literal("")),
+  imageUrl: z
+    .string()
+    .refine(
+      (v) => v === "" || v.startsWith("/") || /^https?:\/\//.test(v),
+      "أدخل رابطاً مطلقاً (http) أو مساراً يبدأ بـ /",
+    ),
   stock: z.coerce.number().min(0, "المخزون غير صالح"),
   active: z.boolean().default(true),
 });

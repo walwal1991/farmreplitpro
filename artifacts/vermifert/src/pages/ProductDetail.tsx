@@ -3,13 +3,16 @@ import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ShoppingCart, ShoppingBag, ArrowRight, CheckCircle2 } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
+import { useCart } from "@/lib/cart";
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const productId = parseInt(id, 10);
   
+  const { add } = useCart();
+
   const { data: product, isLoading, isError } = useGetProduct(productId, { 
     query: { 
       enabled: !!productId, 
@@ -87,12 +90,36 @@ export default function ProductDetail() {
                 </ul>
               </div>
 
-              <Button asChild size="lg" className="w-full h-14 text-lg gap-2">
-                <Link href={`/order/${product.id}`}>
-                  <ShoppingCart className="w-5 h-5" />
-                  اطلب الآن - الدفع عند الاستلام
-                </Link>
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  size="lg"
+                  className="flex-1 h-14 text-base gap-2"
+                  onClick={() =>
+                    add({
+                      id: product.id,
+                      name: product.name,
+                      price: product.price,
+                      unit: product.unit,
+                      weightKg: product.weightKg,
+                      imageUrl: product.imageUrl,
+                    })
+                  }
+                >
+                  <ShoppingBag className="w-5 h-5" />
+                  أضف إلى السلة
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="flex-1 h-14 text-base gap-2"
+                >
+                  <Link href={`/order/${product.id}`}>
+                    <ShoppingCart className="w-5 h-5" />
+                    اطلب الآن
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         )}
