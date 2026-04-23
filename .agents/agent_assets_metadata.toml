@@ -18,3 +18,9 @@ id = "1vanoiZ6Q4KntxbdW40PC"
 uri = "file://attached_assets/generated_images/worm-castings-bag.png"
 type = "image"
 title = "worm castings bag"
+
+[[generated]]
+id = "4FDT7Zb2n5yPdeT1tEHyh"
+uri = "file://attached_assets/generated_images/hero-green-field.png"
+type = "image"
+title = "generated_image"

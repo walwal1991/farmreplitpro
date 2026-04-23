@@ -6,6 +6,7 @@ import { useListProducts } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
+import heroField from "@assets/generated_images/hero-green-field.png";
 
 export default function Home() {
   const { data: products, isLoading } = useListProducts();
@@ -14,40 +15,49 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 overflow-hidden bg-background">
-        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent" />
-        <div className="container mx-auto px-4 relative z-10 flex flex-col lg:flex-row items-center gap-12">
-          <div className="flex-1 text-center lg:text-right space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-              <Sprout className="w-4 h-4" />
-              <span>من المزرعة إلى أرضك</span>
-            </div>
-            <h1 className="text-4xl lg:text-6xl font-bold leading-tight text-foreground">
-              سماد طبيعي حيوي، <br/>
-              <span className="text-primary">يحيي تربتك</span>
-            </h1>
-            <p className="text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0">
-              سماد ديدان عالي الجودة لجميع أنواع المزروعات. غني بالعناصر الغذائية والميكروبات النافعة لزيادة إنتاجيتك وتحسين جودة محاصيلك بطريقة طبيعية ومستدامة.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-4">
-              <Button asChild size="lg" className="w-full sm:w-auto text-lg px-8 h-14">
-                <Link href="/products">اطلب الآن</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto text-lg px-8 h-14">
-                <Link href="/consultation">اطلب استشارة مجانية</Link>
-              </Button>
-            </div>
+      <section className="relative overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroField})` }}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50" aria-hidden="true" />
+
+        <div className="relative z-10 container mx-auto px-4 py-24 lg:py-36 flex flex-col items-center text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 border border-white/30 backdrop-blur text-white text-sm font-medium mb-10">
+            <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+            <span>الشركة الجزائرية الرائدة • تأسست 2026</span>
           </div>
-          <div className="flex-1 w-full max-w-lg lg:max-w-none">
-            <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl relative bg-muted">
-              <img 
-                src={vermicompostBag} 
-                alt="سماد الديدان" 
-                className="object-cover w-full h-full"
-              />
-            </div>
+
+          <h1 className="font-extrabold leading-[1.05] text-5xl sm:text-6xl lg:text-8xl tracking-tight">
+            <span className="block bg-gradient-to-l from-amber-300 via-yellow-200 to-lime-200 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
+              نحو تربة أفضل
+            </span>
+            <span className="block mt-2 bg-gradient-to-l from-lime-200 via-emerald-300 to-amber-300 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
+              وبيئة أنظف
+            </span>
+          </h1>
+
+          <p className="mt-8 max-w-2xl text-base sm:text-lg text-white/90 leading-loose">
+            نحوّل النفايات العضوية إلى سماد ديدان غني بالعناصر الغذائية، ونرافق
+            الفلاحين عبر منصتنا الرقمية بالإرشاد والتوجيه لتحقيق زراعة مستدامة
+            وإنتاجية أعلى.
+          </p>
+
+          <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+            <Button asChild size="lg" className="text-base px-8 h-12 shadow-lg">
+              <Link href="/products">اطلب الآن</Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="text-base px-8 h-12 bg-white/10 hover:bg-white/20 text-white border-white/40 backdrop-blur"
+            >
+              <Link href="/consultation">اطلب استشارة مجانية</Link>
+            </Button>
           </div>
         </div>
       </section>
