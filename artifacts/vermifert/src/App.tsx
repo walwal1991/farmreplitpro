@@ -9,6 +9,7 @@ import Products from "@/pages/Products";
 import ProductDetail from "@/pages/ProductDetail";
 import Checkout from "@/pages/Checkout";
 import Consultation from "@/pages/Consultation";
+import Guide from "@/pages/Guide";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProducts from "@/pages/AdminProducts";
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/products/:id" component={ProductDetail} />
       <Route path="/order/:id" component={Checkout} />
       <Route path="/consultation" component={Consultation} />
+      <Route path="/guide" component={Guide} />
       
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />
