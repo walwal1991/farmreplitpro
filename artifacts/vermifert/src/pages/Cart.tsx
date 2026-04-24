@@ -9,10 +9,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
-import { useCreateOrder } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingBag, CheckCircle2, Trash2, Plus, Minus } from "lucide-react";
+import { ShoppingBag, CheckCircle2, Trash2, Plus, Minus, Copy, LayoutDashboard } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
+
+const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const formSchema = z.object({
   customerName: z.string().min(2, "الاسم مطلوب"),
@@ -23,31 +24,43 @@ const formSchema = z.object({
 });
 type FormVals = z.infer<typeof formSchema>;
 
+interface OrderResult { id: number; trackingNumber?: string | null; }
+
 export default function Cart() {
   const { items, total, setQty, remove, clear } = useCart();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [results, setResults] = useState<OrderResult[] | null>(null);
+
+  const customerToken = localStorage.getItem("customerToken") ?? "";
+  const customerUser = (() => {
+    try { return JSON.parse(localStorage.getItem("customerUser") ?? "null"); } catch { return null; }
+  })();
 
   const form = useForm<FormVals>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customerName: "",
-      phone: "",
+      customerName: customerUser?.name ?? "",
+      phone: customerUser?.phone ?? "",
       address: "",
       city: "",
       notes: "",
     },
   });
 
-  const createOrder = useCreateOrder();
-
   const onSubmit = async (vals: FormVals) => {
+    setSubmitting(true);
     try {
-      // Submit one order per cart line (backend supports a single product per order).
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (customerToken) headers["x-customer-token"] = customerToken;
+
+      const ordered: OrderResult[] = [];
       for (const it of items) {
-        await createOrder.mutateAsync({
-          data: {
+        const res = await fetch(`${API}/api/orders`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
             customerName: vals.customerName,
             phone: vals.phone,
             address: vals.address,
@@ -55,39 +68,77 @@ export default function Cart() {
             notes: vals.notes ?? "",
             productId: it.id,
             quantity: it.quantity,
-          },
+          }),
         });
+        const json = await res.json();
+        if (!res.ok) {
+          toast({ title: "تعذّر إرسال الطلب", description: json.error ?? "حاول مرة أخرى", variant: "destructive" });
+          return;
+        }
+        ordered.push({ id: json.id, trackingNumber: json.trackingNumber });
       }
-      setSubmitted(true);
+      setResults(ordered);
       clear();
-    } catch {
-      toast({
-        title: "تعذّر إرسال الطلب",
-        description: "حاول مرة أخرى أو راجع البيانات.",
-        variant: "destructive",
-      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (submitted) {
+  function copyTracking(tn: string) {
+    navigator.clipboard.writeText(tn).then(() => toast({ title: "تم نسخ رقم التتبع" }));
+  }
+
+  if (results) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 container mx-auto px-4 py-20">
           <div className="max-w-lg mx-auto text-center bg-card border border-border/60 rounded-2xl p-10">
-            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 text-primary flex items-center justify-center mb-6">
+            <div className="w-16 h-16 mx-auto rounded-full bg-green-500/10 text-green-600 flex items-center justify-center mb-6">
               <CheckCircle2 className="w-9 h-9" />
             </div>
-            <h1 className="text-2xl font-bold mb-3">تمّ تأكيد طلبك بنجاح</h1>
-            <p className="text-muted-foreground mb-8">
-              سنتواصل معك قريباً لتأكيد تفاصيل التوصيل. الدفع نقداً عند الاستلام.
+            <h1 className="text-2xl font-bold mb-3">تمّ تأكيد طلبك بنجاح!</h1>
+            <p className="text-muted-foreground mb-6">
+              شكراً لثقتك بنا. الدفع نقداً عند الاستلام.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={() => setLocation("/products")}>
+
+            {results.some(r => r.trackingNumber) && (
+              <div className="space-y-2 mb-6">
+                <p className="text-sm font-medium text-muted-foreground">أرقام التتبع</p>
+                {results.filter(r => r.trackingNumber).map(r => (
+                  <div key={r.id} className="flex items-center justify-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+                    <code className="text-sm font-mono font-bold text-primary tracking-widest" dir="ltr">
+                      {r.trackingNumber}
+                    </code>
+                    <button
+                      onClick={() => copyTracking(r.trackingNumber!)}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              {customerUser && (
+                <Button asChild>
+                  <Link href="/customer/dashboard">
+                    <LayoutDashboard className="w-4 h-4 me-2" />
+                    عرض طلباتي
+                  </Link>
+                </Button>
+              )}
+              {results.length === 1 && results[0].trackingNumber && (
+                <Button asChild variant={customerUser ? "outline" : "default"}>
+                  <Link href={`/track/${results[0].trackingNumber}`}>
+                    تتبع الطلب
+                  </Link>
+                </Button>
+              )}
+              <Button variant={customerUser ? "ghost" : "outline"} onClick={() => setLocation("/products")}>
                 مواصلة التسوق
-              </Button>
-              <Button variant="outline" onClick={() => setLocation("/")}>
-                العودة للرئيسية
               </Button>
             </div>
           </div>
@@ -123,6 +174,13 @@ export default function Cart() {
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold mb-8">إتمام الطلب</h1>
+
+        {customerUser && (
+          <div className="mb-6 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm text-primary flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            مرحباً {customerUser.name} — سيُربط هذا الطلب بحسابك تلقائياً
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-[1fr_380px] gap-8 items-start">
           {/* Form */}
@@ -177,9 +235,9 @@ export default function Cart() {
               type="submit"
               size="lg"
               className="w-full h-12"
-              disabled={createOrder.isPending}
+              disabled={submitting}
             >
-              {createOrder.isPending
+              {submitting
                 ? "جاري إرسال الطلب..."
                 : `تأكيد الطلب (${total} د.ج)`}
             </Button>
