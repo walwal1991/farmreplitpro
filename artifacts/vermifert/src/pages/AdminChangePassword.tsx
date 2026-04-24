@@ -23,7 +23,9 @@ export default function AdminChangePassword() {
     if (!token) setLocation("/admin/login");
   }, [token, setLocation]);
 
-  const change = useAdminChangePassword();
+  const change = useAdminChangePassword({
+    request: { headers: { "x-admin-token": token || "" } },
+  });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +49,6 @@ export default function AdminChangePassword() {
     change.mutate(
       {
         data: { currentPassword, newPassword },
-        request: { headers: { "x-admin-token": token || "" } },
       },
       {
         onSuccess: (res) => {
