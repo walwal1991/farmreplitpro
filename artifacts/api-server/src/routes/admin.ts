@@ -191,6 +191,22 @@ router.get(
   },
 );
 
+router.post("/admin/customers", requireAdmin, async (req, res): Promise<void> => {
+  const { name, email, phone, password } = req.body;
+  if (!name || !email || !password) {
+    res.status(400).json({ error: "الاسم والإيميل وكلمة المرور مطلوبة" });
+    return;
+  }
+  const existing = await db.execute(sql`SELECT id FROM customers WHERE email = ${email} LIMIT 1`);
+  if (existing.rows.length > 0) {
+    res.status(409).json({ error: "البريد الإلكتروني مستخدم بالفعل" });
+    return;
+  }
+  const hash = await bcrypt.hash(password, 10);
+  await db.execute(sql`INSERT INTO customers (name, email, phone, password_hash) VALUES (${name}, ${email}, ${phone || null}, ${hash})`);
+  res.status(201).json({ success: true });
+});
+
 router.get("/admin/customers", requireAdmin, async (_req, res): Promise<void> => {
   const rows = await db.execute(sql`
     SELECT id, name, email, phone, is_blocked, created_at,
