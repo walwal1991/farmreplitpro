@@ -209,11 +209,19 @@ router.post("/admin/customers", requireAdmin, async (req, res): Promise<void> =>
 
 router.get("/admin/customers/:id/orders", requireAdmin, async (req, res): Promise<void> => {
   const { id } = req.params;
+  const customerId = parseInt(id, 10);
+
+  const customerRow = await db.execute(sql`SELECT phone, email FROM customers WHERE id = ${customerId} LIMIT 1`);
+  const customer = customerRow.rows[0] as { phone: string; email: string } | undefined;
+  if (!customer) { res.status(404).json({ error: "العميل غير موجود" }); return; }
+
   const rows = await db.execute(sql`
     SELECT id, product_name, quantity, unit_price, total_price, status,
-           city, address, tracking_number, created_at, assigned_driver_name
+           city, address, tracking_number, created_at, assigned_driver_name,
+           customer_id
     FROM orders
-    WHERE customer_id = ${parseInt(id, 10)}
+    WHERE customer_id = ${customerId}
+       OR (customer_id IS NULL AND phone = ${customer.phone || ""})
     ORDER BY created_at DESC
   `);
   res.json(rows.rows);
@@ -222,7 +230,9 @@ router.get("/admin/customers/:id/orders", requireAdmin, async (req, res): Promis
 router.get("/admin/customers", requireAdmin, async (_req, res): Promise<void> => {
   const rows = await db.execute(sql`
     SELECT id, name, email, phone, is_blocked, created_at,
-      (SELECT COUNT(*) FROM orders WHERE customer_id = customers.id) as order_count
+      (SELECT COUNT(*) FROM orders
+       WHERE customer_id = customers.id
+          OR (customer_id IS NULL AND phone = customers.phone AND customers.phone IS NOT NULL AND customers.phone != '')) as order_count
     FROM customers
     ORDER BY created_at DESC
   `);
