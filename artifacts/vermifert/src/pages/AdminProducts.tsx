@@ -183,73 +183,63 @@ export default function AdminProducts() {
                   إضافة منتج
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] rtl">
+              <DialogContent className="sm:max-w-[660px] rtl">
                 <DialogHeader>
                   <DialogTitle>إضافة منتج جديد</DialogTitle>
                 </DialogHeader>
-                <form id="product-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>الاسم</Label>
-                      <Input {...form.register("name")} />
+                <form id="product-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 py-2">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1 col-span-2">
+                      <Label className="text-xs">الاسم</Label>
+                      <Input className="h-8 text-sm" {...form.register("name")} />
                     </div>
-                    <div className="space-y-2">
-                      <Label>السعر (د.ج)</Label>
-                      <Input type="number" {...form.register("price")} />
+                    <div className="space-y-1">
+                      <Label className="text-xs">السعر (د.ج)</Label>
+                      <Input className="h-8 text-sm" type="number" {...form.register("price")} />
                     </div>
-                    <div className="space-y-2">
-                      <Label>الوزن</Label>
-                      <Input type="number" step="0.1" {...form.register("weightKg")} />
+                    <div className="space-y-1">
+                      <Label className="text-xs">الوزن</Label>
+                      <Input className="h-8 text-sm" type="number" step="0.1" {...form.register("weightKg")} />
                     </div>
-                    <div className="space-y-2">
-                      <Label>الوحدة (كغ، لتر...)</Label>
-                      <Input {...form.register("unit")} />
+                    <div className="space-y-1">
+                      <Label className="text-xs">الوحدة (كغ، لتر...)</Label>
+                      <Input className="h-8 text-sm" {...form.register("unit")} />
                     </div>
-                    <div className="space-y-2">
-                      <Label>المخزون</Label>
-                      <Input type="number" {...form.register("stock")} />
+                    <div className="space-y-1">
+                      <Label className="text-xs">المخزون</Label>
+                      <Input className="h-8 text-sm" type="number" {...form.register("stock")} />
                     </div>
-                    <div className="space-y-2 col-span-2">
-                      <Label>الصورة</Label>
-                      <div className="flex gap-2">
-                        <Input dir="ltr" {...form.register("imageUrl")} placeholder="https://..." className="flex-1" />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          disabled={uploading}
-                          onClick={() => fileInputRef.current?.click()}
-                          title="رفع صورة"
-                        >
-                          <Upload className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      {form.watch("imageUrl") && (
-                        <img src={form.watch("imageUrl")} alt="preview" className="h-16 w-16 rounded object-cover border border-border" />
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>النوع</Label>
+                    <div className="space-y-1">
+                      <Label className="text-xs">النوع</Label>
                       <select
                         {...form.register("category")}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
                       >
                         {CATEGORY_OPTIONS.map((c) => (
                           <option key={c.value} value={c.value}>{c.label}</option>
                         ))}
                       </select>
                     </div>
+                    <div className="space-y-1 col-span-2">
+                      <Label className="text-xs">الصورة</Label>
+                      <div className="flex gap-2">
+                        <Input dir="ltr" {...form.register("imageUrl")} placeholder="https://..." className="flex-1 h-8 text-sm" />
+                        <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" disabled={uploading} onClick={() => fileInputRef.current?.click()} title="رفع صورة">
+                          <Upload className="w-3.5 h-3.5" />
+                        </Button>
+                        {form.watch("imageUrl") && (
+                          <img src={form.watch("imageUrl")} alt="preview" className="h-8 w-8 rounded object-cover border border-border shrink-0" />
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>الوصف</Label>
-                    <Textarea rows={3} {...form.register("description")} />
+                  <div className="space-y-1">
+                    <Label className="text-xs">الوصف</Label>
+                    <Textarea rows={2} className="text-sm resize-none" {...form.register("description")} />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label>نشط (يظهر في المتجر)</Label>
-                    <Switch 
-                      checked={form.watch("active")} 
-                      onCheckedChange={(val) => form.setValue("active", val)} 
-                    />
+                    <Label className="text-xs">نشط (يظهر في المتجر)</Label>
+                    <Switch checked={form.watch("active")} onCheckedChange={(val) => form.setValue("active", val)} />
                   </div>
                 </form>
                 <DialogFooter>
@@ -340,73 +330,63 @@ export default function AdminProducts() {
 
         {/* Edit Dialog */}
         <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
-          <DialogContent className="sm:max-w-[600px] rtl">
+          <DialogContent className="sm:max-w-[660px] rtl">
             <DialogHeader>
               <DialogTitle>تعديل المنتج</DialogTitle>
             </DialogHeader>
-            <form id="edit-product-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>الاسم</Label>
-                  <Input {...form.register("name")} />
+            <form id="edit-product-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 py-2">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1 col-span-2">
+                  <Label className="text-xs">الاسم</Label>
+                  <Input className="h-8 text-sm" {...form.register("name")} />
                 </div>
-                <div className="space-y-2">
-                  <Label>السعر (د.ج)</Label>
-                  <Input type="number" {...form.register("price")} />
+                <div className="space-y-1">
+                  <Label className="text-xs">السعر (د.ج)</Label>
+                  <Input className="h-8 text-sm" type="number" {...form.register("price")} />
                 </div>
-                <div className="space-y-2">
-                  <Label>الوزن</Label>
-                  <Input type="number" step="0.1" {...form.register("weightKg")} />
+                <div className="space-y-1">
+                  <Label className="text-xs">الوزن</Label>
+                  <Input className="h-8 text-sm" type="number" step="0.1" {...form.register("weightKg")} />
                 </div>
-                <div className="space-y-2">
-                  <Label>الوحدة (كغ، لتر...)</Label>
-                  <Input {...form.register("unit")} />
+                <div className="space-y-1">
+                  <Label className="text-xs">الوحدة (كغ، لتر...)</Label>
+                  <Input className="h-8 text-sm" {...form.register("unit")} />
                 </div>
-                <div className="space-y-2">
-                  <Label>المخزون</Label>
-                  <Input type="number" {...form.register("stock")} />
+                <div className="space-y-1">
+                  <Label className="text-xs">المخزون</Label>
+                  <Input className="h-8 text-sm" type="number" {...form.register("stock")} />
                 </div>
-                <div className="space-y-2 col-span-2">
-                  <Label>الصورة</Label>
-                  <div className="flex gap-2">
-                    <Input dir="ltr" {...form.register("imageUrl")} placeholder="https://..." className="flex-1" />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      disabled={uploading}
-                      onClick={() => fileInputRef.current?.click()}
-                      title="رفع صورة"
-                    >
-                      <Upload className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {form.watch("imageUrl") && (
-                    <img src={form.watch("imageUrl")} alt="preview" className="h-16 w-16 rounded object-cover border border-border" />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>النوع</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">النوع</Label>
                   <select
                     {...form.register("category")}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
                   >
                     {CATEGORY_OPTIONS.map((c) => (
                       <option key={c.value} value={c.value}>{c.label}</option>
                     ))}
                   </select>
                 </div>
+                <div className="space-y-1 col-span-2">
+                  <Label className="text-xs">الصورة</Label>
+                  <div className="flex gap-2">
+                    <Input dir="ltr" {...form.register("imageUrl")} placeholder="https://..." className="flex-1 h-8 text-sm" />
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" disabled={uploading} onClick={() => fileInputRef.current?.click()} title="رفع صورة">
+                      <Upload className="w-3.5 h-3.5" />
+                    </Button>
+                    {form.watch("imageUrl") && (
+                      <img src={form.watch("imageUrl")} alt="preview" className="h-8 w-8 rounded object-cover border border-border shrink-0" />
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>الوصف</Label>
-                <Textarea rows={3} {...form.register("description")} />
+              <div className="space-y-1">
+                <Label className="text-xs">الوصف</Label>
+                <Textarea rows={2} className="text-sm resize-none" {...form.register("description")} />
               </div>
               <div className="flex items-center justify-between">
-                <Label>نشط (يظهر في المتجر)</Label>
-                <Switch 
-                  checked={form.watch("active")} 
-                  onCheckedChange={(val) => form.setValue("active", val)} 
-                />
+                <Label className="text-xs">نشط (يظهر في المتجر)</Label>
+                <Switch checked={form.watch("active")} onCheckedChange={(val) => form.setValue("active", val)} />
               </div>
             </form>
             <DialogFooter>
