@@ -50,8 +50,10 @@ export default function Navbar() {
               </span>
             )}
           </Button>
-          <Button variant="ghost" size="icon" aria-label="الحساب">
-            <User className="w-5 h-5" />
+          <Button asChild variant="ghost" size="icon" aria-label="دخول الإدارة">
+            <Link href="/admin/login">
+              <User className="w-5 h-5" />
+            </Link>
           </Button>
           <Button
             variant="ghost"
@@ -151,6 +153,16 @@ export default function Navbar() {
                 <Link href="/products" onClick={() => setOpen(false)}>
                   <ShoppingCart className="w-4 h-4" />
                   اطلب الآن
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="w-full gap-2"
+              >
+                <Link href="/admin/login" onClick={() => setOpen(false)}>
+                  <User className="w-4 h-4" />
+                  دخول الإدارة
                 </Link>
               </Button>
             </SheetContent>
