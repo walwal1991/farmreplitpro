@@ -1,5 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Package, ShoppingBag, MessageSquare, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingBag,
+  MessageSquare,
+  LogOut,
+  Home,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function AdminSidebar() {
@@ -47,7 +54,14 @@ export default function AdminSidebar() {
         })}
       </div>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-2">
+        <Link
+          href="/"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted w-full transition-colors"
+        >
+          <Home className="w-5 h-5" />
+          العودة إلى المتجر
+        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 w-full transition-colors"
