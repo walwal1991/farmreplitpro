@@ -184,26 +184,63 @@ router.post("/admin/delivery-users", requireAdmin, async (req, res): Promise<voi
   res.status(201).json({ ...row, createdAt: row.createdAt.toISOString() });
 });
 
-// ─── Admin: toggle active ─────────────────────────────────────────────────────
+// ─── Admin: update delivery user (profile + active toggle) ───────────────────
 router.patch("/admin/delivery-users/:id", requireAdmin, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
-  const { active } = req.body ?? {};
-  if (typeof active !== "boolean") {
-    res.status(400).json({ error: "active مطلوب" });
+  const { active, name, phone, username, password, role } = req.body ?? {};
+
+  // Build update payload — only include defined fields
+  const updates: Record<string, unknown> = {};
+  if (typeof active === "boolean") updates.active = active;
+  if (name !== undefined) updates.name = name;
+  if (phone !== undefined) updates.phone = phone;
+  if (username !== undefined) {
+    // Check uniqueness if username is being changed
+    const existing = await db
+      .select({ id: deliveryUsersTable.id })
+      .from(deliveryUsersTable)
+      .where(eq(deliveryUsersTable.username, username))
+      .limit(1);
+    if (existing[0] && existing[0].id !== id) {
+      res.status(409).json({ error: "اسم المستخدم مستخدم بالفعل" });
+      return;
+    }
+    updates.username = username;
+  }
+  if (role !== undefined) updates.role = role;
+  if (password) {
+    updates.passwordHash = await bcrypt.hash(password, 10);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "لا توجد بيانات للتحديث" });
     return;
   }
-  await db.update(deliveryUsersTable).set({ active }).where(eq(deliveryUsersTable.id, id));
-  if (!active) {
-    // invalidate sessions
-    const sessions = await db
-      .select()
-      .from(deliverySessionsTable)
-      .where(eq(deliverySessionsTable.userId, id));
-    for (const s of sessions) {
-      await db.delete(deliverySessionsTable).where(eq(deliverySessionsTable.token, s.token));
-    }
+
+  await db.update(deliveryUsersTable).set(updates).where(eq(deliveryUsersTable.id, id));
+
+  // Invalidate sessions if deactivating
+  if (updates.active === false) {
+    await db.delete(deliverySessionsTable).where(eq(deliverySessionsTable.userId, id));
   }
-  res.json({ ok: true });
+
+  // Return updated row
+  const rows = await db
+    .select({
+      id: deliveryUsersTable.id,
+      username: deliveryUsersTable.username,
+      name: deliveryUsersTable.name,
+      phone: deliveryUsersTable.phone,
+      role: deliveryUsersTable.role,
+      active: deliveryUsersTable.active,
+      available: deliveryUsersTable.available,
+      createdAt: deliveryUsersTable.createdAt,
+    })
+    .from(deliveryUsersTable)
+    .where(eq(deliveryUsersTable.id, id))
+    .limit(1);
+
+  res.json(rows[0] ? { ...rows[0], createdAt: rows[0].createdAt.toISOString() } : { ok: true });
 });
 
 // ─── Admin: delete delivery user ──────────────────────────────────────────────
