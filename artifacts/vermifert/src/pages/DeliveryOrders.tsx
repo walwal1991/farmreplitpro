@@ -52,6 +52,8 @@ export default function DeliveryOrders() {
   const token = localStorage.getItem("deliveryToken");
   const userStr = localStorage.getItem("deliveryUser");
   const user = userStr ? JSON.parse(userStr) : null;
+  const [available, setAvailable] = useState(true);
+  const [togglingAvail, setTogglingAvail] = useState(false);
 
   useEffect(() => {
     if (!token) { setLocation("/delivery/login"); }
@@ -98,6 +100,21 @@ export default function DeliveryOrders() {
     }
   };
 
+  const toggleAvailability = async () => {
+    setTogglingAvail(true);
+    try {
+      const res = await fetch(`${API}/api/delivery/me/available`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-delivery-token": token! },
+        body: JSON.stringify({ available: !available }),
+      });
+      if (res.ok) {
+        setAvailable((v) => !v);
+        toast({ title: !available ? "أصبحت متاحاً" : "أصبحت مشغولاً" });
+      }
+    } finally { setTogglingAvail(false); }
+  };
+
   const handleLogout = async () => {
     await fetch(`${API}/api/delivery/logout`, {
       method: "POST",
@@ -125,6 +142,18 @@ export default function DeliveryOrders() {
               <div className="font-bold text-sm leading-tight">{user?.name}</div>
               <div className="text-xs text-muted-foreground">{roleLabel}</div>
             </div>
+            <button
+              onClick={toggleAvailability}
+              disabled={togglingAvail}
+              className={`mr-1 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+                available
+                  ? "bg-green-100 text-green-700 border-green-300 hover:bg-green-200"
+                  : "bg-red-100 text-red-600 border-red-300 hover:bg-red-200"
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${available ? "bg-green-500" : "bg-red-500"}`} />
+              {available ? "متاح" : "مشغول"}
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">

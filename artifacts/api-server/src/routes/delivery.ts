@@ -121,6 +121,18 @@ router.patch("/delivery/orders/:id/status", requireDelivery, async (req, res): P
   res.json({ ok: true, id, status });
 });
 
+// ─── Delivery: toggle own availability ────────────────────────────────────────
+router.patch("/delivery/me/available", requireDelivery, async (req, res): Promise<void> => {
+  const user = (req as Request & { deliveryUser: { id: number } }).deliveryUser;
+  const { available } = req.body ?? {};
+  if (typeof available !== "boolean") {
+    res.status(400).json({ error: "available مطلوب" });
+    return;
+  }
+  await db.update(deliveryUsersTable).set({ available }).where(eq(deliveryUsersTable.id, user.id));
+  res.json({ ok: true, available });
+});
+
 // ─── Admin: list delivery users ───────────────────────────────────────────────
 router.get("/admin/delivery-users", requireAdmin, async (_req, res): Promise<void> => {
   const users = await db
@@ -131,6 +143,7 @@ router.get("/admin/delivery-users", requireAdmin, async (_req, res): Promise<voi
       phone: deliveryUsersTable.phone,
       role: deliveryUsersTable.role,
       active: deliveryUsersTable.active,
+      available: deliveryUsersTable.available,
       createdAt: deliveryUsersTable.createdAt,
     })
     .from(deliveryUsersTable)
@@ -157,7 +170,7 @@ router.post("/admin/delivery-users", requireAdmin, async (req, res): Promise<voi
   const passwordHash = await bcrypt.hash(password, 10);
   const [row] = await db
     .insert(deliveryUsersTable)
-    .values({ username, passwordHash, name, phone: phone ?? "", role: role ?? "driver", active: true })
+    .values({ username, passwordHash, name, phone: phone ?? "", role: role ?? "driver", active: true, available: true })
     .returning({
       id: deliveryUsersTable.id,
       username: deliveryUsersTable.username,
@@ -165,6 +178,7 @@ router.post("/admin/delivery-users", requireAdmin, async (req, res): Promise<voi
       phone: deliveryUsersTable.phone,
       role: deliveryUsersTable.role,
       active: deliveryUsersTable.active,
+      available: deliveryUsersTable.available,
       createdAt: deliveryUsersTable.createdAt,
     });
   res.status(201).json({ ...row, createdAt: row.createdAt.toISOString() });

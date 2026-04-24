@@ -8,6 +8,7 @@ export const deliveryUsersTable = pgTable("delivery_users", {
   phone: text("phone").notNull().default(""),
   role: text("role").notNull().default("driver"), // 'driver' | 'company'
   active: boolean("active").notNull().default(true),
+  available: boolean("available").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
