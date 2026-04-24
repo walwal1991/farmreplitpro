@@ -257,6 +257,7 @@ export default function AdminProducts() {
                 <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                   <tr>
                     <th className="px-6 py-4 font-medium">المنتج</th>
+                    <th className="px-6 py-4 font-medium">نوع المنتج</th>
                     <th className="px-6 py-4 font-medium">السعر</th>
                     <th className="px-6 py-4 font-medium">الوزن</th>
                     <th className="px-6 py-4 font-medium">المخزون</th>
@@ -269,6 +270,7 @@ export default function AdminProducts() {
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i}>
                         <td className="px-6 py-4"><Skeleton className="h-6 w-32" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-20" /></td>
                         <td className="px-6 py-4"><Skeleton className="h-6 w-16" /></td>
                         <td className="px-6 py-4"><Skeleton className="h-6 w-16" /></td>
                         <td className="px-6 py-4"><Skeleton className="h-6 w-16" /></td>
@@ -290,6 +292,11 @@ export default function AdminProducts() {
                             </div>
                             <span className="font-medium text-foreground">{product.name}</span>
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex px-2 py-1 rounded-full text-xs font-bold bg-secondary/60 text-secondary-foreground">
+                            {CATEGORY_OPTIONS.find(c => c.value === (product.category ?? "solid"))?.label ?? "—"}
+                          </span>
                         </td>
                         <td className="px-6 py-4 font-medium">{product.price} د.ج</td>
                         <td className="px-6 py-4 text-muted-foreground">{product.weightKg} {product.unit}</td>
@@ -317,7 +324,7 @@ export default function AdminProducts() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                      <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                         لا توجد منتجات
                       </td>
                     </tr>
