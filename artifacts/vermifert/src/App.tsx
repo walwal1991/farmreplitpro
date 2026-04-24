@@ -23,6 +23,7 @@ import SmartDiagnosis from "@/pages/SmartDiagnosis";
 import DeliveryLogin from "@/pages/DeliveryLogin";
 import DeliveryOrders from "@/pages/DeliveryOrders";
 import AdminDeliveryUsers from "@/pages/AdminDeliveryUsers";
+import AdminCustomers from "@/pages/AdminCustomers";
 import CustomerLogin from "@/pages/CustomerLogin";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import TrackOrder from "@/pages/TrackOrder";
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/consultations" component={AdminConsultations} />
       <Route path="/admin/delivery" component={AdminDeliveryUsers} />
+      <Route path="/admin/customers" component={AdminCustomers} />
       <Route path="/admin/change-password" component={AdminChangePassword} />
       <Route path="/delivery/login" component={DeliveryLogin} />
       <Route path="/delivery/orders" component={DeliveryOrders} />

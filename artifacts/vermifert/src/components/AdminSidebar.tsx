@@ -8,6 +8,7 @@ import {
   Home,
   KeyRound,
   Truck,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ export default function AdminSidebar() {
     { href: "/admin/orders", label: "الطلبات", icon: ShoppingBag },
     { href: "/admin/consultations", label: "الاستشارات", icon: MessageSquare },
     { href: "/admin/delivery", label: "حسابات التوصيل", icon: Truck },
+    { href: "/admin/customers", label: "العملاء", icon: Users },
     { href: "/admin/change-password", label: "كلمة المرور", icon: KeyRound },
   ];
 

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { db, customersTable, customerSessionsTable, ordersTable } from "@workspace/db";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
@@ -54,13 +54,17 @@ router.post("/customer/login", async (req, res): Promise<void> => {
     res.status(400).json({ error: "البريد الإلكتروني وكلمة المرور مطلوبان" });
     return;
   }
-  const rows = await db.select().from(customersTable).where(eq(customersTable.email, email)).limit(1);
-  const customer = rows[0];
+  const result = await db.execute(sql`SELECT id, name, email, phone, password_hash, is_blocked FROM customers WHERE email = ${email} LIMIT 1`);
+  const customer = result.rows[0] as { id: number; name: string; email: string; phone: string; password_hash: string; is_blocked: boolean } | undefined;
   if (!customer) {
     res.status(401).json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
     return;
   }
-  const ok = await bcrypt.compare(password, customer.passwordHash);
+  if (customer.is_blocked) {
+    res.status(403).json({ error: "هذا الحساب محظور. تواصل مع الدعم." });
+    return;
+  }
+  const ok = await bcrypt.compare(password, customer.password_hash);
   if (!ok) {
     res.status(401).json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
     return;

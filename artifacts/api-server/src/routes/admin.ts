@@ -191,6 +191,52 @@ router.get(
   },
 );
 
+router.get("/admin/customers", requireAdmin, async (_req, res): Promise<void> => {
+  const rows = await db.execute(sql`
+    SELECT id, name, email, phone, is_blocked, created_at,
+      (SELECT COUNT(*) FROM orders WHERE customer_id = customers.id) as order_count
+    FROM customers
+    ORDER BY created_at DESC
+  `);
+  res.json(rows.rows);
+});
+
+router.patch("/admin/customers/:id", requireAdmin, async (req, res): Promise<void> => {
+  const { id } = req.params;
+  const { name, email, phone, password } = req.body;
+  const customerId = parseInt(id, 10);
+  if (isNaN(customerId)) { res.status(400).json({ error: "معرّف غير صالح" }); return; }
+
+  let changed = false;
+  if (name !== undefined) { await db.execute(sql`UPDATE customers SET name = ${name} WHERE id = ${customerId}`); changed = true; }
+  if (email !== undefined) { await db.execute(sql`UPDATE customers SET email = ${email} WHERE id = ${customerId}`); changed = true; }
+  if (phone !== undefined) { await db.execute(sql`UPDATE customers SET phone = ${phone} WHERE id = ${customerId}`); changed = true; }
+  if (password !== undefined && password !== "") {
+    const hash = await bcrypt.hash(password, 10);
+    await db.execute(sql`UPDATE customers SET password_hash = ${hash} WHERE id = ${customerId}`);
+    changed = true;
+  }
+  if (!changed) { res.status(400).json({ error: "لا توجد بيانات للتعديل" }); return; }
+  res.json({ success: true });
+});
+
+router.patch("/admin/customers/:id/block", requireAdmin, async (req, res): Promise<void> => {
+  const { id } = req.params;
+  const { blocked } = req.body;
+  await db.execute(sql`UPDATE customers SET is_blocked = ${blocked} WHERE id = ${id}`);
+  if (blocked) {
+    await db.execute(sql`DELETE FROM customer_sessions WHERE customer_id = ${id}`);
+  }
+  res.json({ success: true });
+});
+
+router.delete("/admin/customers/:id", requireAdmin, async (req, res): Promise<void> => {
+  const { id } = req.params;
+  await db.execute(sql`DELETE FROM customer_sessions WHERE customer_id = ${id}`);
+  await db.execute(sql`DELETE FROM customers WHERE id = ${id}`);
+  res.json({ success: true });
+});
+
 void sql;
 
 export default router;

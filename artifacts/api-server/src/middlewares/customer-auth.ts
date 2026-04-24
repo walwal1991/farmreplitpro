@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { eq, lt } from "drizzle-orm";
+import { eq, lt, sql } from "drizzle-orm";
 import { db, customerSessionsTable, customersTable } from "@workspace/db";
 
 const SESSION_DAYS = 30;
@@ -18,19 +18,21 @@ export async function getCustomerSessionUser(
   token: string | undefined,
 ): Promise<{ id: number; name: string; email: string; phone: string } | null> {
   if (!token) return null;
-  const rows = await db
-    .select({ session: customerSessionsTable, customer: customersTable })
-    .from(customerSessionsTable)
-    .innerJoin(customersTable, eq(customerSessionsTable.customerId, customersTable.id))
-    .where(eq(customerSessionsTable.token, token))
-    .limit(1);
-  const row = rows[0];
+  const rows = await db.execute(
+    sql`SELECT cs.expires_at, c.id, c.name, c.email, c.phone, c.is_blocked
+        FROM customer_sessions cs
+        JOIN customers c ON cs.customer_id = c.id
+        WHERE cs.token = ${token}
+        LIMIT 1`
+  );
+  const row = rows.rows[0] as { expires_at: Date; id: number; name: string; email: string; phone: string; is_blocked: boolean } | undefined;
   if (!row) return null;
-  if (row.session.expiresAt < new Date()) {
-    await db.delete(customerSessionsTable).where(eq(customerSessionsTable.token, token));
+  if (new Date(row.expires_at) < new Date()) {
+    await db.execute(sql`DELETE FROM customer_sessions WHERE token = ${token}`);
     return null;
   }
-  return { id: row.customer.id, name: row.customer.name, email: row.customer.email, phone: row.customer.phone };
+  if (row.is_blocked) return null;
+  return { id: row.id, name: row.name, email: row.email, phone: row.phone };
 }
 
 function extractToken(req: Request): string {
