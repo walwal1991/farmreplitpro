@@ -188,6 +188,18 @@ router.patch(
   },
 );
 
+router.delete(
+  "/admin/orders/:id",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) { res.status(400).json({ error: "معرّف غير صالح" }); return; }
+    const [row] = await db.delete(ordersTable).where(eq(ordersTable.id, id)).returning();
+    if (!row) { res.status(404).json({ error: "الطلب غير موجود" }); return; }
+    res.json({ ok: true });
+  },
+);
+
 // Suppress unused import warning
 void OrderResponse;
 

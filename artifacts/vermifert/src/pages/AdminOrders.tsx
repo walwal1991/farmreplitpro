@@ -6,11 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { Printer, Truck, Edit } from "lucide-react";
+import { Printer, Truck, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import StickerPrint from "@/components/StickerPrint";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -69,6 +70,9 @@ export default function AdminOrders() {
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [editForm, setEditForm] = useState({ customerName: "", phone: "", address: "", city: "", notes: "", quantity: "1" });
   const [editLoading, setEditLoading] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => { if (!token) setLocation("/admin/login"); }, [token, setLocation]);
 
@@ -152,6 +156,29 @@ export default function AdminOrders() {
       toast({ title: "خطأ", description: "حدث خطأ أثناء التعديل", variant: "destructive" });
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`${API}/api/admin/orders/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: { "x-admin-token": token! },
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast({ title: "خطأ", description: d.error, variant: "destructive" });
+        return;
+      }
+      toast({ title: "تم الحذف", description: `تم حذف الطلب #${deleteTarget.id}` });
+      setDeleteTarget(null);
+      fetchOrders();
+    } catch {
+      toast({ title: "خطأ", description: "حدث خطأ أثناء الحذف", variant: "destructive" });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -351,6 +378,15 @@ export default function AdminOrders() {
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                title="حذف الطلب"
+                                onClick={() => setDeleteTarget(order)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -369,6 +405,27 @@ export default function AdminOrders() {
           </div>
         </div>
       </main>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف الطلب <strong>#{deleteTarget?.id}</strong> للعميل <strong>{deleteTarget?.customerName}</strong> نهائياً ولا يمكن استعادته.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteLoading ? "جارٍ الحذف..." : "حذف نهائياً"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={!!editOrder} onOpenChange={(o) => !o && setEditOrder(null)}>
         <DialogContent className="max-w-lg" dir="rtl">
