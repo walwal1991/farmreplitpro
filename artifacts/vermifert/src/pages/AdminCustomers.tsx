@@ -24,11 +24,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Search, Edit, Trash2, Ban, CheckCircle, ShoppingBag, UserPlus, Printer } from "lucide-react";
+import { Users, Search, Edit, Trash2, Ban, CheckCircle, ShoppingBag, UserPlus, Printer, Eye, Package, MapPin, Hash } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  pending:   { label: "قيد الانتظار", color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  confirmed: { label: "مؤكد",         color: "bg-blue-100 text-blue-800 border-blue-200" },
+  shipped:   { label: "مشحون",        color: "bg-purple-100 text-purple-800 border-purple-200" },
+  delivered: { label: "تم التوصيل",   color: "bg-green-100 text-green-800 border-green-200" },
+  cancelled: { label: "ملغى",         color: "bg-red-100 text-red-800 border-red-200" },
+};
 
 interface Customer {
   id: number;
@@ -38,6 +46,20 @@ interface Customer {
   is_blocked: boolean;
   created_at: string;
   order_count: number;
+}
+
+interface CustomerOrder {
+  id: number;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  status: string;
+  city: string;
+  address: string;
+  tracking_number: string;
+  created_at: string;
+  assigned_driver_name: string | null;
 }
 
 export default function AdminCustomers() {
@@ -61,6 +83,10 @@ export default function AdminCustomers() {
 
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [ordersCustomer, setOrdersCustomer] = useState<Customer | null>(null);
+  const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   useEffect(() => {
     if (!token) setLocation("/admin/login");
@@ -88,6 +114,21 @@ export default function AdminCustomers() {
       c.email.toLowerCase().includes(search.toLowerCase()) ||
       (c.phone || "").includes(search)
   );
+
+  const openOrders = async (c: Customer) => {
+    setOrdersCustomer(c);
+    setCustomerOrders([]);
+    setOrdersLoading(true);
+    try {
+      const res = await fetch(`${API}/api/admin/customers/${c.id}/orders`, {
+        headers: { "x-admin-token": token || "" },
+      });
+      const data = await res.json();
+      setCustomerOrders(data);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!createForm.name || !createForm.email || !createForm.password) {
@@ -325,6 +366,9 @@ export default function AdminCustomers() {
                             </td>
                             <td className="py-4 px-4">
                               <div className="flex items-center gap-2">
+                                <Button size="sm" variant="ghost" onClick={() => openOrders(c)} title="عرض الطلبات" className="text-primary hover:text-primary">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
                                 <Button size="sm" variant="ghost" onClick={() => openEdit(c)} title="تعديل">
                                   <Edit className="w-4 h-4" />
                                 </Button>
@@ -354,6 +398,72 @@ export default function AdminCustomers() {
           </Card>
         </div>
       </main>
+
+      <Dialog open={!!ordersCustomer} onOpenChange={(o) => !o && setOrdersCustomer(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-primary" />
+              طلبات {ordersCustomer?.name}
+              <Badge variant="outline" className="mr-2">{customerOrders.length} طلب</Badge>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {ordersLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+              </div>
+            ) : customerOrders.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>لا توجد طلبات لهذا العميل</p>
+              </div>
+            ) : (
+              customerOrders.map((order) => {
+                const st = STATUS_MAP[order.status] ?? { label: order.status, color: "bg-gray-100 text-gray-700 border-gray-200" };
+                return (
+                  <div key={order.id} className="border border-border rounded-xl p-4 space-y-3 bg-card">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Package className="w-4 h-4 text-primary" />
+                          <span className="font-semibold">{order.product_name}</span>
+                          <span className="text-muted-foreground text-sm">× {order.quantity}</span>
+                        </div>
+                        <div className="text-lg font-bold text-primary">{order.total_price.toLocaleString()} د.ج</div>
+                      </div>
+                      <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${st.color}`}>
+                        {st.label}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{order.city}{order.address ? ` — ${order.address}` : ""}</span>
+                      </div>
+                      {order.tracking_number && (
+                        <div className="flex items-center gap-1.5" dir="ltr">
+                          <Hash className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="font-mono text-xs">{order.tracking_number}</span>
+                        </div>
+                      )}
+                      {order.assigned_driver_name && (
+                        <div className="flex items-center gap-1.5 col-span-2">
+                          <span className="text-xs">السائق: {order.assigned_driver_name}</span>
+                        </div>
+                      )}
+                      <div className="col-span-2 text-xs">
+                        {format(new Date(order.created_at), "EEEE dd MMMM yyyy — HH:mm", { locale: ar })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showCreate} onOpenChange={(o) => !o && setShowCreate(false)}>
         <DialogContent className="max-w-md" dir="rtl">

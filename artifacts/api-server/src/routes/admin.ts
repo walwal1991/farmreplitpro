@@ -207,6 +207,18 @@ router.post("/admin/customers", requireAdmin, async (req, res): Promise<void> =>
   res.status(201).json({ success: true });
 });
 
+router.get("/admin/customers/:id/orders", requireAdmin, async (req, res): Promise<void> => {
+  const { id } = req.params;
+  const rows = await db.execute(sql`
+    SELECT id, product_name, quantity, unit_price, total_price, status,
+           city, address, tracking_number, created_at, assigned_driver_name
+    FROM orders
+    WHERE customer_id = ${parseInt(id, 10)}
+    ORDER BY created_at DESC
+  `);
+  res.json(rows.rows);
+});
+
 router.get("/admin/customers", requireAdmin, async (_req, res): Promise<void> => {
   const rows = await db.execute(sql`
     SELECT id, name, email, phone, is_blocked, created_at,
