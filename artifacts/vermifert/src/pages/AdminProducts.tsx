@@ -31,7 +31,15 @@ const productSchema = z.object({
     ),
   stock: z.coerce.number().min(0, "المخزون غير صالح"),
   active: z.boolean().default(true),
+  category: z.enum(["solid", "liquid", "worms", "equipment"]).default("solid"),
 });
+
+const CATEGORY_OPTIONS = [
+  { value: "solid", label: "سماد صلب" },
+  { value: "liquid", label: "سماد سائل" },
+  { value: "worms", label: "دود حي" },
+  { value: "equipment", label: "معدات" },
+] as const;
 
 type ProductForm = z.infer<typeof productSchema>;
 
@@ -65,6 +73,7 @@ export default function AdminProducts() {
       imageUrl: "",
       stock: 100,
       active: true,
+      category: "solid",
     }
   });
 
@@ -79,6 +88,7 @@ export default function AdminProducts() {
       imageUrl: product.imageUrl,
       stock: product.stock,
       active: product.active,
+      category: (product.category ?? "solid") as ProductForm["category"],
     });
   };
 
@@ -131,7 +141,7 @@ export default function AdminProducts() {
             
             <Dialog open={isCreateOpen} onOpenChange={(open) => {
               setIsCreateOpen(open);
-              if (open) form.reset({ name: "", description: "", price: 0, unit: "كغ", weightKg: 1, imageUrl: "", stock: 100, active: true });
+              if (open) form.reset({ name: "", description: "", price: 0, unit: "كغ", weightKg: 1, imageUrl: "", stock: 100, active: true, category: "solid" });
             }}>
               <DialogTrigger asChild>
                 <Button className="gap-2">
@@ -168,6 +178,17 @@ export default function AdminProducts() {
                     <div className="space-y-2">
                       <Label>رابط الصورة</Label>
                       <Input dir="ltr" {...form.register("imageUrl")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>النوع</Label>
+                      <select
+                        {...form.register("category")}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        {CATEGORY_OPTIONS.map((c) => (
+                          <option key={c.value} value={c.value}>{c.label}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -299,6 +320,17 @@ export default function AdminProducts() {
                 <div className="space-y-2">
                   <Label>رابط الصورة</Label>
                   <Input dir="ltr" {...form.register("imageUrl")} />
+                </div>
+                <div className="space-y-2">
+                  <Label>النوع</Label>
+                  <select
+                    {...form.register("category")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    {CATEGORY_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="space-y-2">

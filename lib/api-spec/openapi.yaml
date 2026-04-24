@@ -322,8 +322,11 @@ components:
         imageUrl: { type: string }
         stock: { type: integer }
         active: { type: boolean }
+        category:
+          type: string
+          enum: [solid, liquid, worms, equipment]
         createdAt: { type: string, format: date-time }
-      required: [id, name, description, price, unit, weightKg, imageUrl, stock, active, createdAt]
+      required: [id, name, description, price, unit, weightKg, imageUrl, stock, active, category, createdAt]
     ProductInput:
       type: object
       properties:
@@ -335,6 +338,9 @@ components:
         imageUrl: { type: string }
         stock: { type: integer }
         active: { type: boolean }
+        category:
+          type: string
+          enum: [solid, liquid, worms, equipment]
       required: [name, description, price, unit, weightKg, imageUrl, stock]
 
     Order:

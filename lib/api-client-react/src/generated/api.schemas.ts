@@ -13,6 +13,16 @@ export interface Error {
   error: string;
 }
 
+export type ProductCategory =
+  (typeof ProductCategory)[keyof typeof ProductCategory];
+
+export const ProductCategory = {
+  solid: "solid",
+  liquid: "liquid",
+  worms: "worms",
+  equipment: "equipment",
+} as const;
+
 export interface Product {
   id: number;
   name: string;
@@ -24,8 +34,19 @@ export interface Product {
   imageUrl: string;
   stock: number;
   active: boolean;
+  category: ProductCategory;
   createdAt: string;
 }
+
+export type ProductInputCategory =
+  (typeof ProductInputCategory)[keyof typeof ProductInputCategory];
+
+export const ProductInputCategory = {
+  solid: "solid",
+  liquid: "liquid",
+  worms: "worms",
+  equipment: "equipment",
+} as const;
 
 export interface ProductInput {
   name: string;
@@ -36,6 +57,7 @@ export interface ProductInput {
   imageUrl: string;
   stock: number;
   active?: boolean;
+  category?: ProductInputCategory;
 }
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];

@@ -5,6 +5,7 @@
  * API for worm-fertilizer e-commerce + consultations
  * OpenAPI spec version: 0.1.0
  */
+import type { ProductInputCategory } from "./productInputCategory";
 
 export interface ProductInput {
   name: string;
@@ -15,4 +16,5 @@ export interface ProductInput {
   imageUrl: string;
   stock: number;
   active?: boolean;
+  category?: ProductInputCategory;
 }

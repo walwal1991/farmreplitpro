@@ -29,4 +29,6 @@ export * from "./orderStatus";
 export * from "./orderStatusUpdate";
 export * from "./orderStatusUpdateStatus";
 export * from "./product";
+export * from "./productCategory";
 export * from "./productInput";
+export * from "./productInputCategory";
