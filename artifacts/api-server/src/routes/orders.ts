@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
-import { db, productsTable, ordersTable } from "@workspace/db";
+import { db, productsTable, ordersTable, deliveryUsersTable } from "@workspace/db";
 import {
   CreateOrderBody,
   ListOrdersResponse,
@@ -68,7 +68,49 @@ router.get(
       .select()
       .from(ordersTable)
       .orderBy(desc(ordersTable.createdAt));
-    res.json(ListOrdersResponse.parse(rows));
+    res.json(rows.map((r) => ({
+      ...r,
+      createdAt: r.createdAt.toISOString(),
+      assignedDriverId: r.assignedDriverId ?? null,
+      assignedDriverName: r.assignedDriverName ?? null,
+    })));
+  },
+);
+
+// ─── Admin: assign driver to order ────────────────────────────────────────────
+router.patch(
+  "/admin/orders/:id/assign",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const id = parseInt(req.params.id, 10);
+    const { driverId } = req.body ?? {};
+
+    if (driverId === null || driverId === undefined) {
+      // Unassign
+      await db.update(ordersTable)
+        .set({ assignedDriverId: null, assignedDriverName: null })
+        .where(eq(ordersTable.id, id));
+      res.json({ ok: true, assignedDriverId: null, assignedDriverName: null });
+      return;
+    }
+
+    const driverRows = await db
+      .select({ id: deliveryUsersTable.id, name: deliveryUsersTable.name, active: deliveryUsersTable.active })
+      .from(deliveryUsersTable)
+      .where(eq(deliveryUsersTable.id, driverId))
+      .limit(1);
+
+    const driver = driverRows[0];
+    if (!driver || !driver.active) {
+      res.status(404).json({ error: "السائق غير موجود أو محظور" });
+      return;
+    }
+
+    await db.update(ordersTable)
+      .set({ assignedDriverId: driver.id, assignedDriverName: driver.name })
+      .where(eq(ordersTable.id, id));
+
+    res.json({ ok: true, assignedDriverId: driver.id, assignedDriverName: driver.name });
   },
 );
 

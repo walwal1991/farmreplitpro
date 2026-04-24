@@ -13,6 +13,8 @@ export const ordersTable = pgTable("orders", {
   quantity: integer("quantity").notNull(),
   totalPrice: doublePrecision("total_price").notNull(),
   status: text("status").notNull().default("pending"),
+  assignedDriverId: integer("assigned_driver_id"),
+  assignedDriverName: text("assigned_driver_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
