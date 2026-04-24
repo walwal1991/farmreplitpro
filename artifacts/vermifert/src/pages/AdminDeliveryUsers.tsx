@@ -4,11 +4,12 @@ import AdminSidebar from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus, Trash2, Power, Truck, Phone, CheckCircle2, XCircle,
-  Building2, Pencil, KeyRound, Search,
+  Plus, Truck, Phone, CheckCircle2, XCircle,
+  Building2, Pencil, KeyRound, Search, ShieldBan, ShieldCheck, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -23,6 +24,7 @@ interface DeliveryUser {
   role: string;
   active: boolean;
   available: boolean;
+  blockedReason: string | null;
   createdAt: string;
 }
 
@@ -64,6 +66,11 @@ export default function AdminDeliveryUsers() {
   const [editForm, setEditForm] = useState<EditForm>({ name: "", phone: "", username: "", role: "driver", newPassword: "" });
   const [saving, setSaving] = useState(false);
 
+  // Block dialog
+  const [blockTarget, setBlockTarget] = useState<DeliveryUser | null>(null);
+  const [blockReason, setBlockReason] = useState("");
+  const [blocking, setBlocking] = useState(false);
+
   useEffect(() => { if (!token) setLocation("/admin/login"); }, [token, setLocation]);
 
   const fetchUsers = useCallback(async () => {
@@ -83,6 +90,11 @@ export default function AdminDeliveryUsers() {
   const openEdit = (user: DeliveryUser) => {
     setEditTarget(user);
     setEditForm({ name: user.name, phone: user.phone, username: user.username, role: user.role as "driver" | "company", newPassword: "" });
+  };
+
+  const openBlock = (user: DeliveryUser) => {
+    setBlockTarget(user);
+    setBlockReason("");
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -117,7 +129,6 @@ export default function AdminDeliveryUsers() {
         role: editForm.role,
       };
       if (editForm.newPassword) body.password = editForm.newPassword;
-
       const res = await fetch(`${API}/api/admin/delivery-users/${editTarget.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-admin-token": token! },
@@ -133,14 +144,33 @@ export default function AdminDeliveryUsers() {
     } finally { setSaving(false); }
   };
 
-  const handleToggleActive = async (user: DeliveryUser) => {
+  const handleBlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blockTarget) return;
+    setBlocking(true);
+    try {
+      const res = await fetch(`${API}/api/admin/delivery-users/${blockTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-admin-token": token! },
+        body: JSON.stringify({ active: false, blockedReason: blockReason.trim() || null }),
+      });
+      if (!res.ok) { toast({ title: "خطأ", variant: "destructive" }); return; }
+      toast({ title: "تم الحظر", description: `تم حظر حساب "${blockTarget.name}"` });
+      setBlockTarget(null);
+      fetchUsers();
+    } catch {
+      toast({ title: "خطأ", variant: "destructive" });
+    } finally { setBlocking(false); }
+  };
+
+  const handleUnblock = async (user: DeliveryUser) => {
     try {
       await fetch(`${API}/api/admin/delivery-users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-admin-token": token! },
-        body: JSON.stringify({ active: !user.active }),
+        body: JSON.stringify({ active: true }),
       });
-      toast({ title: user.active ? "تم تعطيل الحساب" : "تم تفعيل الحساب" });
+      toast({ title: "تم رفع الحظر", description: `تم تفعيل حساب "${user.name}" من جديد` });
       fetchUsers();
     } catch { toast({ title: "خطأ", variant: "destructive" }); }
   };
@@ -161,6 +191,7 @@ export default function AdminDeliveryUsers() {
   const activeUsers = users.filter(u => u.active);
   const freeDrivers = activeUsers.filter(u => u.role === "driver" && u.available);
   const busyDrivers = activeUsers.filter(u => u.role === "driver" && !u.available);
+  const blockedUsers = users.filter(u => !u.active);
   const totalCompanies = users.filter(u => u.role === "company").length;
 
   const filtered = users
@@ -197,19 +228,19 @@ export default function AdminDeliveryUsers() {
               </div>
               <div className="text-3xl font-black text-green-700 dark:text-green-400">{freeDrivers.length}</div>
             </div>
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <XCircle className="w-4 h-4 text-amber-600" />
+                <span className="text-xs font-medium text-amber-700">سائقون مشغولون</span>
+              </div>
+              <div className="text-3xl font-black text-amber-700">{busyDrivers.length}</div>
+            </div>
             <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
-                <XCircle className="w-4 h-4 text-red-500" />
-                <span className="text-xs font-medium text-red-600">سائقون مشغولون</span>
+                <ShieldBan className="w-4 h-4 text-red-600" />
+                <span className="text-xs font-medium text-red-700">محظورون</span>
               </div>
-              <div className="text-3xl font-black text-red-600">{busyDrivers.length}</div>
-            </div>
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Building2 className="w-4 h-4 text-primary" />
-                <span className="text-xs font-medium text-primary">شركات التوصيل</span>
-              </div>
-              <div className="text-3xl font-black text-primary">{totalCompanies}</div>
+              <div className="text-3xl font-black text-red-700">{blockedUsers.length}</div>
             </div>
             <div className="bg-muted border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
@@ -288,22 +319,30 @@ export default function AdminDeliveryUsers() {
                 ) : (
                   filtered.map((user, idx) => {
                     const isDriver = user.role === "driver";
+                    const isBlocked = !user.active;
                     return (
                       <tr
                         key={user.id}
-                        className={`border-b border-border/50 transition-colors hover:bg-muted/30 ${!user.active ? "opacity-50" : ""} ${idx % 2 === 0 ? "" : "bg-muted/10"}`}
+                        className={`border-b border-border/50 transition-colors hover:bg-muted/30 ${isBlocked ? "bg-red-50/40 dark:bg-red-950/10" : idx % 2 !== 0 ? "bg-muted/10" : ""}`}
                       >
-                        {/* Name + avatar */}
+                        {/* Name */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                              isDriver
-                                ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
-                                : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                              isBlocked ? "bg-red-100 dark:bg-red-900/40 text-red-500" :
+                              isDriver ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                                       : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
                             }`}>
-                              {user.name.charAt(0)}
+                              {isBlocked ? <ShieldBan className="w-4 h-4" /> : user.name.charAt(0)}
                             </div>
-                            <span className="font-medium">{user.name}</span>
+                            <div>
+                              <span className={`font-medium ${isBlocked ? "line-through text-muted-foreground" : ""}`}>{user.name}</span>
+                              {user.blockedReason && (
+                                <p className="text-xs text-red-500 mt-0.5 max-w-[160px] truncate" title={user.blockedReason}>
+                                  السبب: {user.blockedReason}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </td>
 
@@ -332,24 +371,27 @@ export default function AdminDeliveryUsers() {
                           </span>
                         </td>
 
-                        {/* Active */}
+                        {/* Status */}
                         <td className="px-4 py-3">
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                            user.active
-                              ? "bg-green-100 dark:bg-green-900/40 text-green-700"
-                              : "bg-muted text-muted-foreground"
-                          }`}>
-                            {user.active ? "مفعّل" : "معطّل"}
-                          </span>
+                          {isBlocked ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600">
+                              <ShieldBan className="w-3 h-3" />
+                              محظور
+                            </span>
+                          ) : (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700">
+                              مفعّل
+                            </span>
+                          )}
                         </td>
 
                         {/* Available */}
                         <td className="px-4 py-3">
-                          {user.active ? (
+                          {!isBlocked ? (
                             <span className={`flex items-center gap-1 text-xs font-medium ${
-                              user.available ? "text-green-600" : "text-red-500"
+                              user.available ? "text-green-600" : "text-amber-600"
                             }`}>
-                              <span className={`w-2 h-2 rounded-full ${user.available ? "bg-green-500" : "bg-red-500"}`} />
+                              <span className={`w-2 h-2 rounded-full ${user.available ? "bg-green-500" : "bg-amber-500"}`} />
                               {user.available ? "متاح" : "مشغول"}
                             </span>
                           ) : (
@@ -365,6 +407,7 @@ export default function AdminDeliveryUsers() {
                         {/* Actions */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
+                            {/* Edit */}
                             <Button
                               variant="ghost" size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-primary"
@@ -373,14 +416,29 @@ export default function AdminDeliveryUsers() {
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
-                            <Button
-                              variant="ghost" size="icon"
-                              className={`h-8 w-8 ${user.active ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50" : "text-green-600 hover:text-green-700 hover:bg-green-50"}`}
-                              title={user.active ? "تعطيل الحساب" : "تفعيل الحساب"}
-                              onClick={() => handleToggleActive(user)}
-                            >
-                              <Power className="w-3.5 h-3.5" />
-                            </Button>
+
+                            {/* Block / Unblock */}
+                            {isBlocked ? (
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                title="رفع الحظر"
+                                onClick={() => handleUnblock(user)}
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                title="حظر الحساب"
+                                onClick={() => openBlock(user)}
+                              >
+                                <ShieldBan className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+
+                            {/* Delete */}
                             <Button
                               variant="ghost" size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -418,7 +476,7 @@ export default function AdminDeliveryUsers() {
         </div>
       </main>
 
-      {/* ── Create Dialog ────────────────────────────────── */}
+      {/* ── Create Dialog ─────────────────────────────────── */}
       <Dialog open={createOpen} onOpenChange={(v) => { if (!v) { setCreateOpen(false); setCreateForm(EMPTY_CREATE); } }}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle>إضافة حساب توصيل جديد</DialogTitle></DialogHeader>
@@ -489,7 +547,6 @@ export default function AdminDeliveryUsers() {
                 <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="0555123456" dir="ltr" />
               </div>
             </div>
-
             <div className="space-y-1.5">
               <Label>نوع الحساب</Label>
               <div className="flex gap-3">
@@ -504,7 +561,6 @@ export default function AdminDeliveryUsers() {
                 ))}
               </div>
             </div>
-
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
                 <KeyRound className="w-3.5 h-3.5" />
@@ -518,12 +574,56 @@ export default function AdminDeliveryUsers() {
                 placeholder="••••••••"
               />
             </div>
-
             <div className="flex gap-3 pt-2">
               <Button type="submit" className="flex-1 font-bold" disabled={saving}>
                 {saving ? "جارٍ الحفظ..." : "حفظ التعديلات"}
               </Button>
               <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>إلغاء</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Block Dialog ──────────────────────────────────── */}
+      <Dialog open={!!blockTarget} onOpenChange={(v) => { if (!v) setBlockTarget(null); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <ShieldBan className="w-5 h-5" />
+              حظر الحساب
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleBlock} className="space-y-4 mt-2">
+            {blockTarget && (
+              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center font-bold text-red-600">
+                  {blockTarget.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="font-bold text-sm">{blockTarget.name}</div>
+                  <div className="text-xs text-muted-foreground font-mono">{blockTarget.username}</div>
+                </div>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label>سبب الحظر <span className="text-muted-foreground font-normal text-xs">(اختياري)</span></Label>
+              <Textarea
+                value={blockReason}
+                onChange={(e) => setBlockReason(e.target.value)}
+                placeholder="مثال: تأخر متكرر في التوصيل، سلوك غير لائق..."
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              سيتم إلغاء جلسة الدخول الخاصة بهذا الحساب فوراً ولن يتمكن من الدخول حتى رفع الحظر.
+            </p>
+            <div className="flex gap-3 pt-1">
+              <Button type="submit" variant="destructive" className="flex-1 font-bold gap-2" disabled={blocking}>
+                <ShieldBan className="w-4 h-4" />
+                {blocking ? "جارٍ الحظر..." : "تأكيد الحظر"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setBlockTarget(null)}>إلغاء</Button>
             </div>
           </form>
         </DialogContent>

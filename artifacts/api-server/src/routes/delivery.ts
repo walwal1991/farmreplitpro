@@ -144,6 +144,7 @@ router.get("/admin/delivery-users", requireAdmin, async (_req, res): Promise<voi
       role: deliveryUsersTable.role,
       active: deliveryUsersTable.active,
       available: deliveryUsersTable.available,
+      blockedReason: deliveryUsersTable.blockedReason,
       createdAt: deliveryUsersTable.createdAt,
     })
     .from(deliveryUsersTable)
@@ -187,11 +188,19 @@ router.post("/admin/delivery-users", requireAdmin, async (req, res): Promise<voi
 // ─── Admin: update delivery user (profile + active toggle) ───────────────────
 router.patch("/admin/delivery-users/:id", requireAdmin, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
-  const { active, name, phone, username, password, role } = req.body ?? {};
+  const { active, name, phone, username, password, role, blockedReason } = req.body ?? {};
 
   // Build update payload — only include defined fields
   const updates: Record<string, unknown> = {};
-  if (typeof active === "boolean") updates.active = active;
+  if (typeof active === "boolean") {
+    updates.active = active;
+    // When blocking (deactivating with a reason), store the reason
+    if (!active && blockedReason !== undefined) {
+      updates.blockedReason = blockedReason || null;
+    }
+    // When reactivating, clear the block reason
+    if (active) updates.blockedReason = null;
+  }
   if (name !== undefined) updates.name = name;
   if (phone !== undefined) updates.phone = phone;
   if (username !== undefined) {
@@ -234,6 +243,7 @@ router.patch("/admin/delivery-users/:id", requireAdmin, async (req, res): Promis
       role: deliveryUsersTable.role,
       active: deliveryUsersTable.active,
       available: deliveryUsersTable.available,
+      blockedReason: deliveryUsersTable.blockedReason,
       createdAt: deliveryUsersTable.createdAt,
     })
     .from(deliveryUsersTable)

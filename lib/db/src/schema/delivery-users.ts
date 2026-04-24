@@ -9,6 +9,7 @@ export const deliveryUsersTable = pgTable("delivery_users", {
   role: text("role").notNull().default("driver"), // 'driver' | 'company'
   active: boolean("active").notNull().default(true),
   available: boolean("available").notNull().default(true),
+  blockedReason: text("blocked_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
