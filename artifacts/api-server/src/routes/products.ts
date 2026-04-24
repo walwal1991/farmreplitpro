@@ -58,6 +58,7 @@ router.post("/products", requireAdmin, async (req, res): Promise<void> => {
       imageUrl: parsed.data.imageUrl,
       stock: parsed.data.stock,
       active: parsed.data.active ?? true,
+      category: parsed.data.category ?? "solid",
     })
     .returning();
   res.status(201).json(GetProductResponse.parse(row));
@@ -88,6 +89,7 @@ router.patch(
         imageUrl: parsed.data.imageUrl,
         stock: parsed.data.stock,
         active: parsed.data.active ?? true,
+        category: parsed.data.category ?? "solid",
       })
       .where(eq(productsTable.id, params.data.id))
       .returning();
