@@ -20,6 +20,9 @@ import AdminOrders from "@/pages/AdminOrders";
 import AdminChangePassword from "@/pages/AdminChangePassword";
 import AdminConsultations from "@/pages/AdminConsultations";
 import SmartDiagnosis from "@/pages/SmartDiagnosis";
+import DeliveryLogin from "@/pages/DeliveryLogin";
+import DeliveryOrders from "@/pages/DeliveryOrders";
+import AdminDeliveryUsers from "@/pages/AdminDeliveryUsers";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +43,10 @@ function Router() {
       <Route path="/admin/products" component={AdminProducts} />
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/consultations" component={AdminConsultations} />
+      <Route path="/admin/delivery" component={AdminDeliveryUsers} />
       <Route path="/admin/change-password" component={AdminChangePassword} />
+      <Route path="/delivery/login" component={DeliveryLogin} />
+      <Route path="/delivery/orders" component={DeliveryOrders} />
       
       <Route component={NotFound} />
     </Switch>
