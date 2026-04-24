@@ -10,6 +10,8 @@ import {
   ChevronDown,
   FlaskConical,
   Package,
+  Truck,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -33,12 +35,17 @@ export default function Navbar() {
   const [dark, setDark] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
+  const [userDropOpen, setUserDropOpen] = useState(false);
+  const userDropRef = useRef<HTMLDivElement>(null);
   const { count, open: openCart } = useCart();
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
         setDropOpen(false);
+      }
+      if (userDropRef.current && !userDropRef.current.contains(e.target as Node)) {
+        setUserDropOpen(false);
       }
     }
     document.addEventListener("mousedown", onClick);
@@ -69,11 +76,42 @@ export default function Navbar() {
               </span>
             )}
           </Button>
-          <Button asChild variant="ghost" size="icon" aria-label="دخول الإدارة">
-            <Link href="/admin/login">
+          <div ref={userDropRef} className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="تسجيل الدخول"
+              onClick={() => setUserDropOpen((v) => !v)}
+              className={userDropOpen ? "bg-muted text-primary" : ""}
+            >
               <User className="w-5 h-5" />
-            </Link>
-          </Button>
+            </Button>
+            {userDropOpen && (
+              <div className="absolute top-full mt-2 left-0 w-52 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50">
+                <Link
+                  href="/admin/login"
+                  onClick={() => setUserDropOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors"
+                >
+                  <LayoutDashboard className="w-4 h-4 text-primary shrink-0" />
+                  <div>
+                    <div className="text-sm font-medium">تسجيل الدخول للإدارة</div>
+                  </div>
+                </Link>
+                <div className="border-t border-border/50" />
+                <Link
+                  href="/delivery/login"
+                  onClick={() => setUserDropOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors"
+                >
+                  <Truck className="w-4 h-4 text-primary shrink-0" />
+                  <div>
+                    <div className="text-sm font-medium">بوابة التوصيل</div>
+                  </div>
+                </Link>
+              </div>
+            )}
+          </div>
           <Button
             variant="ghost"
             size="icon"
