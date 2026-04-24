@@ -225,46 +225,39 @@ export default function AdminOrders() {
                                 onValueChange={(val) => handleAssignDriver(order.id, val)}
                                 disabled={assigningId === order.id}
                               >
-                                <SelectTrigger className={`w-[160px] h-8 text-xs ${order.assignedDriverId ? "border-blue-300 bg-blue-50 dark:bg-blue-950/30" : ""}`}>
-                                  <SelectValue>
-                                    {order.assignedDriverId ? (
-                                      <span className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300">
-                                        <Truck className="w-3 h-3" />
-                                        {order.assignedDriverName}
-                                      </span>
-                                    ) : (
-                                      <span className="flex items-center gap-1.5 text-muted-foreground">
-                                        <UserX className="w-3 h-3" />
-                                        بدون سائق
-                                      </span>
-                                    )}
-                                  </SelectValue>
+                                <SelectTrigger className={`w-[160px] h-8 text-xs ${order.assignedDriverId ? "border-blue-300 bg-blue-50 dark:bg-blue-950/30 text-blue-700" : ""}`}>
+                                  <SelectValue placeholder="بدون سائق" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="none">
-                                    <span className="flex items-center gap-2 text-muted-foreground">
-                                      <UserX className="w-3.5 h-3.5" />
-                                      بدون سائق
-                                    </span>
-                                  </SelectItem>
-                                  {drivers.length === 0 ? (
+                                  <SelectItem value="none">بدون سائق</SelectItem>
+                                  {/* Always show currently assigned driver even if unavailable */}
+                                  {order.assignedDriverId && !drivers.find(d => d.id === order.assignedDriverId) && (
+                                    <SelectItem value={order.assignedDriverId.toString()}>
+                                      {order.assignedDriverName} (مشغول)
+                                    </SelectItem>
+                                  )}
+                                  {drivers.length === 0 && !order.assignedDriverId ? (
                                     <SelectItem value="__empty__" disabled>
                                       لا يوجد سائقون متاحون
                                     </SelectItem>
                                   ) : (
                                     drivers.map(d => (
                                       <SelectItem key={d.id} value={d.id.toString()}>
-                                        <span className="flex items-center gap-2">
-                                          {d.role === "driver" ? <Truck className="w-3.5 h-3.5 text-amber-600" /> : <Truck className="w-3.5 h-3.5 text-blue-600" />}
-                                          {d.name}
-                                        </span>
+                                        {d.name}
                                       </SelectItem>
                                     ))
                                   )}
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <span className="text-xs text-muted-foreground">—</span>
+                              order.assignedDriverName ? (
+                                <span className="text-xs flex items-center gap-1.5 text-blue-700 dark:text-blue-300">
+                                  <Truck className="w-3 h-3" />
+                                  {order.assignedDriverName}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )
                             )}
                           </td>
 
