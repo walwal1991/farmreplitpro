@@ -26,9 +26,9 @@ import {
 
 const router: IRouter = Router();
 
-function issueToken(username: string): string {
+async function issueToken(username: string): Promise<string> {
   const token = randomBytes(32).toString("hex");
-  createSession(username, token);
+  await createSession(username, token);
   return token;
 }
 
@@ -58,7 +58,7 @@ router.post("/admin/login", async (req, res): Promise<void> => {
     return;
   }
 
-  const token = issueToken(admin.username);
+  const token = await issueToken(admin.username);
   res.json(AdminLoginResponse.parse({ token, username: admin.username }));
 });
 
@@ -103,8 +103,8 @@ router.post(
       .set({ passwordHash: newHash, updatedAt: new Date() })
       .where(eq(adminsTable.id, admin.id));
 
-    destroyUserSessions(username);
-    const newToken = issueToken(username);
+    await destroyUserSessions(username);
+    const newToken = await issueToken(username);
     res.json(AdminLoginResponse.parse({ token: newToken, username }));
   },
 );
