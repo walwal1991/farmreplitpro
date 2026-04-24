@@ -87,27 +87,27 @@ export default function Navbar() {
               <User className="w-5 h-5" />
             </Button>
             {userDropOpen && (
-              <div className="absolute top-full mt-2 left-0 w-52 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50">
+              <div className="absolute top-full mt-2 right-0 w-56 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50">
                 <Link
                   href="/admin/login"
                   onClick={() => setUserDropOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors"
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted transition-colors"
                 >
-                  <LayoutDashboard className="w-4 h-4 text-primary shrink-0" />
-                  <div>
-                    <div className="text-sm font-medium">تسجيل الدخول للإدارة</div>
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <LayoutDashboard className="w-4 h-4" />
                   </div>
+                  <div className="text-sm font-semibold">تسجيل الدخول للإدارة</div>
                 </Link>
-                <div className="border-t border-border/50" />
+                <div className="border-t border-border/50 mx-3" />
                 <Link
                   href="/delivery/login"
                   onClick={() => setUserDropOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors"
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted transition-colors"
                 >
-                  <Truck className="w-4 h-4 text-primary shrink-0" />
-                  <div>
-                    <div className="text-sm font-medium">بوابة التوصيل</div>
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <Truck className="w-4 h-4" />
                   </div>
+                  <div className="text-sm font-semibold">بوابة التوصيل</div>
                 </Link>
               </div>
             )}

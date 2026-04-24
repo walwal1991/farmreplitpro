@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Truck, LogOut, MapPin, Phone, Package, RefreshCw } from "lucide-react";
+import { Truck, LogOut, MapPin, Phone, Package, RefreshCw, Home } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import StickerPrint from "@/components/StickerPrint";
@@ -127,6 +127,12 @@ export default function DeliveryOrders() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+              <Link href="/">
+                <Home className="w-4 h-4" />
+                المتجر
+              </Link>
+            </Button>
             <Button variant="ghost" size="icon" onClick={fetchOrders} title="تحديث">
               <RefreshCw className="w-4 h-4" />
             </Button>
