@@ -93,23 +93,28 @@ router.get("/customer/me", async (req, res): Promise<void> => {
 
 // ─── My Orders ────────────────────────────────────────────────────────────────
 router.get("/customer/orders", requireCustomer, async (req, res): Promise<void> => {
-  const customer = (req as Request & { customerUser: { id: number } }).customerUser;
-  const orders = await db
-    .select()
-    .from(ordersTable)
-    .where(eq(ordersTable.customerId, customer.id))
-    .orderBy(desc(ordersTable.createdAt));
-  res.json(orders.map(o => ({
+  const customer = (req as Request & { customerUser: { id: number; phone: string } }).customerUser;
+
+  const result = await db.execute(sql`
+    SELECT id, tracking_number, product_name, quantity, total_price, status,
+           city, address, created_at, assigned_driver_name, customer_id
+    FROM orders
+    WHERE customer_id = ${customer.id}
+       OR (customer_id IS NULL AND phone = ${customer.phone || ""} AND ${customer.phone || ""} != '')
+    ORDER BY created_at DESC
+  `);
+
+  res.json(result.rows.map((o: Record<string, unknown>) => ({
     id: o.id,
-    trackingNumber: o.trackingNumber,
-    productName: o.productName,
+    trackingNumber: o.tracking_number,
+    productName: o.product_name,
     quantity: o.quantity,
-    totalPrice: o.totalPrice,
+    totalPrice: o.total_price,
     status: o.status,
     city: o.city,
     address: o.address,
-    createdAt: o.createdAt.toISOString(),
-    assignedDriverName: o.assignedDriverName,
+    createdAt: o.created_at,
+    assignedDriverName: o.assigned_driver_name,
   })));
 });
 
