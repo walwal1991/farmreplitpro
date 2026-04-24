@@ -1,10 +1,10 @@
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAdminLogin } from "@workspace/api-client-react";
 import { useState } from "react";
-import { Sprout } from "lucide-react";
+import { Sprout, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminLogin() {
@@ -35,7 +35,12 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="max-w-md w-full bg-card p-8 rounded-3xl border border-border shadow-lg">
+      <div className="max-w-md w-full">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-5">
+          <ArrowRight className="w-4 h-4" />
+          العودة إلى المتجر
+        </Link>
+      <div className="bg-card p-8 rounded-3xl border border-border shadow-lg">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-4">
             <Sprout className="w-8 h-8" />
@@ -78,6 +83,7 @@ export default function AdminLogin() {
             هذه الصفحة مخصّصة لمسؤول المتجر فقط.
           </p>
         </form>
+      </div>
       </div>
     </div>
   );

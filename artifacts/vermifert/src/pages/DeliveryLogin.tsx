@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Truck, Sprout } from "lucide-react";
+import { Truck, Sprout, ArrowRight } from "lucide-react";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -42,6 +42,10 @@ export default function DeliveryLogin() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-5">
+          <ArrowRight className="w-4 h-4" />
+          العودة إلى المتجر
+        </Link>
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center text-primary mx-auto mb-4">
             <Truck className="w-8 h-8" />
