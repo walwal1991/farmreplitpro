@@ -16,22 +16,20 @@ import {
 } from "@workspace/api-zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
-import { requireAdmin } from "../middlewares/admin-auth";
+import {
+  requireAdmin,
+  createSession,
+  getSessionUser,
+  destroyUserSessions,
+  getRequestToken,
+} from "../middlewares/admin-auth";
 
 const router: IRouter = Router();
 
-// In-memory token -> username map. Tokens last until the server restarts.
-const sessions = new Map<string, string>();
-
 function issueToken(username: string): string {
   const token = randomBytes(32).toString("hex");
-  sessions.set(token, username);
+  createSession(username, token);
   return token;
-}
-
-export function getSessionUsername(token: string | undefined): string | null {
-  if (!token) return null;
-  return sessions.get(token) ?? null;
 }
 
 router.post("/admin/login", async (req, res): Promise<void> => {
@@ -73,11 +71,7 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    const token =
-      (req.header("x-admin-token") ??
-        req.header("authorization")?.replace(/^Bearer\s+/i, "")) ||
-      undefined;
-    const username = getSessionUsername(token);
+    const username = getSessionUser(getRequestToken(req));
     if (!username) {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -109,54 +103,55 @@ router.post(
       .set({ passwordHash: newHash, updatedAt: new Date() })
       .where(eq(adminsTable.id, admin.id));
 
-    // Invalidate all old tokens for this user, issue a new one.
-    for (const [t, u] of sessions.entries()) {
-      if (u === username) sessions.delete(t);
-    }
+    destroyUserSessions(username);
     const newToken = issueToken(username);
     res.json(AdminLoginResponse.parse({ token: newToken, username }));
   },
 );
 
-router.get(
-  "/admin/stats",
-  requireAdmin,
-  async (_req, res): Promise<void> => {
-    const allOrders = await db.select().from(ordersTable);
-    const allConsults = await db.select().from(consultationsTable);
-    const products = await db.select().from(productsTable);
+router.get("/admin/stats", requireAdmin, async (_req, res): Promise<void> => {
+  const allOrders = await db.select().from(ordersTable);
+  const allConsults = await db.select().from(consultationsTable);
+  const products = await db.select().from(productsTable);
 
-    const totalOrders = allOrders.length;
-    const pendingOrders = allOrders.filter((o) => o.status === "pending").length;
-    const deliveredOrders = allOrders.filter((o) => o.status === "delivered").length;
-    const totalRevenue = allOrders
-      .filter((o) => o.status !== "cancelled")
-      .reduce((sum, o) => sum + Number(o.totalPrice), 0);
+  const totalOrders = allOrders.length;
+  const pendingOrders = allOrders.filter((o) => o.status === "pending").length;
+  const deliveredOrders = allOrders.filter(
+    (o) => o.status === "delivered",
+  ).length;
+  const totalRevenue = allOrders
+    .filter((o) => o.status !== "cancelled")
+    .reduce((sum, o) => sum + Number(o.totalPrice), 0);
 
-    const totalConsultations = allConsults.length;
-    const newConsultations = allConsults.filter((c) => c.status === "new").length;
-    const totalProducts = products.length;
+  const totalConsultations = allConsults.length;
+  const newConsultations = allConsults.filter((c) => c.status === "new").length;
+  const totalProducts = products.length;
 
-    const statusBuckets = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
-    const ordersByStatus = statusBuckets.map((status) => ({
-      status,
-      count: allOrders.filter((o) => o.status === status).length,
-    }));
+  const statusBuckets = [
+    "pending",
+    "confirmed",
+    "shipped",
+    "delivered",
+    "cancelled",
+  ];
+  const ordersByStatus = statusBuckets.map((status) => ({
+    status,
+    count: allOrders.filter((o) => o.status === status).length,
+  }));
 
-    res.json(
-      GetAdminStatsResponse.parse({
-        totalOrders,
-        pendingOrders,
-        deliveredOrders,
-        totalRevenue,
-        totalConsultations,
-        newConsultations,
-        totalProducts,
-        ordersByStatus,
-      }),
-    );
-  },
-);
+  res.json(
+    GetAdminStatsResponse.parse({
+      totalOrders,
+      pendingOrders,
+      deliveredOrders,
+      totalRevenue,
+      totalConsultations,
+      newConsultations,
+      totalProducts,
+      ordersByStatus,
+    }),
+  );
+});
 
 router.get(
   "/admin/recent-activity",
@@ -196,7 +191,6 @@ router.get(
   },
 );
 
-// suppress unused
 void sql;
 
 export default router;
