@@ -37,6 +37,13 @@ app.use(
   }),
 );
 
+app.use(
+  "/api/uploads",
+  express.static(path.resolve(process.cwd(), "uploads"), {
+    maxAge: "7d",
+  }),
+);
+
 app.use("/api", router);
 
 export default app;

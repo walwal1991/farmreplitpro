@@ -1,7 +1,7 @@
 import AdminSidebar from "@/components/AdminSidebar";
 import { useListProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, getListProductsQueryKey } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2, Image as ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Product } from "@workspace/api-client-react";
 import { Switch } from "@/components/ui/switch";
+import { Upload } from "lucide-react";
 
 const productSchema = z.object({
   name: z.string().min(2, "الاسم مطلوب"),
@@ -51,6 +52,32 @@ export default function AdminProducts() {
   
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        headers: { "x-admin-token": token || "" },
+        body: formData,
+      });
+      if (!res.ok) throw new Error("فشل الرفع");
+      const { url } = await res.json();
+      form.setValue("imageUrl", url);
+      toast({ title: "تم الرفع", description: "تم رفع الصورة بنجاح" });
+    } catch {
+      toast({ title: "خطأ", description: "تعذّر رفع الصورة", variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     if (!token) setLocation("/admin/login");
@@ -133,6 +160,13 @@ export default function AdminProducts() {
 
   return (
     <div className="flex min-h-screen bg-background">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageUpload}
+      />
       <AdminSidebar />
       <main className="flex-1 p-8 overflow-auto">
         <div className="max-w-6xl mx-auto">
@@ -175,9 +209,24 @@ export default function AdminProducts() {
                       <Label>المخزون</Label>
                       <Input type="number" {...form.register("stock")} />
                     </div>
-                    <div className="space-y-2">
-                      <Label>رابط الصورة</Label>
-                      <Input dir="ltr" {...form.register("imageUrl")} />
+                    <div className="space-y-2 col-span-2">
+                      <Label>الصورة</Label>
+                      <div className="flex gap-2">
+                        <Input dir="ltr" {...form.register("imageUrl")} placeholder="https://..." className="flex-1" />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={uploading}
+                          onClick={() => fileInputRef.current?.click()}
+                          title="رفع صورة"
+                        >
+                          <Upload className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {form.watch("imageUrl") && (
+                        <img src={form.watch("imageUrl")} alt="preview" className="h-16 w-16 rounded object-cover border border-border" />
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>النوع</Label>
@@ -317,9 +366,24 @@ export default function AdminProducts() {
                   <Label>المخزون</Label>
                   <Input type="number" {...form.register("stock")} />
                 </div>
-                <div className="space-y-2">
-                  <Label>رابط الصورة</Label>
-                  <Input dir="ltr" {...form.register("imageUrl")} />
+                <div className="space-y-2 col-span-2">
+                  <Label>الصورة</Label>
+                  <div className="flex gap-2">
+                    <Input dir="ltr" {...form.register("imageUrl")} placeholder="https://..." className="flex-1" />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={uploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      title="رفع صورة"
+                    >
+                      <Upload className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {form.watch("imageUrl") && (
+                    <img src={form.watch("imageUrl")} alt="preview" className="h-16 w-16 rounded object-cover border border-border" />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>النوع</Label>
