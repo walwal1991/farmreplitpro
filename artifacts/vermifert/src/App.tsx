@@ -19,6 +19,7 @@ import AdminProducts from "@/pages/AdminProducts";
 import AdminOrders from "@/pages/AdminOrders";
 import AdminChangePassword from "@/pages/AdminChangePassword";
 import AdminConsultations from "@/pages/AdminConsultations";
+import SmartDiagnosis from "@/pages/SmartDiagnosis";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/consultation" component={Consultation} />
       <Route path="/guide" component={Guide} />
       <Route path="/cart" component={Cart} />
+      <Route path="/diagnosis" component={SmartDiagnosis} />
       
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />

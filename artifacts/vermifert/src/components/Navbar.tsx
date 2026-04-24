@@ -7,24 +7,43 @@ import {
   Sun,
   Globe,
   Menu,
+  ChevronDown,
+  FlaskConical,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useCart } from "@/lib/cart";
 
 const NAV_LINKS = [
   { href: "/", label: "الرئيسية" },
-  { href: "/products", label: "المنتجات" },
   { href: "/guide", label: "دليل الاستعمال" },
   { href: "/consultation", label: "الاستشارة" },
+];
+
+const PRODUCTS_DROPDOWN = [
+  { href: "/products", label: "المنتجات", icon: Package, desc: "تصفح كامل منتجاتنا العضوية" },
+  { href: "/diagnosis", label: "التشخيص الذكي للتربة", icon: FlaskConical, desc: "احصل على توصية مخصصة لتربتك" },
 ];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
   const [dark, setDark] = useState(false);
+  const [dropOpen, setDropOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
   const { count, open: openCart } = useCart();
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
+        setDropOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
 
   useEffect(() => {
     if (dark) document.documentElement.classList.add("dark");
@@ -74,6 +93,44 @@ export default function Navbar() {
 
         {/* Center nav links */}
         <div className="hidden md:flex items-center gap-7 text-[15px] font-medium">
+          {/* Products dropdown */}
+          <div ref={dropRef} className="relative">
+            <button
+              onClick={() => setDropOpen((v) => !v)}
+              className={`flex items-center gap-1 transition-colors ${
+                location === "/products" || location === "/diagnosis"
+                  ? "text-primary border-b-2 border-primary pb-1"
+                  : "text-foreground/80 hover:text-primary"
+              }`}
+            >
+              المنتجات
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${dropOpen ? "rotate-180" : ""}`} />
+            </button>
+            {dropOpen && (
+              <div className="absolute top-full mt-3 right-0 w-64 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50">
+                {PRODUCTS_DROPDOWN.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setDropOpen(false)}
+                      className={`flex items-start gap-3 px-4 py-3 hover:bg-muted transition-colors ${
+                        location === item.href ? "bg-primary/5 text-primary" : ""
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 mt-0.5 text-primary shrink-0" />
+                      <div>
+                        <div className="font-medium text-sm">{item.label}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{item.desc}</div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {NAV_LINKS.map((l) => {
             const active = location === l.href;
             return (
@@ -135,6 +192,20 @@ export default function Navbar() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="flex flex-col gap-3 pt-12">
+              {PRODUCTS_DROPDOWN.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-2 text-base font-medium py-2 border-b border-border/50"
+                    onClick={() => setOpen(false)}
+                  >
+                    <Icon className="w-4 h-4 text-primary" />
+                    {item.label}
+                  </Link>
+                );
+              })}
               {NAV_LINKS.map((l) => (
                 <Link
                   key={l.href}
