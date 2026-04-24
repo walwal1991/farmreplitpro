@@ -6,7 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdminLoginResult {
-  token: string;
-  username: string;
+export interface AdminChangePasswordInput {
+  currentPassword: string;
+  /** @minLength 6 */
+  newPassword: string;
 }

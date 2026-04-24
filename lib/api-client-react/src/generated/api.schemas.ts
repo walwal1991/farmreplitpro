@@ -164,6 +164,13 @@ export interface AdminLoginInput {
 
 export interface AdminLoginResult {
   token: string;
+  username: string;
+}
+
+export interface AdminChangePasswordInput {
+  currentPassword: string;
+  /** @minLength 6 */
+  newPassword: string;
 }
 
 export type AdminStatsOrdersByStatusItem = {

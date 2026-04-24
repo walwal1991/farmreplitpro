@@ -8,6 +8,7 @@
 
 export * from "./activityItem";
 export * from "./activityItemKind";
+export * from "./adminChangePasswordInput";
 export * from "./adminLoginInput";
 export * from "./adminLoginResult";
 export * from "./adminStats";

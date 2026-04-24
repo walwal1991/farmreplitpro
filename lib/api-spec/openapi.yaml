@@ -251,6 +251,30 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AdminStats" }
 
+  /admin/change-password:
+    post:
+      operationId: adminChangePassword
+      tags: [admin]
+      summary: Change admin password
+      parameters:
+        - $ref: "#/components/parameters/AdminToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminChangePasswordInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminLoginResult" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
   /admin/recent-activity:
     get:
       operationId: getRecentActivity
@@ -396,7 +420,14 @@ components:
       type: object
       properties:
         token: { type: string }
-      required: [token]
+        username: { type: string }
+      required: [token, username]
+    AdminChangePasswordInput:
+      type: object
+      properties:
+        currentPassword: { type: string }
+        newPassword: { type: string, minLength: 6 }
+      required: [currentPassword, newPassword]
 
     AdminStats:
       type: object

@@ -1,15 +1,38 @@
 import { Router, type IRouter } from "express";
-import { sql, desc } from "drizzle-orm";
-import { db, ordersTable, consultationsTable, productsTable } from "@workspace/db";
+import { sql, desc, eq } from "drizzle-orm";
+import {
+  db,
+  ordersTable,
+  consultationsTable,
+  productsTable,
+  adminsTable,
+} from "@workspace/db";
 import {
   AdminLoginBody,
   AdminLoginResponse,
+  AdminChangePasswordBody,
   GetAdminStatsResponse,
   GetRecentActivityResponse,
 } from "@workspace/api-zod";
+import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import { requireAdmin } from "../middlewares/admin-auth";
 
 const router: IRouter = Router();
+
+// In-memory token -> username map. Tokens last until the server restarts.
+const sessions = new Map<string, string>();
+
+function issueToken(username: string): string {
+  const token = randomBytes(32).toString("hex");
+  sessions.set(token, username);
+  return token;
+}
+
+export function getSessionUsername(token: string | undefined): string | null {
+  if (!token) return null;
+  return sessions.get(token) ?? null;
+}
 
 router.post("/admin/login", async (req, res): Promise<void> => {
   const parsed = AdminLoginBody.safeParse(req.body);
@@ -17,22 +40,83 @@ router.post("/admin/login", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const password = process.env["ADMIN_PASSWORD"];
-  const username = process.env["ADMIN_USERNAME"] ?? "admin";
-  if (!password) {
-    req.log.error("ADMIN_PASSWORD env var not configured");
-    res.status(500).json({ error: "Server misconfigured" });
-    return;
-  }
-  if (
-    parsed.data.username !== username ||
-    parsed.data.password !== password
-  ) {
+  const { username, password } = parsed.data;
+
+  const rows = await db
+    .select()
+    .from(adminsTable)
+    .where(eq(adminsTable.username, username))
+    .limit(1);
+  const admin = rows[0];
+
+  if (!admin) {
     res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
     return;
   }
-  res.json(AdminLoginResponse.parse({ token: password }));
+
+  const ok = await bcrypt.compare(password, admin.passwordHash);
+  if (!ok) {
+    res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+    return;
+  }
+
+  const token = issueToken(admin.username);
+  res.json(AdminLoginResponse.parse({ token, username: admin.username }));
 });
+
+router.post(
+  "/admin/change-password",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = AdminChangePasswordBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const token =
+      (req.header("x-admin-token") ??
+        req.header("authorization")?.replace(/^Bearer\s+/i, "")) ||
+      undefined;
+    const username = getSessionUsername(token);
+    if (!username) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const rows = await db
+      .select()
+      .from(adminsTable)
+      .where(eq(adminsTable.username, username))
+      .limit(1);
+    const admin = rows[0];
+    if (!admin) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const ok = await bcrypt.compare(
+      parsed.data.currentPassword,
+      admin.passwordHash,
+    );
+    if (!ok) {
+      res.status(401).json({ error: "كلمة المرور الحالية غير صحيحة" });
+      return;
+    }
+
+    const newHash = await bcrypt.hash(parsed.data.newPassword, 10);
+    await db
+      .update(adminsTable)
+      .set({ passwordHash: newHash, updatedAt: new Date() })
+      .where(eq(adminsTable.id, admin.id));
+
+    // Invalidate all old tokens for this user, issue a new one.
+    for (const [t, u] of sessions.entries()) {
+      if (u === username) sessions.delete(t);
+    }
+    const newToken = issueToken(username);
+    res.json(AdminLoginResponse.parse({ token: newToken, username }));
+  },
+);
 
 router.get(
   "/admin/stats",

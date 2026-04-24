@@ -17,6 +17,7 @@ import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProducts from "@/pages/AdminProducts";
 import AdminOrders from "@/pages/AdminOrders";
+import AdminChangePassword from "@/pages/AdminChangePassword";
 import AdminConsultations from "@/pages/AdminConsultations";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/admin/products" component={AdminProducts} />
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/consultations" component={AdminConsultations} />
+      <Route path="/admin/change-password" component={AdminChangePassword} />
       
       <Route component={NotFound} />
     </Switch>

@@ -252,6 +252,7 @@ export const AdminLoginBody = zod.object({
 
 export const AdminLoginResponse = zod.object({
   token: zod.string(),
+  username: zod.string(),
 });
 
 /**
@@ -275,6 +276,25 @@ export const GetAdminStatsResponse = zod.object({
       count: zod.number(),
     }),
   ),
+});
+
+/**
+ * @summary Change admin password
+ */
+export const AdminChangePasswordHeader = zod.object({
+  "x-admin-token": zod.string(),
+});
+
+export const adminChangePasswordBodyNewPasswordMin = 6;
+
+export const AdminChangePasswordBody = zod.object({
+  currentPassword: zod.string(),
+  newPassword: zod.string().min(adminChangePasswordBodyNewPasswordMin),
+});
+
+export const AdminChangePasswordResponse = zod.object({
+  token: zod.string(),
+  username: zod.string(),
 });
 
 /**

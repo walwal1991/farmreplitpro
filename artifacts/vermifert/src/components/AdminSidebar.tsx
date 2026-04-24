@@ -6,6 +6,7 @@ import {
   MessageSquare,
   LogOut,
   Home,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ export default function AdminSidebar() {
     { href: "/admin/products", label: "المنتجات", icon: Package },
     { href: "/admin/orders", label: "الطلبات", icon: ShoppingBag },
     { href: "/admin/consultations", label: "الاستشارات", icon: MessageSquare },
+    { href: "/admin/change-password", label: "كلمة المرور", icon: KeyRound },
   ];
 
   return (
