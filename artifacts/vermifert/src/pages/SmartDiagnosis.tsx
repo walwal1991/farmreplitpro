@@ -321,8 +321,7 @@ export default function SmartDiagnosis() {
               </div>
 
               <Button
-                variant="outline"
-                className="w-full h-11 font-bold border-white text-primary hover:bg-white hover:text-primary gap-2"
+                className="w-full h-11 font-bold bg-amber-500 hover:bg-amber-600 text-white border-0 gap-2"
                 onClick={addAllToCart}
               >
                 <ShoppingCart className="w-4 h-4" />
