@@ -1,7 +1,7 @@
 import AdminSidebar from "@/components/AdminSidebar";
 import { useListOrders, useUpdateOrderStatus, getListOrdersQueryKey } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,12 +9,22 @@ import { useToast } from "@/hooks/use-toast";
 import { OrderStatusUpdateStatus } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import StickerPrint from "@/components/StickerPrint";
 
 export default function AdminOrders() {
   const [, setLocation] = useLocation();
   const token = localStorage.getItem("adminToken");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [stickerOrder, setStickerOrder] = useState<null | {
+    id: number; customerName: string; phone: string;
+    address: string; city: string; notes?: string | null;
+    productName: string; quantity: number;
+    unitPrice: number; totalPrice: number;
+    status: string; createdAt: string;
+  }>(null);
 
   useEffect(() => {
     if (!token) setLocation("/admin/login");
@@ -84,6 +94,7 @@ export default function AdminOrders() {
                     <th className="px-6 py-4 font-medium">التاريخ</th>
                     <th className="px-6 py-4 font-medium">الحالة</th>
                     <th className="px-6 py-4 font-medium text-left">تحديث الحالة</th>
+                    <th className="px-6 py-4 font-medium text-left">ملصق</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -97,6 +108,7 @@ export default function AdminOrders() {
                         <td className="px-6 py-4"><Skeleton className="h-6 w-24" /></td>
                         <td className="px-6 py-4"><Skeleton className="h-6 w-20" /></td>
                         <td className="px-6 py-4"><Skeleton className="h-8 w-32 ml-auto" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-8 w-8 ml-auto" /></td>
                       </tr>
                     ))
                   ) : orders?.length ? (
@@ -138,11 +150,22 @@ export default function AdminOrders() {
                             </SelectContent>
                           </Select>
                         </td>
+                        <td className="px-6 py-4 text-left">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            title="طباعة الملصق"
+                            onClick={() => setStickerOrder(order)}
+                          >
+                            <Printer className="w-4 h-4" />
+                          </Button>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">
                         لا توجد طلبات
                       </td>
                     </tr>
@@ -153,6 +176,12 @@ export default function AdminOrders() {
           </div>
         </div>
       </main>
+
+      <StickerPrint
+        order={stickerOrder}
+        open={!!stickerOrder}
+        onClose={() => setStickerOrder(null)}
+      />
     </div>
   );
 }
