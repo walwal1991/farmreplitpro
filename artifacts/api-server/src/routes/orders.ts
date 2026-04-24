@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
 import { db, productsTable, ordersTable, deliveryUsersTable } from "@workspace/db";
 import {
   CreateOrderBody,
@@ -10,6 +11,13 @@ import {
   GetProductResponse as OrderResponse,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/admin-auth";
+import { getCustomerSessionUser } from "../middlewares/customer-auth";
+
+function generateTrackingNumber(): string {
+  const year = new Date().getFullYear();
+  const rand = randomBytes(3).toString("hex").toUpperCase();
+  return `VF${year}${rand}`;
+}
 
 // Reuse a generic order parser via direct cast — orders.ts has no specific GetOrderResponse;
 // ListOrdersResponse parses arrays so we use ListOrdersResponseItem implicitly via array parse.
@@ -41,9 +49,21 @@ router.post("/orders", async (req, res): Promise<void> => {
   }
   const totalPrice = product.price * parsed.data.quantity;
 
+  // Link to customer account if token provided
+  const customerToken = (req.header("x-customer-token") ?? "").trim();
+  let customerId: number | null = null;
+  if (customerToken) {
+    const customer = await getCustomerSessionUser(customerToken);
+    if (customer) customerId = customer.id;
+  }
+
+  const trackingNumber = generateTrackingNumber();
+
   const [row] = await db
     .insert(ordersTable)
     .values({
+      trackingNumber,
+      customerId,
       customerName: parsed.data.customerName,
       phone: parsed.data.phone,
       address: parsed.data.address,
@@ -57,7 +77,7 @@ router.post("/orders", async (req, res): Promise<void> => {
       status: "pending",
     })
     .returning();
-  res.status(201).json(parseOrder(row));
+  res.status(201).json({ ...parseOrder(row), trackingNumber: row.trackingNumber });
 });
 
 router.get(

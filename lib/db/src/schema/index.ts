@@ -5,3 +5,5 @@ export * from "./admins";
 export * from "./admin-sessions";
 export * from "./delivery-users";
 export * from "./delivery-sessions";
+export * from "./customers";
+export * from "./customer-sessions";

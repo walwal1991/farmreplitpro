@@ -23,6 +23,9 @@ import SmartDiagnosis from "@/pages/SmartDiagnosis";
 import DeliveryLogin from "@/pages/DeliveryLogin";
 import DeliveryOrders from "@/pages/DeliveryOrders";
 import AdminDeliveryUsers from "@/pages/AdminDeliveryUsers";
+import CustomerLogin from "@/pages/CustomerLogin";
+import CustomerDashboard from "@/pages/CustomerDashboard";
+import TrackOrder from "@/pages/TrackOrder";
 
 const queryClient = new QueryClient();
 
@@ -47,7 +50,12 @@ function Router() {
       <Route path="/admin/change-password" component={AdminChangePassword} />
       <Route path="/delivery/login" component={DeliveryLogin} />
       <Route path="/delivery/orders" component={DeliveryOrders} />
-      
+
+      <Route path="/customer/login" component={CustomerLogin} />
+      <Route path="/customer/dashboard" component={CustomerDashboard} />
+      <Route path="/track" component={TrackOrder} />
+      <Route path="/track/:trackingNumber" component={TrackOrder} />
+
       <Route component={NotFound} />
     </Switch>
   );

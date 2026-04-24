@@ -2,6 +2,8 @@ import { pgTable, serial, text, integer, timestamp, doublePrecision } from "driz
 
 export const ordersTable = pgTable("orders", {
   id: serial("id").primaryKey(),
+  trackingNumber: text("tracking_number").unique(),
+  customerId: integer("customer_id"),
   customerName: text("customer_name").notNull(),
   phone: text("phone").notNull(),
   address: text("address").notNull(),

@@ -12,6 +12,8 @@ import {
   Package,
   Truck,
   LayoutDashboard,
+  Search,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -31,13 +33,31 @@ const PRODUCTS_DROPDOWN = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [dark, setDark] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
   const [userDropOpen, setUserDropOpen] = useState(false);
   const userDropRef = useRef<HTMLDivElement>(null);
   const { count, open: openCart } = useCart();
+
+  const customerUser = (() => {
+    try { return JSON.parse(localStorage.getItem("customerUser") ?? "null"); } catch { return null; }
+  })();
+
+  function handleCustomerLogout() {
+    const token = localStorage.getItem("customerToken");
+    if (token) {
+      fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/customer/logout`, {
+        method: "POST",
+        headers: { "x-customer-token": token },
+      });
+    }
+    localStorage.removeItem("customerToken");
+    localStorage.removeItem("customerUser");
+    setUserDropOpen(false);
+    setLocation("/");
+  }
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -87,27 +107,91 @@ export default function Navbar() {
               <User className="w-5 h-5" />
             </Button>
             {userDropOpen && (
-              <div className="absolute top-full mt-2 right-0 w-56 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50">
+              <div className="absolute top-full mt-2 right-0 w-64 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50">
+                {customerUser ? (
+                  <>
+                    <div className="px-4 py-3 border-b border-border/50 bg-primary/5">
+                      <p className="text-xs text-muted-foreground">مرحباً</p>
+                      <p className="font-bold text-sm text-primary">{customerUser.name}</p>
+                    </div>
+                    <Link
+                      href="/customer/dashboard"
+                      onClick={() => setUserDropOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <Package className="w-4 h-4" />
+                      </div>
+                      <div className="text-sm font-semibold">طلباتي</div>
+                    </Link>
+                    <Link
+                      href="/track"
+                      onClick={() => setUserDropOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <Search className="w-4 h-4" />
+                      </div>
+                      <div className="text-sm font-semibold">تتبع طلب</div>
+                    </Link>
+                    <div className="border-t border-border/50 mx-3" />
+                    <button
+                      onClick={handleCustomerLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted transition-colors text-destructive"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                        <LogOut className="w-4 h-4" />
+                      </div>
+                      <div className="text-sm font-semibold">تسجيل الخروج</div>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/customer/login"
+                      onClick={() => setUserDropOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold">حساب العميل</div>
+                        <div className="text-xs text-muted-foreground">تسجيل دخول أو إنشاء حساب</div>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/track"
+                      onClick={() => setUserDropOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <Search className="w-4 h-4" />
+                      </div>
+                      <div className="text-sm font-semibold">تتبع طلب</div>
+                    </Link>
+                  </>
+                )}
+                <div className="border-t border-border/50 mx-3" />
                 <Link
                   href="/admin/login"
                   onClick={() => setUserDropOpen(false)}
                   className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
                     <LayoutDashboard className="w-4 h-4" />
                   </div>
-                  <div className="text-sm font-semibold">تسجيل الدخول للإدارة</div>
+                  <div className="text-sm text-muted-foreground">تسجيل الدخول للإدارة</div>
                 </Link>
-                <div className="border-t border-border/50 mx-3" />
                 <Link
                   href="/delivery/login"
                   onClick={() => setUserDropOpen(false)}
                   className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
                     <Truck className="w-4 h-4" />
                   </div>
-                  <div className="text-sm font-semibold">بوابة التوصيل</div>
+                  <div className="text-sm text-muted-foreground">بوابة التوصيل</div>
                 </Link>
               </div>
             )}
