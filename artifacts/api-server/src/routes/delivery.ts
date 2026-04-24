@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, or, isNull } from "drizzle-orm";
 import { db, deliveryUsersTable, deliverySessionsTable, ordersTable } from "@workspace/db";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
@@ -62,23 +62,30 @@ router.post("/delivery/logout", async (req, res): Promise<void> => {
 });
 
 // ─── List orders (delivery) ───────────────────────────────────────────────────
-router.get("/delivery/orders", requireDelivery, async (_req, res): Promise<void> => {
-  const orders = await db
-    .select()
-    .from(ordersTable)
-    .where(eq(ordersTable.status, "confirmed"))
-    .orderBy(desc(ordersTable.createdAt));
+router.get("/delivery/orders", requireDelivery, async (req, res): Promise<void> => {
+  const driverUser = (req as Request & { deliveryUser: { id: number } }).deliveryUser;
+  const driverId = driverUser.id;
 
-  // Also fetch shipped ones
-  const shipped = await db
-    .select()
-    .from(ordersTable)
-    .where(eq(ordersTable.status, "shipped"))
-    .orderBy(desc(ordersTable.createdAt));
+  // Each driver sees only orders assigned to them OR unassigned orders
+  const myOrderFilter = or(
+    isNull(ordersTable.assignedDriverId),
+    eq(ordersTable.assignedDriverId, driverId),
+  )!;
 
-  const all = [...orders, ...shipped].sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-  );
+  const [confirmed, shipped] = await Promise.all([
+    db.select().from(ordersTable)
+      .where(eq(ordersTable.status, "confirmed"))
+      .orderBy(desc(ordersTable.createdAt)),
+    db.select().from(ordersTable)
+      .where(eq(ordersTable.status, "shipped"))
+      .orderBy(desc(ordersTable.createdAt)),
+  ]);
+
+  const all = [...confirmed, ...shipped]
+    .filter(o => o.assignedDriverId === null || o.assignedDriverId === driverId)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  void myOrderFilter;
 
   res.json(
     all.map((o) => ({
