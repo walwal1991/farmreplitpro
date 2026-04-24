@@ -6,8 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { Printer, Truck, UserX } from "lucide-react";
+import { Printer, Truck, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import StickerPrint from "@/components/StickerPrint";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -63,6 +66,10 @@ export default function AdminOrders() {
   const [assigningId, setAssigningId] = useState<number | null>(null);
   const [stickerOrder, setStickerOrder] = useState<Order | null>(null);
 
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [editForm, setEditForm] = useState({ customerName: "", phone: "", address: "", city: "", notes: "", quantity: "1" });
+  const [editLoading, setEditLoading] = useState(false);
+
   useEffect(() => { if (!token) setLocation("/admin/login"); }, [token, setLocation]);
 
   const fetchOrders = useCallback(async () => {
@@ -102,6 +109,49 @@ export default function AdminOrders() {
       fetchOrders();
     } catch {
       toast({ title: "خطأ", description: "حدث خطأ أثناء التحديث", variant: "destructive" });
+    }
+  };
+
+  const openEdit = (order: Order) => {
+    setEditOrder(order);
+    setEditForm({
+      customerName: order.customerName,
+      phone: order.phone,
+      address: order.address,
+      city: order.city,
+      notes: order.notes || "",
+      quantity: order.quantity.toString(),
+    });
+  };
+
+  const handleEdit = async () => {
+    if (!editOrder) return;
+    setEditLoading(true);
+    try {
+      const res = await fetch(`${API}/api/admin/orders/${editOrder.id}/details`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-admin-token": token! },
+        body: JSON.stringify({
+          customerName: editForm.customerName,
+          phone: editForm.phone,
+          address: editForm.address,
+          city: editForm.city,
+          notes: editForm.notes,
+          quantity: editForm.quantity,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast({ title: "خطأ", description: d.error, variant: "destructive" });
+        return;
+      }
+      toast({ title: "تم التعديل", description: `تم تحديث بيانات الطلب #${editOrder.id}` });
+      setEditOrder(null);
+      fetchOrders();
+    } catch {
+      toast({ title: "خطأ", description: "حدث خطأ أثناء التعديل", variant: "destructive" });
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -280,17 +330,28 @@ export default function AdminOrders() {
                             </Select>
                           </td>
 
-                          {/* Print sticker */}
+                          {/* Print sticker + Edit */}
                           <td className="px-4 py-4">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-primary"
-                              title="طباعة الملصق"
-                              onClick={() => setStickerOrder(order)}
-                            >
-                              <Printer className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                title="طباعة الملصق"
+                                onClick={() => setStickerOrder(order)}
+                              >
+                                <Printer className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-blue-600"
+                                title="تعديل الطلب"
+                                onClick={() => openEdit(order)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -308,6 +369,60 @@ export default function AdminOrders() {
           </div>
         </div>
       </main>
+
+      <Dialog open={!!editOrder} onOpenChange={(o) => !o && setEditOrder(null)}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-4 h-4" />
+              تعديل الطلب #{editOrder?.id}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>اسم العميل</Label>
+                <Input value={editForm.customerName} onChange={(e) => setEditForm(f => ({ ...f, customerName: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>رقم الهاتف</Label>
+                <Input dir="ltr" value={editForm.phone} onChange={(e) => setEditForm(f => ({ ...f, phone: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>المدينة</Label>
+                <Input value={editForm.city} onChange={(e) => setEditForm(f => ({ ...f, city: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>الكمية</Label>
+                <Input type="number" min="1" dir="ltr" value={editForm.quantity} onChange={(e) => setEditForm(f => ({ ...f, quantity: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>العنوان</Label>
+              <Input value={editForm.address} onChange={(e) => setEditForm(f => ({ ...f, address: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>ملاحظات</Label>
+              <Input value={editForm.notes} onChange={(e) => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="لا توجد ملاحظات" />
+            </div>
+            {editOrder && (
+              <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 space-y-1">
+                <div>المنتج: <span className="font-medium">{editOrder.productName}</span></div>
+                <div>سعر الوحدة: <span className="font-medium">{editOrder.unitPrice} د.ج</span></div>
+                <div>الإجمالي بعد التعديل: <span className="font-bold text-primary">{(editOrder.unitPrice * parseInt(editForm.quantity || "1")).toLocaleString()} د.ج</span></div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditOrder(null)}>إلغاء</Button>
+            <Button onClick={handleEdit} disabled={editLoading}>
+              {editLoading ? "جارٍ الحفظ..." : "حفظ التغييرات"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <StickerPrint
         order={stickerOrder}

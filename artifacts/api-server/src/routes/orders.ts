@@ -161,6 +161,33 @@ router.patch(
   },
 );
 
+router.patch(
+  "/admin/orders/:id/details",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) { res.status(400).json({ error: "معرّف غير صالح" }); return; }
+    const { customerName, phone, address, city, notes, quantity } = req.body;
+    const updates: Partial<typeof ordersTable.$inferInsert> = {};
+    if (customerName !== undefined) updates.customerName = customerName;
+    if (phone !== undefined) updates.phone = phone;
+    if (address !== undefined) updates.address = address;
+    if (city !== undefined) updates.city = city;
+    if (notes !== undefined) updates.notes = notes;
+    if (quantity !== undefined) {
+      const qty = parseInt(quantity, 10);
+      if (isNaN(qty) || qty < 1) { res.status(400).json({ error: "الكمية غير صالحة" }); return; }
+      updates.quantity = qty;
+      const [existing] = await db.select({ unitPrice: ordersTable.unitPrice }).from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+      if (existing) updates.totalPrice = existing.unitPrice * qty;
+    }
+    if (Object.keys(updates).length === 0) { res.status(400).json({ error: "لا توجد بيانات للتعديل" }); return; }
+    const [row] = await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id)).returning();
+    if (!row) { res.status(404).json({ error: "الطلب غير موجود" }); return; }
+    res.json({ ok: true });
+  },
+);
+
 // Suppress unused import warning
 void OrderResponse;
 
