@@ -97,6 +97,7 @@ router.get("/delivery/orders", requireDelivery, async (req, res): Promise<void> 
       notes: o.notes,
       productName: o.productName,
       quantity: o.quantity,
+      unitPrice: o.unitPrice,
       totalPrice: o.totalPrice,
       status: o.status,
       createdAt: o.createdAt.toISOString(),

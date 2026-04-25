@@ -198,7 +198,7 @@ export default function StickerPrint({ order, open, onClose }: StickerPrintProps
               <div className="row flex gap-3 mt-2">
                 <div className="col flex-1">
                   <div className="text-[9px] text-gray-500 mb-0.5">سعر الوحدة</div>
-                  <div className="font-bold text-sm">{order.unitPrice.toLocaleString("ar-DZ")} د.ج</div>
+                  <div className="font-bold text-sm">{(order.unitPrice ?? (order.totalPrice / (order.quantity || 1))).toLocaleString("ar-DZ")} د.ج</div>
                 </div>
                 <div className="col flex-1">
                   <div className="text-[9px] text-gray-500 mb-0.5">الإجمالي</div>
