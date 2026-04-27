@@ -12,27 +12,31 @@ router.get("/products/:id/reviews", async (req, res): Promise<void> => {
   const productId = parseInt(req.params.id, 10);
   if (isNaN(productId)) { res.status(400).json({ error: "معرّف غير صالح" }); return; }
 
-  const reviews = await db
-    .select()
-    .from(reviewsTable)
-    .where(eq(reviewsTable.productId, productId))
-    .orderBy(desc(reviewsTable.createdAt));
+  const rows = await db.execute(
+    sql`SELECT id, customer_name, rating, comment, image_url, created_at
+        FROM product_reviews WHERE product_id = ${productId}
+        ORDER BY created_at DESC`
+  );
 
-  const stats = await db.execute(
+  const statsRow = await db.execute(
     sql`SELECT COUNT(*)::int as count, ROUND(AVG(rating)::numeric, 1)::float as avg
         FROM product_reviews WHERE product_id = ${productId}`
   );
-  const row = stats.rows[0] as { count: number; avg: number | null };
+  const stat = statsRow.rows[0] as { count: number; avg: number | null };
 
   res.json({
-    reviews: reviews.map(r => ({
+    reviews: (rows.rows as Array<{
+      id: number; customer_name: string; rating: number;
+      comment: string | null; image_url: string | null; created_at: string;
+    }>).map(r => ({
       id: r.id,
-      customerName: r.customerName,
+      customerName: r.customer_name,
       rating: r.rating,
-      comment: r.comment,
-      createdAt: r.createdAt.toISOString(),
+      comment: r.comment ?? "",
+      imageUrl: r.image_url ?? null,
+      createdAt: r.created_at,
     })),
-    stats: { count: row.count ?? 0, avg: row.avg ?? 0 },
+    stats: { count: stat.count ?? 0, avg: stat.avg ?? 0 },
   });
 });
 
@@ -41,17 +45,21 @@ router.post("/products/:id/reviews", async (req: Request, res): Promise<void> =>
   const productId = parseInt(req.params.id, 10);
   if (isNaN(productId)) { res.status(400).json({ error: "معرّف غير صالح" }); return; }
 
-  const { rating, comment, customerName: guestName } = req.body ?? {};
+  const { rating, comment, customerName: guestName, imageUrl } = req.body ?? {};
 
   if (!rating || rating < 1 || rating > 5) {
     res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5" }); return;
+  }
+
+  // Validate image size (base64 ~4/3 of actual size, limit 2MB → ~2.7MB base64)
+  if (imageUrl && typeof imageUrl === "string" && imageUrl.length > 3_000_000) {
+    res.status(400).json({ error: "حجم الصورة كبير جداً (الحد الأقصى 2 ميغابايت)" }); return;
   }
 
   const [product] = await db.select({ id: productsTable.id })
     .from(productsTable).where(eq(productsTable.id, productId)).limit(1);
   if (!product) { res.status(404).json({ error: "المنتج غير موجود" }); return; }
 
-  // Try to get logged-in customer
   const customerToken = (req.header("x-customer-token") ?? "").trim();
   let customerId: number | null = null;
   let customerName = (guestName ?? "").toString().trim();
@@ -68,38 +76,48 @@ router.post("/products/:id/reviews", async (req: Request, res): Promise<void> =>
     res.status(400).json({ error: "الاسم مطلوب" }); return;
   }
 
-  const [review] = await db.insert(reviewsTable).values({
-    productId,
-    customerId,
-    customerName,
-    rating: parseInt(rating, 10),
-    comment: (comment ?? "").toString().trim(),
-  }).returning();
+  const cleanImageUrl = imageUrl && typeof imageUrl === "string" ? imageUrl : null;
+
+  const result = await db.execute(
+    sql`INSERT INTO product_reviews (product_id, customer_id, customer_name, rating, comment, image_url)
+        VALUES (${productId}, ${customerId}, ${customerName}, ${parseInt(rating, 10)},
+                ${(comment ?? "").toString().trim()}, ${cleanImageUrl})
+        RETURNING id, customer_name, rating, comment, image_url, created_at`
+  );
+  const review = result.rows[0] as {
+    id: number; customer_name: string; rating: number;
+    comment: string; image_url: string | null; created_at: string;
+  };
 
   res.status(201).json({
     id: review.id,
-    customerName: review.customerName,
+    customerName: review.customer_name,
     rating: review.rating,
     comment: review.comment,
-    createdAt: review.createdAt.toISOString(),
+    imageUrl: review.image_url ?? null,
+    createdAt: review.created_at,
   });
 });
 
 // ─── GET /api/admin/reviews ────────────────────────────────────────────────────
 router.get("/admin/reviews", requireAdmin, async (_req, res): Promise<void> => {
-  const reviews = await db
-    .select()
-    .from(reviewsTable)
-    .orderBy(desc(reviewsTable.createdAt));
-
-  res.json(reviews.map(r => ({
+  const rows = await db.execute(
+    sql`SELECT id, product_id, customer_id, customer_name, rating, comment, image_url, created_at
+        FROM product_reviews ORDER BY created_at DESC`
+  );
+  res.json((rows.rows as Array<{
+    id: number; product_id: number; customer_id: number | null;
+    customer_name: string; rating: number; comment: string | null;
+    image_url: string | null; created_at: string;
+  }>).map(r => ({
     id: r.id,
-    productId: r.productId,
-    customerId: r.customerId,
-    customerName: r.customerName,
+    productId: r.product_id,
+    customerId: r.customer_id,
+    customerName: r.customer_name,
     rating: r.rating,
-    comment: r.comment,
-    createdAt: r.createdAt.toISOString(),
+    comment: r.comment ?? "",
+    imageUrl: r.image_url ?? null,
+    createdAt: r.created_at,
   })));
 });
 

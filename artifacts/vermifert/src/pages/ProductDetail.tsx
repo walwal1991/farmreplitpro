@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, ShoppingBag, ArrowRight, CheckCircle2, Star, MessageSquare, Send } from "lucide-react";
+import { ShoppingCart, ShoppingBag, ArrowRight, CheckCircle2, Star, MessageSquare, Send, ImagePlus, X } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 import { useCart } from "@/lib/cart";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -21,6 +21,7 @@ interface Review {
   customerName: string;
   rating: number;
   comment: string;
+  imageUrl: string | null;
   createdAt: string;
 }
 
@@ -91,8 +92,11 @@ export default function ProductDetail() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [guestName, setGuestName] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchReviews = useCallback(async () => {
     if (!productId) return;
@@ -108,6 +112,29 @@ export default function ProductDetail() {
   }, [productId]);
 
   useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "الصورة كبيرة جداً", description: "الحد الأقصى لحجم الصورة 2 ميغابايت", variant: "destructive" });
+      e.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const b64 = ev.target?.result as string;
+      setImageBase64(b64);
+      setImagePreview(b64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setImageBase64(null);
+    setImagePreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +155,12 @@ export default function ProductDetail() {
       const res = await fetch(`${API}/api/products/${productId}/reviews`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ rating, comment, customerName: name }),
+        body: JSON.stringify({
+          rating,
+          comment,
+          customerName: name,
+          imageUrl: imageBase64 ?? null,
+        }),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -139,6 +171,7 @@ export default function ProductDetail() {
       setRating(0);
       setComment("");
       setGuestName("");
+      clearImage();
       fetchReviews();
       toast({ title: "شكراً على تقييمك!" });
     } finally {
@@ -192,7 +225,6 @@ export default function ProductDetail() {
                       الوزن: {product.weightKg} {product.unit}
                     </span>
                   </div>
-                  {/* Rating summary */}
                   {!reviewsLoading && stats.count > 0 && (
                     <div className="flex items-center gap-2 mb-2">
                       <StarDisplay rating={Math.round(stats.avg)} size="sm" />
@@ -317,7 +349,17 @@ export default function ProductDetail() {
                           <StarDisplay rating={review.rating} size="sm" />
                         </div>
                         {review.comment && (
-                          <p className="text-sm text-muted-foreground leading-relaxed">{review.comment}</p>
+                          <p className="text-sm text-muted-foreground leading-relaxed mb-3">{review.comment}</p>
+                        )}
+                        {review.imageUrl && (
+                          <div className="mt-2">
+                            <img
+                              src={review.imageUrl}
+                              alt="صورة التقييم"
+                              className="rounded-xl max-h-60 w-auto object-cover border border-border cursor-zoom-in"
+                              onClick={() => window.open(review.imageUrl!, "_blank")}
+                            />
+                          </div>
                         )}
                       </div>
                     ))
@@ -380,6 +422,40 @@ export default function ProductDetail() {
                           value={comment}
                           onChange={e => setComment(e.target.value)}
                         />
+                      </div>
+
+                      {/* Image upload */}
+                      <div className="space-y-2">
+                        <Label>صورة (اختياري)</Label>
+                        {imagePreview ? (
+                          <div className="relative inline-block">
+                            <img
+                              src={imagePreview}
+                              alt="معاينة الصورة"
+                              className="rounded-xl max-h-40 w-auto object-cover border border-border"
+                            />
+                            <button
+                              type="button"
+                              onClick={clearImage}
+                              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md hover:bg-destructive/90 transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl p-5 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                            <ImagePlus className="w-7 h-7 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">انقر لإضافة صورة</span>
+                            <span className="text-xs text-muted-foreground/70">الحد الأقصى 2 ميغابايت</span>
+                            <input
+                              ref={fileRef}
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              onChange={handleImageChange}
+                            />
+                          </label>
+                        )}
                       </div>
 
                       <Button type="submit" className="w-full gap-2" disabled={submitting}>

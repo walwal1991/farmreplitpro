@@ -20,6 +20,7 @@ interface Review {
   customerName: string;
   rating: number;
   comment: string;
+  imageUrl: string | null;
   createdAt: string;
 }
 
@@ -149,6 +150,16 @@ export default function AdminReviews() {
                     <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground/50 mt-1 italic">بدون تعليق</p>
+                  )}
+                  {review.imageUrl && (
+                    <div className="mt-2">
+                      <img
+                        src={review.imageUrl}
+                        alt="صورة التقييم"
+                        className="rounded-lg max-h-32 w-auto object-cover border border-border cursor-zoom-in"
+                        onClick={() => window.open(review.imageUrl!, "_blank")}
+                      />
+                    </div>
                   )}
                 </div>
                 <Button
