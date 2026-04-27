@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { useListProducts } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingBag, Search, Filter } from "lucide-react";
+import { ShoppingBag, Search, Filter, Star } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 import { useCart } from "@/lib/cart";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+
+const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const CATEGORIES = [
   { value: "all", label: "الكل" },
@@ -18,12 +20,43 @@ const CATEGORIES = [
   { value: "equipment", label: "معدات" },
 ] as const;
 
+interface RatingStat { product_id: number; count: number; avg: number; }
+
+function MiniStars({ avg, count }: { avg: number; count: number }) {
+  const full = Math.round(avg);
+  return (
+    <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map(s => (
+          <Star
+            key={s}
+            className={`w-3 h-3 ${s <= full ? "fill-amber-400 text-amber-400" : "fill-muted text-muted-foreground/20"}`}
+          />
+        ))}
+      </div>
+      <span className="text-[10px] text-muted-foreground tabular-nums">({count})</span>
+    </div>
+  );
+}
+
 export default function Products() {
   const { data: products, isLoading } = useListProducts();
   const { add } = useCart();
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
+  const [ratings, setRatings] = useState<Map<number, RatingStat>>(new Map());
+
+  useEffect(() => {
+    fetch(`${API}/api/products/ratings`)
+      .then(r => r.json())
+      .then((rows: RatingStat[]) => {
+        const map = new Map<number, RatingStat>();
+        rows.forEach(r => map.set(r.product_id, r));
+        setRatings(map);
+      })
+      .catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => {
     if (!products) return [];
@@ -142,54 +175,70 @@ export default function Products() {
                   </div>
                 ))
               ) : filtered.length ? (
-                filtered.map((product) => (
-                  <Card
-                    key={product.id}
-                    className="group overflow-hidden border-border/60 hover:border-primary transition-colors flex flex-col"
-                  >
-                    <Link href={`/products/${product.id}`} className="block">
-                      <div className="aspect-square bg-muted relative overflow-hidden">
-                        <img
-                          src={product.imageUrl || vermicompostBag}
-                          alt={product.name}
-                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-                        />
-                      </div>
-                    </Link>
-                    <CardContent className="p-3 flex flex-col gap-2 flex-1">
-                      <Link href={`/products/${product.id}`}>
-                        <h3 className="text-sm font-bold line-clamp-2 group-hover:text-primary transition-colors">
-                          {product.name}
-                        </h3>
+                filtered.map((product) => {
+                  const stat = ratings.get(product.id);
+                  return (
+                    <Card
+                      key={product.id}
+                      className="group overflow-hidden border-border/60 hover:border-primary transition-colors flex flex-col"
+                    >
+                      <Link href={`/products/${product.id}`} className="block">
+                        <div className="aspect-square bg-muted relative overflow-hidden">
+                          <img
+                            src={product.imageUrl || vermicompostBag}
+                            alt={product.name}
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                          />
+                        </div>
                       </Link>
-                      <div className="flex items-center justify-between">
-                        <span className="text-base font-extrabold text-primary tabular-nums">
-                          {product.price} د.ج
-                        </span>
-                        <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                          {product.weightKg} {product.unit}
-                        </span>
-                      </div>
-                      <Button
-                        size="sm"
-                        className="w-full gap-1.5 mt-auto"
-                        onClick={() =>
-                          add({
-                            id: product.id,
-                            name: product.name,
-                            price: product.price,
-                            unit: product.unit,
-                            weightKg: product.weightKg,
-                            imageUrl: product.imageUrl,
-                          })
-                        }
-                      >
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                        أضف إلى السلة
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))
+                      <CardContent className="p-3 flex flex-col gap-2 flex-1">
+                        <Link href={`/products/${product.id}`}>
+                          <h3 className="text-sm font-bold line-clamp-2 group-hover:text-primary transition-colors">
+                            {product.name}
+                          </h3>
+                        </Link>
+
+                        {/* Rating row */}
+                        {stat && stat.count > 0 ? (
+                          <MiniStars avg={stat.avg} count={stat.count} />
+                        ) : (
+                          <div className="flex items-center gap-0.5 opacity-30">
+                            {[1,2,3,4,5].map(s => (
+                              <Star key={s} className="w-3 h-3 fill-muted text-muted-foreground" />
+                            ))}
+                            <span className="text-[10px] text-muted-foreground mr-1">لا يوجد</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-base font-extrabold text-primary tabular-nums">
+                            {product.price} د.ج
+                          </span>
+                          <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {product.weightKg} {product.unit}
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="w-full gap-1.5 mt-auto"
+                          onClick={() =>
+                            add({
+                              id: product.id,
+                              name: product.name,
+                              price: product.price,
+                              unit: product.unit,
+                              weightKg: product.weightKg,
+                              imageUrl: product.imageUrl,
+                            })
+                          }
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          أضف إلى السلة
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })
               ) : (
                 <div className="col-span-full text-center py-20 text-muted-foreground bg-card rounded-2xl border border-dashed border-border">
                   <p className="text-lg">لا توجد منتجات مطابقة.</p>

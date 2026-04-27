@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 import {
   ListProductsResponse,
@@ -22,6 +22,15 @@ router.get("/products", async (_req, res): Promise<void> => {
     .where(eq(productsTable.active, true))
     .orderBy(desc(productsTable.createdAt));
   res.json(ListProductsResponse.parse(rows));
+});
+
+// Must be before /products/:id to avoid param capture
+router.get("/products/ratings", async (_req, res): Promise<void> => {
+  const result = await db.execute(
+    sql`SELECT product_id, COUNT(*)::int as count, ROUND(AVG(rating)::numeric, 1)::float as avg
+        FROM product_reviews GROUP BY product_id`
+  );
+  res.json(result.rows);
 });
 
 router.get("/products/:id", async (req, res): Promise<void> => {
