@@ -1,29 +1,155 @@
 import Navbar from "@/components/Navbar";
 import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, ShoppingBag, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ShoppingCart, ShoppingBag, ArrowRight, CheckCircle2, Star, MessageSquare, Send } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 import { useCart } from "@/lib/cart";
+import { useEffect, useState, useCallback } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
+
+const API = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+interface Review {
+  id: number;
+  customerName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+interface ReviewStats {
+  count: number;
+  avg: number;
+}
+
+function StarDisplay({ rating, size = "md" }: { rating: number; size?: "sm" | "md" | "lg" }) {
+  const sz = size === "sm" ? "w-3.5 h-3.5" : size === "lg" ? "w-6 h-6" : "w-5 h-5";
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star
+          key={s}
+          className={`${sz} ${s <= rating ? "fill-amber-400 text-amber-400" : "fill-muted text-muted-foreground/30"}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function StarInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hover, setHover] = useState(0);
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <button
+          key={s}
+          type="button"
+          onClick={() => onChange(s)}
+          onMouseEnter={() => setHover(s)}
+          onMouseLeave={() => setHover(0)}
+          className="p-0.5 transition-transform hover:scale-110"
+        >
+          <Star
+            className={`w-7 h-7 transition-colors ${
+              s <= (hover || value)
+                ? "fill-amber-400 text-amber-400"
+                : "fill-muted text-muted-foreground/30"
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const productId = parseInt(id, 10);
-  
   const { add } = useCart();
+  const { toast } = useToast();
 
-  const { data: product, isLoading, isError } = useGetProduct(productId, { 
-    query: { 
-      enabled: !!productId, 
-      queryKey: getGetProductQueryKey(productId) 
-    } 
+  const { data: product, isLoading, isError } = useGetProduct(productId, {
+    query: { enabled: !!productId, queryKey: getGetProductQueryKey(productId) },
   });
+
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [stats, setStats] = useState<ReviewStats>({ count: 0, avg: 0 });
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+
+  const customerToken = localStorage.getItem("customerToken") ?? "";
+  const customerUser = (() => {
+    try { return JSON.parse(localStorage.getItem("customerUser") ?? "null"); } catch { return null; }
+  })();
+
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const fetchReviews = useCallback(async () => {
+    if (!productId) return;
+    setReviewsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/products/${productId}/reviews`);
+      const data = await res.json();
+      setReviews(data.reviews ?? []);
+      setStats(data.stats ?? { count: 0, avg: 0 });
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [productId]);
+
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (rating === 0) {
+      toast({ title: "اختر تقييماً", description: "يرجى اختيار عدد النجوم", variant: "destructive" });
+      return;
+    }
+    const name = customerUser?.name ?? guestName.trim();
+    if (!name || name.length < 2) {
+      toast({ title: "الاسم مطلوب", description: "يرجى إدخال اسمك", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (customerToken) headers["x-customer-token"] = customerToken;
+
+      const res = await fetch(`${API}/api/products/${productId}/reviews`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ rating, comment, customerName: name }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast({ title: "خطأ", description: d.error, variant: "destructive" });
+        return;
+      }
+      setSubmitted(true);
+      setRating(0);
+      setComment("");
+      setGuestName("");
+      fetchReviews();
+      toast({ title: "شكراً على تقييمك!" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      
+
       <main className="flex-1 container mx-auto px-4 py-8">
         <Link href="/products" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors">
           <ArrowRight className="w-4 h-4" />
@@ -43,85 +169,233 @@ export default function ProductDetail() {
         ) : isError || !product ? (
           <div className="text-center py-20 bg-card rounded-2xl">
             <h2 className="text-2xl font-bold mb-4">المنتج غير موجود</h2>
-            <Button asChild variant="outline">
-              <Link href="/products">تصفح المنتجات</Link>
-            </Button>
+            <Button asChild variant="outline"><Link href="/products">تصفح المنتجات</Link></Button>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
-            <div className="aspect-square bg-muted rounded-3xl overflow-hidden border border-border/50">
-              <img 
-                src={product.imageUrl || vermicompostBag} 
-                alt={product.name}
-                className="object-cover w-full h-full"
-              />
-            </div>
-            
-            <div className="space-y-8">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-4">{product.name}</h1>
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="text-3xl font-bold text-primary">{product.price} د.ج</span>
-                  <span className="text-lg text-muted-foreground bg-muted px-3 py-1 rounded-lg">
-                    الوزن: {product.weightKg} {product.unit}
-                  </span>
+          <>
+            {/* Product info */}
+            <div className="grid lg:grid-cols-2 gap-12 items-start">
+              <div className="aspect-square bg-muted rounded-3xl overflow-hidden border border-border/50">
+                <img
+                  src={product.imageUrl || vermicompostBag}
+                  alt={product.name}
+                  className="object-cover w-full h-full"
+                />
+              </div>
+
+              <div className="space-y-8">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold mb-4">{product.name}</h1>
+                  <div className="flex items-center gap-4 mb-4">
+                    <span className="text-3xl font-bold text-primary">{product.price} د.ج</span>
+                    <span className="text-lg text-muted-foreground bg-muted px-3 py-1 rounded-lg">
+                      الوزن: {product.weightKg} {product.unit}
+                    </span>
+                  </div>
+                  {/* Rating summary */}
+                  {!reviewsLoading && stats.count > 0 && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <StarDisplay rating={Math.round(stats.avg)} size="sm" />
+                      <span className="text-sm font-bold text-amber-500">{stats.avg.toFixed(1)}</span>
+                      <span className="text-sm text-muted-foreground">({stats.count} تقييم)</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="prose prose-stone rtl:prose-p:text-right max-w-none text-muted-foreground">
+                  <p>{product.description}</p>
+                </div>
+
+                <div className="bg-card p-6 rounded-2xl border border-border space-y-4">
+                  <h3 className="font-bold text-lg">مميزات المنتج:</h3>
+                  <ul className="space-y-3">
+                    {[
+                      "عضوي وطبيعي 100%",
+                      "غني بالعناصر الغذائية الأساسية",
+                      "يحسن خصوبة التربة واحتفاظها بالماء",
+                    ].map((f) => (
+                      <li key={f} className="flex items-center gap-3 text-muted-foreground">
+                        <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    size="lg"
+                    className="flex-1 h-14 text-base gap-2"
+                    onClick={() =>
+                      add({ id: product.id, name: product.name, price: product.price, unit: product.unit, weightKg: product.weightKg, imageUrl: product.imageUrl })
+                    }
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    أضف إلى السلة
+                  </Button>
+                  <Button asChild size="lg" variant="outline" className="flex-1 h-14 text-base gap-2">
+                    <Link href={`/order/${product.id}`}>
+                      <ShoppingCart className="w-5 h-5" />
+                      اطلب الآن
+                    </Link>
+                  </Button>
                 </div>
               </div>
-
-              <div className="prose prose-stone rtl:prose-p:text-right max-w-none text-muted-foreground">
-                <p>{product.description}</p>
-              </div>
-
-              <div className="bg-card p-6 rounded-2xl border border-border space-y-4">
-                <h3 className="font-bold text-lg">مميزات المنتج:</h3>
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-3 text-muted-foreground">
-                    <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span>عضوي وطبيعي 100%</span>
-                  </li>
-                  <li className="flex items-center gap-3 text-muted-foreground">
-                    <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span>غني بالعناصر الغذائية الأساسية</span>
-                  </li>
-                  <li className="flex items-center gap-3 text-muted-foreground">
-                    <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span>يحسن خصوبة التربة واحتفاظها بالماء</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  size="lg"
-                  className="flex-1 h-14 text-base gap-2"
-                  onClick={() =>
-                    add({
-                      id: product.id,
-                      name: product.name,
-                      price: product.price,
-                      unit: product.unit,
-                      weightKg: product.weightKg,
-                      imageUrl: product.imageUrl,
-                    })
-                  }
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  أضف إلى السلة
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="flex-1 h-14 text-base gap-2"
-                >
-                  <Link href={`/order/${product.id}`}>
-                    <ShoppingCart className="w-5 h-5" />
-                    اطلب الآن
-                  </Link>
-                </Button>
-              </div>
             </div>
-          </div>
+
+            {/* Reviews section */}
+            <section className="mt-16">
+              <div className="flex items-center gap-3 mb-8">
+                <MessageSquare className="w-6 h-6 text-primary" />
+                <h2 className="text-2xl font-bold">التقييمات والمراجعات</h2>
+                {stats.count > 0 && (
+                  <span className="text-sm text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
+                    {stats.count} تقييم
+                  </span>
+                )}
+              </div>
+
+              <div className="grid lg:grid-cols-[1fr_380px] gap-8 items-start">
+                {/* Reviews list */}
+                <div className="space-y-4">
+                  {/* Overall rating card */}
+                  {!reviewsLoading && stats.count > 0 && (
+                    <div className="bg-card border border-border rounded-2xl p-6 flex items-center gap-6 mb-6">
+                      <div className="text-center">
+                        <div className="text-5xl font-black text-primary tabular-nums">{stats.avg.toFixed(1)}</div>
+                        <StarDisplay rating={Math.round(stats.avg)} size="sm" />
+                        <div className="text-xs text-muted-foreground mt-1">{stats.count} تقييم</div>
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        {[5, 4, 3, 2, 1].map(star => {
+                          const cnt = reviews.filter(r => r.rating === star).length;
+                          const pct = stats.count ? (cnt / stats.count) * 100 : 0;
+                          return (
+                            <div key={star} className="flex items-center gap-2 text-sm">
+                              <span className="w-3 text-muted-foreground tabular-nums">{star}</span>
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-amber-400 rounded-full transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="w-5 text-xs text-muted-foreground tabular-nums">{cnt}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {reviewsLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2].map(i => (
+                        <div key={i} className="bg-card border border-border rounded-2xl p-5 animate-pulse">
+                          <div className="h-4 bg-muted rounded w-1/4 mb-3" />
+                          <div className="h-3 bg-muted rounded w-full mb-2" />
+                          <div className="h-3 bg-muted rounded w-3/4" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : reviews.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground bg-card border border-dashed border-border rounded-2xl">
+                      <Star className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                      <p className="font-medium">لا توجد تقييمات بعد</p>
+                      <p className="text-sm mt-1">كن أول من يقيّم هذا المنتج!</p>
+                    </div>
+                  ) : (
+                    reviews.map(review => (
+                      <div key={review.id} className="bg-card border border-border rounded-2xl p-5">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div>
+                            <div className="font-bold text-sm">{review.customerName}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {format(new Date(review.createdAt), "d MMMM yyyy", { locale: ar })}
+                            </div>
+                          </div>
+                          <StarDisplay rating={review.rating} size="sm" />
+                        </div>
+                        {review.comment && (
+                          <p className="text-sm text-muted-foreground leading-relaxed">{review.comment}</p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Submit review form */}
+                <div className="lg:sticky lg:top-24">
+                  {submitted ? (
+                    <div className="bg-card border border-border rounded-2xl p-6 text-center">
+                      <div className="w-12 h-12 mx-auto rounded-full bg-green-500/10 text-green-600 flex items-center justify-center mb-3">
+                        <CheckCircle2 className="w-6 h-6" />
+                      </div>
+                      <h3 className="font-bold mb-1">شكراً على تقييمك!</h3>
+                      <p className="text-sm text-muted-foreground mb-4">ساعد تقييمك الزبائن الآخرين في اتخاذ قرارهم.</p>
+                      <Button variant="outline" size="sm" onClick={() => setSubmitted(false)}>
+                        إضافة تقييم آخر
+                      </Button>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={handleSubmitReview}
+                      className="bg-card border border-border rounded-2xl p-6 space-y-5"
+                    >
+                      <h3 className="font-bold text-lg">أضف تقييمك</h3>
+
+                      {!customerUser && (
+                        <div className="space-y-1.5">
+                          <Label>اسمك</Label>
+                          <Input
+                            placeholder="محمد أحمد"
+                            value={guestName}
+                            onChange={e => setGuestName(e.target.value)}
+                            required
+                          />
+                        </div>
+                      )}
+                      {customerUser && (
+                        <div className="text-sm text-primary bg-primary/5 border border-primary/20 rounded-lg px-3 py-2 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          التقييم باسم: <strong>{customerUser.name}</strong>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label>تقييمك</Label>
+                        <StarInput value={rating} onChange={setRating} />
+                        {rating > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {["", "ضعيف جداً", "ضعيف", "مقبول", "جيد", "ممتاز"][rating]}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>تعليقك (اختياري)</Label>
+                        <Textarea
+                          rows={4}
+                          placeholder="شاركنا تجربتك مع المنتج..."
+                          value={comment}
+                          onChange={e => setComment(e.target.value)}
+                        />
+                      </div>
+
+                      <Button type="submit" className="w-full gap-2" disabled={submitting}>
+                        {submitting ? "جاري الإرسال..." : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            إرسال التقييم
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  )}
+                </div>
+              </div>
+            </section>
+          </>
         )}
       </main>
     </div>
