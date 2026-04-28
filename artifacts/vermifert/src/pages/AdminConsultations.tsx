@@ -27,10 +27,11 @@ interface ContactMessage {
   isRead: boolean;
   adminReply: string | null;
   sessionId: string | null;
+  customerId: number | null;
   createdAt: string;
 }
 
-// Group messages by session
+// Group messages by customer account (if available), otherwise by session
 interface Session {
   sessionId: string;
   customerName: string;
@@ -43,7 +44,8 @@ interface Session {
 function groupBySessions(msgs: ContactMessage[]): Session[] {
   const map = new Map<string, Session>();
   for (const m of msgs) {
-    const key = m.sessionId ?? `solo_${m.id}`;
+    // Prefer grouping by customer account ID, then by session, then by message ID
+    const key = m.customerId ? `account_${m.customerId}` : (m.sessionId ?? `solo_${m.id}`);
     if (!map.has(key)) {
       map.set(key, {
         sessionId: key,

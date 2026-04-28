@@ -110,12 +110,16 @@ function ChatView() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const customerToken = localStorage.getItem("customerToken") ?? "";
+
   const fetchMessages = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (customerToken) headers["x-customer-token"] = customerToken;
       const res = await fetch(`${API}/api/contact/session`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ sessionId }),
       });
       if (res.ok) {
@@ -126,7 +130,7 @@ function ChatView() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, customerToken]);
 
   useEffect(() => {
     fetchMessages();
@@ -149,9 +153,11 @@ function ChatView() {
     if (!text.trim() || !name.trim()) return;
     setSending(true);
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (customerToken) headers["x-customer-token"] = customerToken;
       const res = await fetch(`${API}/api/contact`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ customerName: name.trim(), message: text.trim(), sessionId }),
       });
       if (!res.ok) {

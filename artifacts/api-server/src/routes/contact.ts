@@ -2,8 +2,10 @@ import { Router, type IRouter } from "express";
 import { sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { requireAdmin } from "../middlewares/admin-auth";
+import { getCustomerSessionUser } from "../middlewares/customer-auth";
 
 const router: IRouter = Router();
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // ─── POST /api/contact ────────────────────────────────────────────────────────
 router.post("/contact", async (req, res): Promise<void> => {
@@ -19,10 +21,17 @@ router.post("/contact", async (req, res): Promise<void> => {
     res.status(400).json({ error: "معرّف الجلسة مطلوب" }); return;
   }
 
+  // Resolve logged-in customer (optional)
+  const customerToken = (req.header("x-customer-token") ?? "").trim();
+  const customerUser = customerToken ? await getCustomerSessionUser(customerToken) : null;
+  const customerId = customerUser ? customerUser.id : null;
+  // If logged in, use the account name
+  const resolvedName = customerUser ? customerUser.name : customerName.trim();
+
   const result = await db.execute(
-    sql`INSERT INTO contact_messages (customer_name, phone, message, session_id)
-        VALUES (${customerName.trim()}, ${(phone ?? "").toString().trim() || null},
-                ${message.trim()}, ${sessionId})
+    sql`INSERT INTO contact_messages (customer_name, phone, message, session_id, customer_id)
+        VALUES (${resolvedName}, ${(phone ?? "").toString().trim() || null},
+                ${message.trim()}, ${sessionId}, ${customerId})
         RETURNING id, customer_name, message, session_id, created_at`
   );
   const row = result.rows[0] as {
@@ -40,11 +49,38 @@ router.post("/contact", async (req, res): Promise<void> => {
   });
 });
 
-// ─── POST /api/contact/session  (customer polls their chat — body carries the secret sessionId) ─
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
+// ─── POST /api/contact/session  (customer polls their chat) ──────────────────
+// If x-customer-token is present → returns ALL messages for that customer account
+// Otherwise → returns messages for the given sessionId (UUID required)
 router.post("/contact/session", async (req, res): Promise<void> => {
   const { sessionId } = req.body ?? {};
+
+  // Check for logged-in customer token
+  const customerToken = (req.header("x-customer-token") ?? "").trim();
+  const customerUser = customerToken ? await getCustomerSessionUser(customerToken) : null;
+
+  if (customerUser) {
+    // Return ALL messages for this customer account (by customer_id)
+    const result = await db.execute(
+      sql`SELECT id, customer_name, message, admin_reply, created_at
+          FROM contact_messages
+          WHERE customer_id = ${customerUser.id}
+          ORDER BY created_at ASC`
+    );
+    res.json((result.rows as Array<{
+      id: number; customer_name: string; message: string;
+      admin_reply: string | null; created_at: string;
+    }>).map(r => ({
+      id: r.id,
+      customerName: r.customer_name,
+      message: r.message,
+      adminReply: r.admin_reply ?? null,
+      createdAt: r.created_at,
+    })));
+    return;
+  }
+
+  // Guest: fall back to sessionId lookup
   if (!sessionId || typeof sessionId !== "string" || !UUID_RE.test(sessionId)) {
     res.status(400).json({ error: "معرّف الجلسة غير صالح" }); return;
   }
@@ -69,16 +105,15 @@ router.post("/contact/session", async (req, res): Promise<void> => {
 });
 
 // ─── GET /api/admin/contact-messages ─────────────────────────────────────────
-// Returns sessions grouped (latest message per session)
 router.get("/admin/contact-messages", requireAdmin, async (_req, res): Promise<void> => {
   const result = await db.execute(
-    sql`SELECT id, customer_name, phone, message, is_read, admin_reply, session_id, created_at
+    sql`SELECT id, customer_name, phone, message, is_read, admin_reply, session_id, customer_id, created_at
         FROM contact_messages ORDER BY created_at DESC`
   );
   res.json((result.rows as Array<{
     id: number; customer_name: string; phone: string | null;
     message: string; is_read: boolean; admin_reply: string | null;
-    session_id: string | null; created_at: string;
+    session_id: string | null; customer_id: number | null; created_at: string;
   }>).map(r => ({
     id: r.id,
     customerName: r.customer_name,
@@ -87,6 +122,7 @@ router.get("/admin/contact-messages", requireAdmin, async (_req, res): Promise<v
     isRead: r.is_read,
     adminReply: r.admin_reply,
     sessionId: r.session_id,
+    customerId: r.customer_id,
     createdAt: r.created_at,
   })));
 });
