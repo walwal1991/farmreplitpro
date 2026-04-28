@@ -14,7 +14,6 @@ import {
   LayoutDashboard,
   Search,
   LogOut,
-  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -79,6 +78,7 @@ export default function Navbar() {
 
   const NAV_LINKS = [
     { href: "/", label: t("nav_home") },
+    { href: "/learn", label: t("nav_learn") },
     { href: "/guide", label: t("nav_guide") },
     { href: "/consultation", label: t("nav_consultation") },
   ];
@@ -86,7 +86,6 @@ export default function Navbar() {
   const PRODUCTS_DROPDOWN = [
     { href: "/products", label: t("nav_products"), icon: Package, desc: t("nav_products_desc") },
     { href: "/diagnosis", label: t("nav_diagnosis"), icon: FlaskConical, desc: t("nav_diagnosis_desc") },
-    { href: "/learn", label: t("nav_learn"), icon: GraduationCap, desc: t("nav_learn_desc") },
   ];
 
   return (
@@ -227,7 +226,7 @@ export default function Navbar() {
             <button
               onClick={() => setDropOpen((v) => !v)}
               className={`flex items-center gap-1 transition-colors ${
-                location === "/products" || location === "/diagnosis" || location === "/learn"
+                location === "/products" || location === "/diagnosis"
                   ? "text-primary border-b-2 border-primary pb-1"
                   : "text-foreground/80 hover:text-primary"
               }`}
