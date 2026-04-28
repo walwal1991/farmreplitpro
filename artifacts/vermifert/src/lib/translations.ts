@@ -496,6 +496,7 @@ export const translations = {
   enroll_success_desc: { ar: "سنتواصل معك قريباً عبر الهاتف لإرسال رابط الدورة وتفاصيل الوصول.", en: "We'll contact you soon by phone to send you the course link and access details.", fr: "Nous vous contacterons bientôt par téléphone pour vous envoyer le lien du cours et les détails d'accès." },
   enroll_cancel: { ar: "إلغاء", en: "Cancel", fr: "Annuler" },
   enroll_error: { ar: "حدث خطأ، يرجى المحاولة مجدداً", en: "An error occurred, please try again", fr: "Une erreur s'est produite, veuillez réessayer" },
+  enroll_from_account: { ar: "من حسابك", en: "From your account", fr: "Depuis votre compte" },
 
   learn_cta_title: { ar: "مستعد للبدء؟", en: "Ready to Start?", fr: "Prêt à commencer ?" },
   learn_cta_sub: { ar: "تواصل معنا للاستفسار عن الدورات أو اطلب استشارة مجانية", en: "Contact us to inquire about courses or request a free consultation", fr: "Contactez-nous pour vous renseigner sur les formations ou demander une consultation gratuite" },

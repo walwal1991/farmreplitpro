@@ -37,6 +37,12 @@ type CourseCardData = {
 export default function Learn() {
   const { t, dir } = useLang();
 
+  // Read logged-in customer from localStorage
+  const customerUser = (() => {
+    try { return JSON.parse(localStorage.getItem("customerUser") ?? "null"); } catch { return null; }
+  })();
+  const isLoggedIn = !!customerUser;
+
   const [enrollName, setEnrollName] = useState("");
   const [enrollPhone, setEnrollPhone] = useState("");
   const [enrollState, setEnrollState] = useState<EnrollState>({ phase: "idle" });
@@ -97,8 +103,8 @@ export default function Learn() {
 
   const handleOpenEnroll = (courseId: string) => {
     setActiveEnrollCourse(courseId);
-    setEnrollName("");
-    setEnrollPhone("");
+    setEnrollName(customerUser?.name ?? "");
+    setEnrollPhone(customerUser?.phone ?? "");
     setEnrollState({ phase: "form" });
   };
 
@@ -302,32 +308,42 @@ export default function Learn() {
                         onSubmit={(e) => handleSubmitEnroll(e, course.id)}
                         className="bg-background/80 border border-border rounded-xl p-4 space-y-3"
                       >
-                        <p className="text-sm font-semibold text-foreground">{t("enroll_title")}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-foreground">{t("enroll_title")}</p>
+                          {isLoggedIn && (
+                            <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                              {t("enroll_from_account") ?? "من حسابك"}
+                            </span>
+                          )}
+                        </div>
 
                         {/* Name */}
-                        <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-lg px-3 py-2">
+                        <div className={`flex items-center gap-2 border rounded-lg px-3 py-2 ${isLoggedIn ? "bg-primary/5 border-primary/20" : "bg-muted/60 border-border"}`}>
                           <User className="w-4 h-4 text-muted-foreground shrink-0" />
                           <input
                             type="text"
                             value={enrollName}
-                            onChange={(e) => setEnrollName(e.target.value)}
+                            onChange={(e) => !isLoggedIn && setEnrollName(e.target.value)}
                             placeholder={t("enroll_name")}
                             required
-                            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            readOnly={isLoggedIn}
+                            className={`flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground ${isLoggedIn ? "text-foreground font-medium cursor-default select-none" : ""}`}
                           />
                         </div>
 
                         {/* Phone */}
-                        <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-lg px-3 py-2">
+                        <div className={`flex items-center gap-2 border rounded-lg px-3 py-2 ${isLoggedIn ? "bg-primary/5 border-primary/20" : "bg-muted/60 border-border"}`}>
                           <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
                           <input
                             type="tel"
                             dir="ltr"
                             value={enrollPhone}
-                            onChange={(e) => setEnrollPhone(e.target.value)}
+                            onChange={(e) => !isLoggedIn && setEnrollPhone(e.target.value)}
                             placeholder={t("enroll_phone")}
                             required
-                            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-start"
+                            readOnly={isLoggedIn}
+                            className={`flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-start ${isLoggedIn ? "text-foreground font-medium cursor-default select-none" : ""}`}
                           />
                         </div>
 
