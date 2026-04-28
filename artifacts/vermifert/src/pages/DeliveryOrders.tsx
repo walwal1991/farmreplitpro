@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Truck, LogOut, MapPin, Phone, Package, RefreshCw, Home, Navigation, X } from "lucide-react";
+import { Truck, LogOut, MapPin, Phone, Package, RefreshCw, Home, Navigation, X, Camera, PenLine, CheckCircle, Trash2, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import StickerPrint from "@/components/StickerPrint";
@@ -21,6 +21,7 @@ interface Order {
   unitPrice: number;
   totalPrice: number;
   status: string;
+  requiresSignature: boolean;
   createdAt: string;
 }
 
@@ -55,12 +56,226 @@ function openStreetMapUrl(order: Order) {
   return `https://www.openstreetmap.org/search?query=${buildDestination(order)}`;
 }
 
+// ── Signature Pad ──────────────────────────────────────────────────────────
+function SignaturePad({ onSignature }: { onSignature: (data: string | null) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawing = useRef(false);
+  const hasDrawn = useRef(false);
+
+  function getPos(e: React.MouseEvent | React.TouchEvent) {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    if ("touches" in e) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.touches[0].clientY - rect.top) * (canvas.height / rect.height),
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+    };
+  }
+
+  function startDraw(e: React.MouseEvent | React.TouchEvent) {
+    e.preventDefault();
+    drawing.current = true;
+    const ctx = canvasRef.current!.getContext("2d")!;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
+
+  function draw(e: React.MouseEvent | React.TouchEvent) {
+    e.preventDefault();
+    if (!drawing.current) return;
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext("2d")!;
+    const pos = getPos(e);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#1a1a1a";
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    hasDrawn.current = true;
+  }
+
+  function endDraw(e: React.MouseEvent | React.TouchEvent) {
+    e.preventDefault();
+    if (!drawing.current) return;
+    drawing.current = false;
+    if (hasDrawn.current) {
+      onSignature(canvasRef.current!.toDataURL("image/png"));
+    }
+  }
+
+  function clearPad() {
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasDrawn.current = false;
+    onSignature(null);
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="relative border-2 border-dashed border-border rounded-xl bg-white overflow-hidden" style={{ touchAction: "none" }}>
+        <canvas
+          ref={canvasRef}
+          width={600}
+          height={200}
+          className="w-full"
+          style={{ height: 160, cursor: "crosshair" }}
+          onMouseDown={startDraw}
+          onMouseMove={draw}
+          onMouseUp={endDraw}
+          onMouseLeave={endDraw}
+          onTouchStart={startDraw}
+          onTouchMove={draw}
+          onTouchEnd={endDraw}
+        />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-muted-foreground/30 text-sm select-none">
+          <PenLine className="w-5 h-5 ml-1" />
+          وقّع هنا
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={clearPad}
+        className="text-xs text-muted-foreground flex items-center gap-1 hover:text-destructive transition-colors"
+      >
+        <Trash2 className="w-3 h-3" />
+        مسح التوقيع
+      </button>
+    </div>
+  );
+}
+
+// ── Proof Modal ─────────────────────────────────────────────────────────────
+function ProofModal({
+  order,
+  onClose,
+  onConfirm,
+  submitting,
+}: {
+  order: Order;
+  onClose: () => void;
+  onConfirm: (proof: { proofImage?: string; signatureImage?: string }) => void;
+  submitting: boolean;
+}) {
+  const [proofImage, setProofImage] = useState<string | null>(null);
+  const [signatureImage, setSignatureImage] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setProofImage(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  const canSubmit = !order.requiresSignature || !!signatureImage;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4" dir="rtl">
+      <div className="bg-background w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl overflow-hidden shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div>
+            <h2 className="font-bold text-lg">إثبات التوصيل</h2>
+            <p className="text-sm text-muted-foreground">طلب #{order.id} — {order.customerName}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="px-5 py-5 space-y-5 overflow-y-auto max-h-[70vh]">
+          {/* Photo proof */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Camera className="w-4 h-4 text-primary" />
+              <span className="font-bold text-sm">صورة إثبات التوصيل</span>
+              <span className="text-xs text-muted-foreground">(اختياري)</span>
+            </div>
+
+            {proofImage ? (
+              <div className="relative rounded-xl overflow-hidden border border-border">
+                <img src={proofImage} alt="إثبات التوصيل" className="w-full max-h-48 object-cover" />
+                <button
+                  onClick={() => { setProofImage(null); if (fileRef.current) fileRef.current.value = ""; }}
+                  className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="w-full h-28 rounded-xl border-2 border-dashed border-border hover:border-primary flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+              >
+                <ImageIcon className="w-8 h-8" />
+                <span className="text-sm font-medium">التقط صورة أو اختر من المعرض</span>
+              </button>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
+          </div>
+
+          {/* Signature (only if required) */}
+          {order.requiresSignature && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <PenLine className="w-4 h-4 text-primary" />
+                <span className="font-bold text-sm">توقيع الزبون</span>
+                <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">مطلوب</span>
+              </div>
+              <SignaturePad onSignature={setSignatureImage} />
+            </div>
+          )}
+
+          {/* Info box */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+            بعد التأكيد سيتم تحديث حالة الطلب إلى "تم التوصيل" ولن يمكن التراجع.
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-border flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={onClose}
+            disabled={submitting}
+          >
+            إلغاء
+          </Button>
+          <Button
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+            disabled={!canSubmit || submitting}
+            onClick={() => onConfirm({ proofImage: proofImage ?? undefined, signatureImage: signatureImage ?? undefined })}
+          >
+            <CheckCircle className="w-4 h-4" />
+            {submitting ? "جارٍ التأكيد..." : "تأكيد التوصيل"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Map modal ──────────────────────────────────────────────────────────────
 function MapModal({ order, onClose }: { order: Order; onClose: () => void }) {
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=-8.6914,18.9906,9.5166,37.3399&layer=mapnik&marker=&query=${buildDestination(order)}`;
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background" dir="rtl">
-      {/* Header */}
       <div className="flex items-center gap-3 px-4 h-14 bg-card border-b border-border shrink-0">
         <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors">
           <X className="w-5 h-5" />
@@ -72,7 +287,6 @@ function MapModal({ order, onClose }: { order: Order; onClose: () => void }) {
         <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full shrink-0">طلب #{order.id}</span>
       </div>
 
-      {/* Map iframe */}
       <div className="flex-1 relative overflow-hidden">
         <iframe
           title="خريطة العنوان"
@@ -82,14 +296,12 @@ function MapModal({ order, onClose }: { order: Order; onClose: () => void }) {
           referrerPolicy="no-referrer"
           sandbox="allow-scripts allow-same-origin allow-popups"
         />
-        {/* Pin overlay label */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-sm border border-border rounded-full px-4 py-1.5 text-xs font-medium shadow-lg pointer-events-none">
           <MapPin className="w-3 h-3 inline ml-1 text-primary" />
           {order.address}، {order.city}
         </div>
       </div>
 
-      {/* Navigation buttons */}
       <div className="px-4 py-4 bg-card border-t border-border grid grid-cols-3 gap-3 shrink-0">
         <a
           href={googleMapsNavUrl(order)}
@@ -135,6 +347,7 @@ export default function DeliveryOrders() {
   const [updating, setUpdating] = useState<number | null>(null);
   const [stickerOrder, setStickerOrder] = useState<Order | null>(null);
   const [mapOrder, setMapOrder] = useState<Order | null>(null);
+  const [proofOrder, setProofOrder] = useState<Order | null>(null);
 
   const token = localStorage.getItem("deliveryToken");
   const userStr = localStorage.getItem("deliveryUser");
@@ -166,19 +379,32 @@ export default function DeliveryOrders() {
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   const handleStatusUpdate = async (order: Order, newStatus: string) => {
-    setUpdating(order.id);
+    if (newStatus === "delivered") {
+      setProofOrder(order);
+      return;
+    }
+    await submitStatusUpdate(order.id, newStatus, {});
+  };
+
+  const submitStatusUpdate = async (
+    orderId: number,
+    newStatus: string,
+    proof: { proofImage?: string; signatureImage?: string },
+  ) => {
+    setUpdating(orderId);
     try {
-      const res = await fetch(`${API}/api/delivery/orders/${order.id}/status`, {
+      const res = await fetch(`${API}/api/delivery/orders/${orderId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-delivery-token": token! },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, ...proof }),
       });
       const data = await res.json();
       if (!res.ok) {
         toast({ title: "خطأ", description: data.error, variant: "destructive" });
         return;
       }
-      toast({ title: "تم التحديث", description: `تم تغيير حالة الطلب #${order.id}` });
+      toast({ title: "تم التوصيل ✓", description: `تم تأكيد توصيل الطلب #${orderId}` });
+      setProofOrder(null);
       fetchOrders();
     } catch {
       toast({ title: "خطأ", description: "فشل التحديث", variant: "destructive" });
@@ -293,6 +519,12 @@ export default function DeliveryOrders() {
                       <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${STATUS_COLORS[order.status] ?? "bg-muted text-muted-foreground"}`}>
                         {STATUS_LABELS[order.status] ?? order.status}
                       </span>
+                      {order.requiresSignature && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1">
+                          <PenLine className="w-2.5 h-2.5" />
+                          يتطلب توقيعاً
+                        </span>
+                      )}
                     </div>
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(order.createdAt), "dd MMM", { locale: ar })}
@@ -386,6 +618,15 @@ export default function DeliveryOrders() {
       />
 
       {mapOrder && <MapModal order={mapOrder} onClose={() => setMapOrder(null)} />}
+
+      {proofOrder && (
+        <ProofModal
+          order={proofOrder}
+          onClose={() => setProofOrder(null)}
+          submitting={updating === proofOrder.id}
+          onConfirm={(proof) => submitStatusUpdate(proofOrder.id, "delivered", proof)}
+        />
+      )}
     </div>
   );
 }

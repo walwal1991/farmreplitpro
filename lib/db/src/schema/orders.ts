@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, doublePrecision, boolean } from "drizzle-orm/pg-core";
 
 export const ordersTable = pgTable("orders", {
   id: serial("id").primaryKey(),
@@ -17,6 +17,10 @@ export const ordersTable = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   assignedDriverId: integer("assigned_driver_id"),
   assignedDriverName: text("assigned_driver_name"),
+  requiresSignature: boolean("requires_signature").notNull().default(false),
+  proofImage: text("proof_image"),
+  signatureImage: text("signature_image"),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

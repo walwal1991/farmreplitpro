@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { Printer, Truck, Edit, Trash2 } from "lucide-react";
+import { Printer, Truck, Edit, Trash2, ImageIcon, PenLine, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,10 @@ interface Order {
   status: string;
   assignedDriverId: number | null;
   assignedDriverName: string | null;
+  requiresSignature: boolean;
+  proofImage?: string | null;
+  signatureImage?: string | null;
+  deliveredAt?: string | null;
   createdAt: string;
 }
 
@@ -68,11 +72,13 @@ export default function AdminOrders() {
   const [stickerOrder, setStickerOrder] = useState<Order | null>(null);
 
   const [editOrder, setEditOrder] = useState<Order | null>(null);
-  const [editForm, setEditForm] = useState({ customerName: "", phone: "", address: "", city: "", notes: "", quantity: "1" });
+  const [editForm, setEditForm] = useState({ customerName: "", phone: "", address: "", city: "", notes: "", quantity: "1", requiresSignature: false });
   const [editLoading, setEditLoading] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [proofViewOrder, setProofViewOrder] = useState<Order | null>(null);
 
   useEffect(() => { if (!token) setLocation("/admin/login"); }, [token, setLocation]);
 
@@ -125,6 +131,7 @@ export default function AdminOrders() {
       city: order.city,
       notes: order.notes || "",
       quantity: order.quantity.toString(),
+      requiresSignature: order.requiresSignature ?? false,
     });
   };
 
@@ -142,6 +149,7 @@ export default function AdminOrders() {
           city: editForm.city,
           notes: editForm.notes,
           quantity: editForm.quantity,
+          requiresSignature: editForm.requiresSignature,
         }),
       });
       if (!res.ok) {
@@ -357,7 +365,7 @@ export default function AdminOrders() {
                             </Select>
                           </td>
 
-                          {/* Print sticker + Edit */}
+                          {/* Print sticker + Edit + Proof */}
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-1">
                               <Button
@@ -378,6 +386,17 @@ export default function AdminOrders() {
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
+                              {(order.proofImage || order.signatureImage) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-green-600 hover:text-green-700"
+                                  title="إثبات التوصيل"
+                                  onClick={() => setProofViewOrder(order)}
+                                >
+                                  <Shield className="w-4 h-4" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -464,6 +483,22 @@ export default function AdminOrders() {
               <Label>ملاحظات</Label>
               <Input value={editForm.notes} onChange={(e) => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="لا توجد ملاحظات" />
             </div>
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
+              <div className="flex items-center gap-2">
+                <PenLine className="w-4 h-4 text-amber-600" />
+                <div>
+                  <div className="text-sm font-medium">يتطلب توقيع الزبون</div>
+                  <div className="text-xs text-muted-foreground">السائق سيطلب التوقيع عند التوصيل</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditForm(f => ({ ...f, requiresSignature: !f.requiresSignature }))}
+                className={`relative w-11 h-6 rounded-full transition-colors ${editForm.requiresSignature ? "bg-primary" : "bg-muted-foreground/30"}`}
+              >
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${editForm.requiresSignature ? "translate-x-5" : "translate-x-0.5"}`} />
+              </button>
+            </div>
             {editOrder && (
               <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 space-y-1">
                 <div>المنتج: <span className="font-medium">{editOrder.productName}</span></div>
@@ -486,6 +521,67 @@ export default function AdminOrders() {
         open={!!stickerOrder}
         onClose={() => setStickerOrder(null)}
       />
+
+      {/* Proof of Delivery Modal */}
+      <Dialog open={!!proofViewOrder} onOpenChange={(o) => !o && setProofViewOrder(null)}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-green-600" />
+              إثبات التوصيل — طلب #{proofViewOrder?.id}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium">{proofViewOrder?.customerName}</span>
+              {proofViewOrder?.deliveredAt && (
+                <span> — {format(new Date(proofViewOrder.deliveredAt), "dd MMM yyyy HH:mm", { locale: ar })}</span>
+              )}
+            </div>
+
+            {proofViewOrder?.proofImage ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-sm font-bold">
+                  <ImageIcon className="w-4 h-4 text-primary" />
+                  صورة إثبات التوصيل
+                </div>
+                <img
+                  src={proofViewOrder.proofImage}
+                  alt="إثبات التوصيل"
+                  className="w-full rounded-xl border border-border object-cover max-h-64"
+                />
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground flex items-center gap-2 py-2">
+                <ImageIcon className="w-4 h-4 opacity-40" />
+                لم يتم إرفاق صورة إثبات
+              </div>
+            )}
+
+            {proofViewOrder?.signatureImage ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-sm font-bold">
+                  <PenLine className="w-4 h-4 text-primary" />
+                  توقيع الزبون
+                </div>
+                <img
+                  src={proofViewOrder.signatureImage}
+                  alt="توقيع الزبون"
+                  className="w-full rounded-xl border border-border bg-white object-contain max-h-32"
+                />
+              </div>
+            ) : proofViewOrder?.requiresSignature ? (
+              <div className="text-sm text-amber-600 flex items-center gap-2 bg-amber-50 rounded-lg px-3 py-2">
+                <PenLine className="w-4 h-4" />
+                التوقيع مطلوب لكنه لم يُسجَّل
+              </div>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProofViewOrder(null)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

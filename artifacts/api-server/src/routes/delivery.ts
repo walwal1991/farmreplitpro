@@ -100,6 +100,7 @@ router.get("/delivery/orders", requireDelivery, async (req, res): Promise<void> 
       unitPrice: o.unitPrice,
       totalPrice: o.totalPrice,
       status: o.status,
+      requiresSignature: o.requiresSignature,
       createdAt: o.createdAt.toISOString(),
     })),
   );
@@ -108,7 +109,7 @@ router.get("/delivery/orders", requireDelivery, async (req, res): Promise<void> 
 // ─── Update order status (delivery — limited transitions) ─────────────────────
 router.patch("/delivery/orders/:id/status", requireDelivery, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
-  const { status } = req.body ?? {};
+  const { status, proofImage, signatureImage } = req.body ?? {};
   const allowed = ["shipped", "delivered"];
   if (!allowed.includes(status)) {
     res.status(400).json({ error: "الحالة غير مسموح بها" });
@@ -125,7 +126,14 @@ router.patch("/delivery/orders/:id/status", requireDelivery, async (req, res): P
     return;
   }
 
-  await db.update(ordersTable).set({ status }).where(eq(ordersTable.id, id));
+  const updates: Record<string, unknown> = { status };
+  if (status === "delivered") {
+    updates.deliveredAt = new Date();
+    if (proofImage) updates.proofImage = proofImage;
+    if (signatureImage) updates.signatureImage = signatureImage;
+  }
+
+  await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id));
   res.json({ ok: true, id, status });
 });
 
