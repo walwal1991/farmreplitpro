@@ -1,59 +1,67 @@
 import Navbar from "@/components/Navbar";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import {
-  Sprout,
-  Droplets,
-  Sun,
-  Leaf,
-  Trees,
-  FlowerIcon,
-  ShieldCheck,
-  Scale,
-  CalendarDays,
-} from "lucide-react";
+import { Sprout, Droplets, Sun, Leaf, Trees, FlowerIcon, ShieldCheck, Scale, CalendarDays } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 
-const STEPS = [
-  {
-    n: "1",
-    icon: Scale,
-    title: "حدّد الكمية المناسبة",
-    body: "للنباتات المنزلية: ملعقتان كبيرتان لكل أصيص. للخضروات: حفنة (≈ 100 غ) لكل شتلة. للأشجار المثمرة: 2–3 كلغ حول قاعدة الشجرة.",
-  },
-  {
-    n: "2",
-    icon: Sprout,
-    title: "اخلطه مع التربة",
-    body: "اخلط السماد مع التربة السطحية (5–10 سم الأولى) قبل الزراعة، أو ضعه حول النبات بعد الزراعة دون أن يلامس الجذور مباشرة.",
-  },
-  {
-    n: "3",
-    icon: Droplets,
-    title: "اسقِ بانتظام",
-    body: "بعد التطبيق، اسقِ النبات جيداً لتنشيط الميكروبات النافعة. حافظ على رطوبة معتدلة طوال الموسم.",
-  },
-  {
-    n: "4",
-    icon: CalendarDays,
-    title: "كرّر كل 30–45 يوماً",
-    body: "سماد الديدان بطيء الإطلاق وآمن، يمكن إعادة تطبيقه كل شهر إلى شهر ونصف خلال موسم النمو دون خطر الإفراط.",
-  },
-];
+const SAFETY_TIPS: Record<string, string[]> = {
+  ar: [
+    "خزّن السماد في مكان جاف وبارد بعيداً عن أشعة الشمس المباشرة.",
+    "أغلق الكيس جيداً بعد الاستعمال للحفاظ على الرطوبة.",
+    "السماد آمن تماماً لليدين، لكن يفضّل غسلهما بعد الاستعمال.",
+    "لا يحتاج إلى فترة انتظار قبل الحصاد، يمكن تطبيقه حتى أيام قبل القطف.",
+  ],
+  en: [
+    "Store fertilizer in a cool, dry place away from direct sunlight.",
+    "Seal the bag tightly after use to preserve moisture.",
+    "The fertilizer is completely safe for hands, but wash them after use.",
+    "No waiting period before harvest — it can be applied even days before picking.",
+  ],
+  fr: [
+    "Conservez l'engrais dans un endroit frais et sec, à l'abri de la lumière directe du soleil.",
+    "Fermez hermétiquement le sac après utilisation pour préserver l'humidité.",
+    "L'engrais est totalement sans danger pour les mains, mais lavez-les après utilisation.",
+    "Aucun délai d'attente avant la récolte — il peut être appliqué même quelques jours avant la cueillette.",
+  ],
+};
 
-const TEA_STEPS = [
-  "خفّف 50 مل من شاي الديدان في 1 لتر ماء.",
-  "اسقِ التربة عند الجذور أو رشّ الأوراق في الصباح الباكر أو المساء.",
-  "كرّر كل 10–14 يوماً للنباتات الضعيفة أو الشتلات.",
-];
+const SAFETY_TITLE: Record<string, string> = {
+  ar: "نصائح للسلامة والتخزين",
+  en: "Safety & Storage Tips",
+  fr: "Conseils de sécurité et de stockage",
+};
 
-const CROPS = [
-  { icon: Trees, name: "الأشجار المثمرة", dose: "2–3 كلغ حول الجذع" },
-  { icon: FlowerIcon, name: "النباتات الزينة", dose: "ملعقتان لكل أصيص" },
-  { icon: Leaf, name: "الخضروات الورقية", dose: "100 غ لكل متر مربع" },
-  { icon: Sun, name: "محاصيل حقلية", dose: "500 كلغ لكل هكتار" },
-];
+const CTA_TITLE: Record<string, string> = {
+  ar: "تحتاج إرشاداً مخصصاً لمحصولك؟",
+  en: "Need personalized guidance for your crop?",
+  fr: "Besoin de conseils personnalisés pour votre culture ?",
+};
+
+const CTA_SUB: Record<string, string> = {
+  ar: "مهندسونا الزراعيون مستعدون لمساعدتك مجاناً عبر منصة الاستشارة.",
+  en: "Our agricultural engineers are ready to help you for free via the consultation platform.",
+  fr: "Nos ingénieurs agronomes sont prêts à vous aider gratuitement via la plateforme de consultation.",
+};
 
 export default function Guide() {
+  const { t, lang } = useLang();
+
+  const STEPS = [
+    { n: "1", icon: Scale,        title: t("guide_step1_title"), body: t("guide_step1_body") },
+    { n: "2", icon: Sprout,       title: t("guide_step2_title"), body: t("guide_step2_body") },
+    { n: "3", icon: Droplets,     title: t("guide_step3_title"), body: t("guide_step3_body") },
+    { n: "4", icon: CalendarDays, title: t("guide_step4_title"), body: t("guide_step4_body") },
+  ];
+
+  const TEA_STEPS = [t("guide_tea_step1"), t("guide_tea_step2"), t("guide_tea_step3")];
+
+  const CROPS = [
+    { icon: Trees,       name: t("guide_crop_fruit"),       dose: t("guide_dose_fruit") },
+    { icon: FlowerIcon,  name: t("guide_crop_ornamental"),  dose: t("guide_dose_ornamental") },
+    { icon: Leaf,        name: t("guide_crop_leafy"),       dose: t("guide_dose_leafy") },
+    { icon: Sun,         name: t("guide_crop_field"),       dose: t("guide_dose_field") },
+  ];
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -63,41 +71,27 @@ export default function Guide() {
         <div className="container mx-auto px-4 py-16 lg:py-20 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
             <Sprout className="w-4 h-4" />
-            <span>دليل عملي للفلاح</span>
+            <span>{t("guide_sub")}</span>
           </div>
-          <h1 className="text-4xl lg:text-5xl font-extrabold mb-4">
-            كيف تستعمل سماد الديدان؟
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            خطوات بسيطة وعملية للاستفادة القصوى من سماد الديدان وشاي الديدان في
-            مزرعتك أو حديقتك المنزلية.
-          </p>
+          <h1 className="text-4xl lg:text-5xl font-extrabold mb-4">{t("guide_title")}</h1>
         </div>
       </section>
 
       {/* Steps */}
       <section className="py-16 lg:py-20 bg-background">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl lg:text-3xl font-bold mb-10 text-center">
-            أربع خطوات للنجاح
-          </h2>
           <div className="grid md:grid-cols-2 gap-6">
             {STEPS.map((s) => {
               const Icon = s.icon;
               return (
-                <div
-                  key={s.n}
-                  className="bg-card border border-border/60 rounded-2xl p-6 flex gap-4"
-                >
+                <div key={s.n} className="bg-card border border-border/60 rounded-2xl p-6 flex gap-4">
                   <div className="shrink-0 w-14 h-14 rounded-2xl bg-primary/10 text-primary flex flex-col items-center justify-center">
                     <Icon className="w-6 h-6" />
                     <span className="text-xs font-bold mt-0.5">{s.n}</span>
                   </div>
                   <div>
                     <h3 className="text-lg font-bold mb-2">{s.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {s.body}
-                    </p>
+                    <p className="text-muted-foreground leading-relaxed">{s.body}</p>
                   </div>
                 </div>
               );
@@ -109,20 +103,12 @@ export default function Guide() {
       {/* Per-crop dosage */}
       <section className="py-16 lg:py-20 bg-card">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl lg:text-3xl font-bold mb-3 text-center">
-            الجرعة حسب نوع الزراعة
-          </h2>
-          <p className="text-muted-foreground text-center max-w-xl mx-auto mb-10">
-            استرشد بهذا الجدول كنقطة بداية، وعدّل الجرعة حسب جودة تربتك.
-          </p>
+          <h2 className="text-2xl lg:text-3xl font-bold mb-10 text-center">{t("guide_dosage_title")}</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {CROPS.map((c) => {
               const Icon = c.icon;
               return (
-                <div
-                  key={c.name}
-                  className="bg-background border border-border/60 rounded-2xl p-6 text-center"
-                >
+                <div key={c.name} className="bg-background border border-border/60 rounded-2xl p-6 text-center">
                   <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
                     <Icon className="w-7 h-7" />
                   </div>
@@ -142,19 +128,12 @@ export default function Guide() {
             <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <Droplets className="w-6 h-6" />
             </div>
-            <h2 className="text-2xl lg:text-3xl font-bold">
-              استعمال شاي الديدان السائل
-            </h2>
+            <h2 className="text-2xl lg:text-3xl font-bold">{t("guide_tea_title")}</h2>
           </div>
           <ol className="space-y-3">
             {TEA_STEPS.map((s, i) => (
-              <li
-                key={i}
-                className="flex gap-3 bg-card border border-border/60 rounded-xl p-4"
-              >
-                <span className="shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
-                  {i + 1}
-                </span>
+              <li key={i} className="flex gap-3 bg-card border border-border/60 rounded-xl p-4">
+                <span className="shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">{i + 1}</span>
                 <span className="text-foreground/90 leading-relaxed">{s}</span>
               </li>
             ))}
@@ -170,12 +149,9 @@ export default function Guide() {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-xl font-bold mb-3">نصائح للسلامة والتخزين</h3>
+              <h3 className="text-xl font-bold mb-3">{SAFETY_TITLE[lang]}</h3>
               <ul className="space-y-2 text-muted-foreground leading-relaxed list-disc ps-5">
-                <li>خزّن السماد في مكان جاف وبارد بعيداً عن أشعة الشمس المباشرة.</li>
-                <li>أغلق الكيس جيداً بعد الاستعمال للحفاظ على الرطوبة.</li>
-                <li>السماد آمن تماماً لليدين، لكن يفضّل غسلهما بعد الاستعمال.</li>
-                <li>لا يحتاج إلى فترة انتظار قبل الحصاد، يمكن تطبيقه حتى أيام قبل القطف.</li>
+                {SAFETY_TIPS[lang].map((tip, i) => <li key={i}>{tip}</li>)}
               </ul>
             </div>
           </div>
@@ -185,18 +161,14 @@ export default function Guide() {
       {/* CTA */}
       <section className="py-16 lg:py-20 bg-background">
         <div className="container mx-auto px-4 text-center max-w-2xl">
-          <h2 className="text-2xl lg:text-3xl font-bold mb-4">
-            تحتاج إرشاداً مخصصاً لمحصولك؟
-          </h2>
-          <p className="text-muted-foreground mb-8">
-            مهندسونا الزراعيون مستعدون لمساعدتك مجاناً عبر منصة الاستشارة.
-          </p>
+          <h2 className="text-2xl lg:text-3xl font-bold mb-4">{CTA_TITLE[lang]}</h2>
+          <p className="text-muted-foreground mb-8">{CTA_SUB[lang]}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild size="lg" className="px-8">
-              <Link href="/consultation">اطلب استشارة مجانية</Link>
+              <Link href="/consultation">{t("home_free_consult")}</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="px-8">
-              <Link href="/products">تصفح المنتجات</Link>
+              <Link href="/products">{t("nav_products")}</Link>
             </Button>
           </div>
         </div>

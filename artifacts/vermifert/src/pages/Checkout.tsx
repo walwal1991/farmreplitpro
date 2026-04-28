@@ -12,18 +12,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Truck, CheckCircle2, Copy, LayoutDashboard, PenLine } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useLang } from "@/lib/i18n";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const checkoutSchema = z.object({
-  customerName: z.string().min(2, "الاسم مطلوب"),
-  phone: z.string().min(8, "رقم الهاتف مطلوب"),
-  address: z.string().min(5, "العنوان مطلوب"),
-  city: z.string().min(2, "المدينة مطلوبة"),
+  customerName: z.string().min(2),
+  phone: z.string().min(8),
+  address: z.string().min(5),
+  city: z.string().min(2),
   notes: z.string().optional(),
-  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+  quantity: z.coerce.number().min(1),
 });
-
 type CheckoutForm = z.infer<typeof checkoutSchema>;
 
 interface OrderResult { id: number; trackingNumber?: string | null; }
@@ -33,6 +33,7 @@ export default function Checkout() {
   const productId = parseInt(id, 10);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useLang();
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [requiresSignature, setRequiresSignature] = useState(false);
@@ -41,7 +42,6 @@ export default function Checkout() {
     query: { enabled: !!productId, queryKey: getGetProductQueryKey(productId) }
   });
 
-  // Pre-fill from customer account if logged in
   const customerToken = localStorage.getItem("customerToken") ?? "";
   const customerUser = (() => {
     try { return JSON.parse(localStorage.getItem("customerUser") ?? "null"); } catch { return null; }
@@ -75,7 +75,7 @@ export default function Checkout() {
       });
       const json = await res.json();
       if (!res.ok) {
-        toast({ title: "خطأ", description: json.error ?? "حدث خطأ", variant: "destructive" });
+        toast({ title: t("checkout_error"), description: json.error ?? t("checkout_error"), variant: "destructive" });
         return;
       }
       setOrderResult({ id: json.id, trackingNumber: json.trackingNumber });
@@ -93,14 +93,12 @@ export default function Checkout() {
             <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto text-green-600">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-bold">تم تأكيد طلبك بنجاح!</h2>
-            <p className="text-muted-foreground text-sm">
-              شكراً لثقتك بنا. الدفع سيكون عند الاستلام.
-            </p>
+            <h2 className="text-2xl font-bold">{t("checkout_success_title")}</h2>
+            <p className="text-muted-foreground text-sm">{t("checkout_success_cod")}</p>
 
             {orderResult.trackingNumber && (
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                <p className="text-xs text-muted-foreground mb-2">رقم التتبع الخاص بك</p>
+                <p className="text-xs text-muted-foreground mb-2">{t("checkout_tracking_label")}</p>
                 <div className="flex items-center justify-center gap-2">
                   <code className="text-lg font-mono font-bold text-primary tracking-widest" dir="ltr">
                     {orderResult.trackingNumber}
@@ -108,35 +106,33 @@ export default function Checkout() {
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(orderResult.trackingNumber!);
-                      toast({ title: "تم نسخ رقم التتبع" });
+                      toast({ title: t("checkout_tracking_copied") });
                     }}
                     className="text-muted-foreground hover:text-primary transition-colors"
                   >
                     <Copy className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">احتفظ بهذا الرقم لتتبع طلبك</p>
+                <p className="text-xs text-muted-foreground mt-2">{t("checkout_tracking_hint")}</p>
               </div>
             )}
 
             <div className="flex flex-col gap-2 pt-2">
               {orderResult.trackingNumber && (
                 <Button asChild variant="default">
-                  <Link href={`/track/${orderResult.trackingNumber}`}>
-                    تتبع طلبك
-                  </Link>
+                  <Link href={`/track/${orderResult.trackingNumber}`}>{t("checkout_track_order")}</Link>
                 </Button>
               )}
               {customerUser && (
                 <Button asChild variant="outline">
                   <Link href="/customer/dashboard">
                     <LayoutDashboard className="w-4 h-4 me-2" />
-                    طلباتي
+                    {t("checkout_my_orders")}
                   </Link>
                 </Button>
               )}
               <Button asChild variant="ghost">
-                <a href="/">العودة للرئيسية</a>
+                <a href="/">{t("checkout_go_home")}</a>
               </Button>
             </div>
           </div>
@@ -148,14 +144,13 @@ export default function Checkout() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-
       <main className="flex-1 container mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8">إتمام الطلب</h1>
+        <h1 className="text-3xl font-bold mb-8">{t("checkout_title")}</h1>
 
         {customerUser && (
           <div className="mb-6 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm text-primary flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
-            مرحباً {customerUser.name} — سيُربط هذا الطلب بحسابك تلقائياً
+            {t("checkout_linked")} {customerUser.name}
           </div>
         )}
 
@@ -163,47 +158,40 @@ export default function Checkout() {
           <div className="lg:col-span-2 bg-card rounded-2xl p-6 border border-border shadow-sm">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
               <Truck className="w-5 h-5 text-primary" />
-              معلومات التوصيل
+              {t("checkout_delivery_info")}
             </h2>
 
             <form id="checkout-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="customerName">الاسم الكامل</Label>
+                  <Label htmlFor="customerName">{t("checkout_name")}</Label>
                   <Input id="customerName" {...form.register("customerName")} />
-                  {form.formState.errors.customerName && <p className="text-sm text-destructive">{form.formState.errors.customerName.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">رقم الهاتف</Label>
+                  <Label htmlFor="phone">{t("checkout_phone")}</Label>
                   <Input id="phone" type="tel" dir="ltr" className="text-right" {...form.register("phone")} />
-                  {form.formState.errors.phone && <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>}
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="city">المدينة / الولاية</Label>
+                  <Label htmlFor="city">{t("checkout_city")}</Label>
                   <Input id="city" {...form.register("city")} />
-                  {form.formState.errors.city && <p className="text-sm text-destructive">{form.formState.errors.city.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">العنوان بالتفصيل</Label>
+                  <Label htmlFor="address">{t("checkout_address")}</Label>
                   <Input id="address" {...form.register("address")} />
-                  {form.formState.errors.address && <p className="text-sm text-destructive">{form.formState.errors.address.message}</p>}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">ملاحظات إضافية (اختياري)</Label>
+                <Label htmlFor="notes">{t("checkout_notes")}</Label>
                 <Textarea id="notes" rows={3} {...form.register("notes")} />
               </div>
 
-              {/* Signature requirement toggle */}
               <div
                 className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors cursor-pointer select-none ${
-                  requiresSignature
-                    ? "bg-amber-50 border-amber-300"
-                    : "bg-muted/40 border-border hover:border-primary/40"
+                  requiresSignature ? "bg-amber-50 border-amber-300" : "bg-muted/40 border-border hover:border-primary/40"
                 }`}
                 onClick={() => setRequiresSignature((v) => !v)}
               >
@@ -212,8 +200,8 @@ export default function Checkout() {
                     <PenLine className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="font-medium text-sm">أريد التوقيع عند استلام الطلب</div>
-                    <div className="text-xs text-muted-foreground">سيطلب السائق منك التوقيع كإثبات للاستلام</div>
+                    <div className="font-medium text-sm">{t("checkout_signature_label")}</div>
+                    <div className="text-xs text-muted-foreground">{t("checkout_signature_hint")}</div>
                   </div>
                 </div>
                 <div className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${requiresSignature ? "bg-amber-500" : "bg-muted-foreground/30"}`}>
@@ -224,7 +212,7 @@ export default function Checkout() {
           </div>
 
           <div className="bg-card rounded-2xl p-6 border border-border shadow-sm sticky top-24">
-            <h2 className="text-xl font-bold mb-6">ملخص الطلب</h2>
+            <h2 className="text-xl font-bold mb-6">{t("checkout_summary")}</h2>
 
             {isLoading ? (
               <div className="space-y-4">
@@ -245,33 +233,21 @@ export default function Checkout() {
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="quantity">الكمية</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      max={product.stock}
-                      {...form.register("quantity")}
-                    />
-                    {form.formState.errors.quantity && <p className="text-sm text-destructive">{form.formState.errors.quantity.message}</p>}
+                    <Label htmlFor="quantity">{t("checkout_qty")}</Label>
+                    <Input id="quantity" type="number" min="1" max={product.stock} {...form.register("quantity")} />
                   </div>
 
                   <div className="flex justify-between items-center py-4 border-t border-border">
-                    <span className="font-bold">المجموع الكلي:</span>
+                    <span className="font-bold">{t("checkout_total")}</span>
                     <span className="text-xl font-bold text-primary">{totalPrice} د.ج</span>
                   </div>
 
                   <div className="bg-primary/5 text-primary p-4 rounded-lg text-sm font-medium text-center">
-                    الدفع عند الاستلام 💵
+                    {t("checkout_cod_badge")}
                   </div>
 
-                  <Button
-                    type="submit"
-                    form="checkout-form"
-                    className="w-full h-12 text-lg"
-                    disabled={submitting}
-                  >
-                    {submitting ? "جاري التأكيد..." : "تأكيد الطلب"}
+                  <Button type="submit" form="checkout-form" className="w-full h-12 text-lg" disabled={submitting}>
+                    {submitting ? t("checkout_submitting") : t("checkout_confirm")}
                   </Button>
                 </div>
               </div>
