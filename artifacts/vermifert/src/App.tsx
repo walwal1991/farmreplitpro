@@ -27,6 +27,7 @@ import DeliveryOrders from "@/pages/DeliveryOrders";
 import AdminDeliveryUsers from "@/pages/AdminDeliveryUsers";
 import AdminCustomers from "@/pages/AdminCustomers";
 import AdminReviews from "@/pages/AdminReviews";
+import AdminEnrollments from "@/pages/AdminEnrollments";
 import CustomerLogin from "@/pages/CustomerLogin";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import TrackOrder from "@/pages/TrackOrder";
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/admin/delivery" component={AdminDeliveryUsers} />
       <Route path="/admin/customers" component={AdminCustomers} />
       <Route path="/admin/reviews" component={AdminReviews} />
+      <Route path="/admin/enrollments" component={AdminEnrollments} />
       <Route path="/admin/change-password" component={AdminChangePassword} />
       <Route path="/delivery/login" component={DeliveryLogin} />
       <Route path="/delivery/orders" component={DeliveryOrders} />

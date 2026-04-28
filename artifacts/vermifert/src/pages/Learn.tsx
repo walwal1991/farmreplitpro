@@ -2,15 +2,27 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useLang } from "@/lib/i18n";
+import { useState } from "react";
 import {
   MapPin, Box, Layers, Worm, Salad, HeartPulse, Package,
   Lightbulb, GraduationCap, Clock, Users, Monitor, MapPinned,
-  CheckCircle, ArrowLeft, ArrowRight, MessageCircle,
+  CheckCircle, ArrowLeft, ArrowRight, MessageCircle, User, Phone,
+  CheckCircle2,
 } from "lucide-react";
+
+const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const STEP_ICONS = [MapPin, Box, Layers, Worm, Salad, HeartPulse, Package];
 
+type EnrollState =
+  | { phase: "idle" }
+  | { phase: "form" }
+  | { phase: "submitting" }
+  | { phase: "success" }
+  | { phase: "error"; msg: string };
+
 type CourseCardData = {
+  id: string;
   titleKey: string;
   levelKey: string;
   durationKey: string;
@@ -25,10 +37,16 @@ type CourseCardData = {
 export default function Learn() {
   const { t, dir } = useLang();
 
+  const [enrollName, setEnrollName] = useState("");
+  const [enrollPhone, setEnrollPhone] = useState("");
+  const [enrollState, setEnrollState] = useState<EnrollState>({ phase: "idle" });
+  const [activeEnrollCourse, setActiveEnrollCourse] = useState<string | null>(null);
+
   const steps = [1, 2, 3, 4, 5, 6, 7] as const;
 
   const courses: CourseCardData[] = [
     {
+      id: "beginner",
       titleKey: "course1_title",
       levelKey: "course1_level",
       durationKey: "course1_duration",
@@ -40,6 +58,7 @@ export default function Learn() {
       color: "from-emerald-500/10 to-emerald-600/5 border-emerald-200 dark:border-emerald-800",
     },
     {
+      id: "intermediate",
       titleKey: "course2_title",
       levelKey: "course2_level",
       durationKey: "course2_duration",
@@ -51,6 +70,7 @@ export default function Learn() {
       color: "from-amber-500/10 to-amber-600/5 border-amber-200 dark:border-amber-800",
     },
     {
+      id: "workshop",
       titleKey: "course3_title",
       levelKey: "course3_level",
       durationKey: "course3_duration",
@@ -62,6 +82,7 @@ export default function Learn() {
       color: "from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-800",
     },
     {
+      id: "professional",
       titleKey: "course4_title",
       levelKey: "course4_level",
       durationKey: "course4_duration",
@@ -73,6 +94,39 @@ export default function Learn() {
       color: "from-purple-500/10 to-purple-600/5 border-purple-200 dark:border-purple-800",
     },
   ];
+
+  const handleOpenEnroll = (courseId: string) => {
+    setActiveEnrollCourse(courseId);
+    setEnrollName("");
+    setEnrollPhone("");
+    setEnrollState({ phase: "form" });
+  };
+
+  const handleCancelEnroll = () => {
+    setActiveEnrollCourse(null);
+    setEnrollState({ phase: "idle" });
+  };
+
+  const handleSubmitEnroll = async (e: React.FormEvent, courseId: string) => {
+    e.preventDefault();
+    if (!enrollName.trim() || !enrollPhone.trim()) return;
+    setEnrollState({ phase: "submitting" });
+    try {
+      const res = await fetch(`${API}/api/enrollments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: enrollName.trim(),
+          phone: enrollPhone.trim(),
+          courseId,
+        }),
+      });
+      if (!res.ok) throw new Error("server error");
+      setEnrollState({ phase: "success" });
+    } catch {
+      setEnrollState({ phase: "error", msg: t("enroll_error") });
+    }
+  };
 
   const BackArrow = dir === "rtl" ? ArrowLeft : ArrowRight;
 
@@ -93,7 +147,6 @@ export default function Learn() {
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             {t("learn_page_sub")}
           </p>
-          {/* Jump links */}
           <div className="flex flex-wrap gap-3 justify-center mt-8">
             <a
               href="#farm"
@@ -111,7 +164,6 @@ export default function Learn() {
             </a>
           </div>
         </div>
-        {/* Decorative circles */}
         <div className="absolute -top-20 -start-20 w-72 h-72 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -end-20 w-72 h-72 rounded-full bg-emerald-400/5 blur-3xl pointer-events-none" />
       </section>
@@ -128,11 +180,9 @@ export default function Learn() {
         </div>
 
         <div className="relative">
-          {/* Vertical timeline line */}
           <div
             className={`absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/40 via-primary/20 to-transparent hidden md:block ${dir === "rtl" ? "right-[2.15rem]" : "left-[2.15rem]"}`}
           />
-
           <div className="space-y-8">
             {steps.map((n) => {
               const Icon = STEP_ICONS[n - 1];
@@ -141,13 +191,11 @@ export default function Learn() {
               const descKey = `farm_step${n}_desc` as Parameters<typeof t>[0];
               return (
                 <div key={n} className="flex gap-5 md:gap-6 group">
-                  {/* Step bubble */}
                   <div className="shrink-0 flex flex-col items-center">
                     <div className="w-[4.3rem] h-[4.3rem] rounded-full bg-primary/10 border-2 border-primary/30 group-hover:bg-primary/20 group-hover:border-primary/60 transition-all flex items-center justify-center shrink-0">
                       <Icon className="w-6 h-6 text-primary" />
                     </div>
                   </div>
-                  {/* Content */}
                   <div className="flex-1 bg-card rounded-2xl border border-border p-5 md:p-6 shadow-sm group-hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">
@@ -192,58 +240,153 @@ export default function Learn() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {courses.map((course, i) => (
-              <div
-                key={i}
-                className={`bg-gradient-to-br ${course.color} bg-card border rounded-2xl p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow`}
-              >
-                {/* Badges row */}
-                <div className="flex flex-wrap gap-2">
-                  <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${course.isFree ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"}`}>
-                    <CheckCircle className="w-3 h-3" />
-                    {t(course.priceKey as Parameters<typeof t>[0])}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
-                    {course.isOnline
-                      ? <Monitor className="w-3 h-3" />
-                      : <MapPinned className="w-3 h-3" />
-                    }
-                    {t(course.modeKey as Parameters<typeof t>[0])}
-                  </span>
-                </div>
+            {courses.map((course) => {
+              const isActive = activeEnrollCourse === course.id;
+              const showForm = isActive && (enrollState.phase === "form" || enrollState.phase === "submitting" || enrollState.phase === "error");
+              const showSuccess = isActive && enrollState.phase === "success";
 
-                <div>
-                  <h3 className="font-bold text-lg text-foreground leading-snug mb-2">
-                    {t(course.titleKey as Parameters<typeof t>[0])}
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    {t(course.descKey as Parameters<typeof t>[0])}
-                  </p>
-                </div>
-
-                {/* Meta */}
-                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <span>{t("course_duration")}: <strong className="text-foreground">{t(course.durationKey as Parameters<typeof t>[0])}</strong></span>
+              return (
+                <div
+                  key={course.id}
+                  className={`bg-gradient-to-br ${course.color} bg-card border rounded-2xl p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow`}
+                >
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${course.isFree ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"}`}>
+                      <CheckCircle className="w-3 h-3" />
+                      {t(course.priceKey as Parameters<typeof t>[0])}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
+                      {course.isOnline ? <Monitor className="w-3 h-3" /> : <MapPinned className="w-3 h-3" />}
+                      {t(course.modeKey as Parameters<typeof t>[0])}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-primary" />
-                    <span>{t("course_level")}: <strong className="text-foreground">{t(course.levelKey as Parameters<typeof t>[0])}</strong></span>
+
+                  {/* Title + desc */}
+                  <div>
+                    <h3 className="font-bold text-lg text-foreground leading-snug mb-2">
+                      {t(course.titleKey as Parameters<typeof t>[0])}
+                    </h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {t(course.descKey as Parameters<typeof t>[0])}
+                    </p>
+                  </div>
+
+                  {/* Meta */}
+                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-primary" />
+                      <span>{t("course_duration")}: <strong className="text-foreground">{t(course.durationKey as Parameters<typeof t>[0])}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-primary" />
+                      <span>{t("course_level")}: <strong className="text-foreground">{t(course.levelKey as Parameters<typeof t>[0])}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* ── CTA / Enrollment ── */}
+                  <div className="mt-auto">
+
+                    {/* SUCCESS state */}
+                    {showSuccess ? (
+                      <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-700 rounded-xl p-4 flex gap-3 items-start">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-emerald-700 dark:text-emerald-300 text-sm">{t("enroll_success_title")}</p>
+                          <p className="text-emerald-600 dark:text-emerald-400 text-xs mt-0.5 leading-relaxed">{t("enroll_success_desc")}</p>
+                        </div>
+                      </div>
+                    ) : showForm ? (
+                      /* FORM state */
+                      <form
+                        onSubmit={(e) => handleSubmitEnroll(e, course.id)}
+                        className="bg-background/80 border border-border rounded-xl p-4 space-y-3"
+                      >
+                        <p className="text-sm font-semibold text-foreground">{t("enroll_title")}</p>
+
+                        {/* Name */}
+                        <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-lg px-3 py-2">
+                          <User className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <input
+                            type="text"
+                            value={enrollName}
+                            onChange={(e) => setEnrollName(e.target.value)}
+                            placeholder={t("enroll_name")}
+                            required
+                            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                          />
+                        </div>
+
+                        {/* Phone */}
+                        <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-lg px-3 py-2">
+                          <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <input
+                            type="tel"
+                            dir="ltr"
+                            value={enrollPhone}
+                            onChange={(e) => setEnrollPhone(e.target.value)}
+                            placeholder={t("enroll_phone")}
+                            required
+                            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-start"
+                          />
+                        </div>
+
+                        {/* Error */}
+                        {enrollState.phase === "error" && (
+                          <p className="text-xs text-destructive">{enrollState.msg}</p>
+                        )}
+
+                        {/* Buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            disabled={enrollState.phase === "submitting"}
+                            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-lg py-2 text-sm font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                          >
+                            {enrollState.phase === "submitting" ? (
+                              <>
+                                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                {t("enroll_submitting")}
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {t("enroll_submit")}
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelEnroll}
+                            className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+                          >
+                            {t("enroll_cancel")}
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      /* DEFAULT CTA */
+                      course.isFree ? (
+                        <button
+                          onClick={() => handleOpenEnroll(course.id)}
+                          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-xl py-2.5 px-4 text-sm font-semibold hover:bg-primary/90 transition-colors"
+                        >
+                          <GraduationCap className="w-4 h-4" />
+                          {t("course_enroll")}
+                        </button>
+                      ) : (
+                        <Link href="/consultation">
+                          <button className="w-full flex items-center justify-center gap-2 bg-card border border-border rounded-xl py-2.5 px-4 text-sm font-semibold hover:bg-muted transition-colors">
+                            <MessageCircle className="w-4 h-4 text-primary" />
+                            {t("course_contact")}
+                          </button>
+                        </Link>
+                      )
+                    )}
                   </div>
                 </div>
-
-                {/* CTA */}
-                <div className="mt-auto">
-                  <Link href="/consultation">
-                    <button className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-xl py-2.5 px-4 text-sm font-semibold hover:bg-primary/90 transition-colors">
-                      <MessageCircle className="w-4 h-4" />
-                      {course.isFree ? t("course_enroll") : t("course_contact")}
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

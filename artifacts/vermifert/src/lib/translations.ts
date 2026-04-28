@@ -486,6 +486,17 @@ export const translations = {
   course4_price: { ar: "مدفوع", en: "Paid", fr: "Payant" },
   course4_desc: { ar: "برنامج شامل يمنحك شهادة معتمدة في إنتاج السماد العضوي. يغطي الجوانب التقنية والتجارية والتسويقية. مثالي لمن يريد تأسيس مشروعه الخاص.", en: "A comprehensive program granting you a certified certificate in organic fertilizer production. Covers technical, commercial, and marketing aspects. Ideal for those wanting to start their own business.", fr: "Un programme complet vous délivrant un certificat reconnu en production d'engrais biologiques. Couvre les aspects techniques, commerciaux et marketing. Idéal pour créer sa propre entreprise." },
 
+  // Enrollment form
+  enroll_title: { ar: "سجّل في الدورة", en: "Enroll in the Course", fr: "S'inscrire au cours" },
+  enroll_name: { ar: "اسمك الكامل", en: "Full Name", fr: "Nom complet" },
+  enroll_phone: { ar: "رقم الهاتف", en: "Phone Number", fr: "Numéro de téléphone" },
+  enroll_submit: { ar: "تأكيد التسجيل", en: "Confirm Enrollment", fr: "Confirmer l'inscription" },
+  enroll_submitting: { ar: "جاري التسجيل...", en: "Enrolling...", fr: "Inscription en cours..." },
+  enroll_success_title: { ar: "تم تسجيلك بنجاح! 🎉", en: "You're enrolled! 🎉", fr: "Inscription réussie ! 🎉" },
+  enroll_success_desc: { ar: "سنتواصل معك قريباً عبر الهاتف لإرسال رابط الدورة وتفاصيل الوصول.", en: "We'll contact you soon by phone to send you the course link and access details.", fr: "Nous vous contacterons bientôt par téléphone pour vous envoyer le lien du cours et les détails d'accès." },
+  enroll_cancel: { ar: "إلغاء", en: "Cancel", fr: "Annuler" },
+  enroll_error: { ar: "حدث خطأ، يرجى المحاولة مجدداً", en: "An error occurred, please try again", fr: "Une erreur s'est produite, veuillez réessayer" },
+
   learn_cta_title: { ar: "مستعد للبدء؟", en: "Ready to Start?", fr: "Prêt à commencer ?" },
   learn_cta_sub: { ar: "تواصل معنا للاستفسار عن الدورات أو اطلب استشارة مجانية", en: "Contact us to inquire about courses or request a free consultation", fr: "Contactez-nous pour vous renseigner sur les formations ou demander une consultation gratuite" },
   learn_cta_btn: { ar: "راسلنا الآن", en: "Contact Us Now", fr: "Nous contacter" },
