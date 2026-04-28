@@ -10,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingBag, CheckCircle2, Trash2, Plus, Minus, Copy, LayoutDashboard } from "lucide-react";
+import { ShoppingBag, CheckCircle2, Trash2, Plus, Minus, Copy, LayoutDashboard, PenLine } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -32,6 +32,7 @@ export default function Cart() {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<OrderResult[] | null>(null);
+  const [requiresSignature, setRequiresSignature] = useState(false);
 
   const customerToken = localStorage.getItem("customerToken") ?? "";
   const customerUser = (() => {
@@ -68,6 +69,7 @@ export default function Cart() {
             notes: vals.notes ?? "",
             productId: it.id,
             quantity: it.quantity,
+            requiresSignature,
           }),
         });
         const json = await res.json();
@@ -231,6 +233,29 @@ export default function Cart() {
               <Label>ملاحظات (اختياري)</Label>
               <Textarea rows={3} {...form.register("notes")} />
             </div>
+            {/* Signature toggle */}
+            <div
+              className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors cursor-pointer select-none ${
+                requiresSignature
+                  ? "bg-amber-50 border-amber-300"
+                  : "bg-muted/40 border-border hover:border-primary/40"
+              }`}
+              onClick={() => setRequiresSignature((v) => !v)}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${requiresSignature ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"}`}>
+                  <PenLine className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">أريد التوقيع عند استلام الطلب</div>
+                  <div className="text-xs text-muted-foreground">سيطلب السائق منك التوقيع كإثبات للاستلام</div>
+                </div>
+              </div>
+              <div className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${requiresSignature ? "bg-amber-500" : "bg-muted-foreground/30"}`}>
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${requiresSignature ? "translate-x-5" : "translate-x-0.5"}`} />
+              </div>
+            </div>
+
             <Button
               type="submit"
               size="lg"
