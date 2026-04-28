@@ -5,7 +5,7 @@ import OrderTracker from "@/components/OrderTracker";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
-import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag, GraduationCap, ExternalLink } from "lucide-react";
+import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag, GraduationCap, ExternalLink, MessageSquare, Shield } from "lucide-react";
 import { format } from "date-fns";
 import { ar, fr, enUS } from "date-fns/locale";
 
@@ -34,6 +34,15 @@ interface Enrollment {
   createdAt: string;
 }
 
+interface ContactMessage {
+  id: number;
+  customerName: string;
+  message: string;
+  adminReply: string | null;
+  isAdminInitiated: boolean;
+  createdAt: string;
+}
+
 const COURSE_LABELS: Record<string, { ar: string; en: string; fr: string }> = {
   beginner:     { ar: "دورة المبتدئين", en: "Beginner Course", fr: "Cours débutant" },
   intermediate: { ar: "دورة الإنتاج المتكامل", en: "Intermediate Course", fr: "Cours intermédiaire" },
@@ -47,6 +56,7 @@ export default function CustomerDashboard() {
   const { t, lang } = useLang();
   const [orders, setOrders] = useState<Order[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -76,16 +86,23 @@ export default function CustomerDashboard() {
     if (!token) return;
     setLoading(true);
     try {
-      const [ordersRes, enrollmentsRes] = await Promise.all([
+      const [ordersRes, enrollmentsRes, messagesRes] = await Promise.all([
         fetch(`${API}/api/customer/orders`, { headers: { "x-customer-token": token } }),
         fetch(`${API}/api/customer/enrollments`, { headers: { "x-customer-token": token } }),
+        fetch(`${API}/api/contact/session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-customer-token": token },
+          body: JSON.stringify({ sessionId: null }),
+        }),
       ]);
       if (ordersRes.status === 401) { setLocation("/customer/login"); return; }
       const ordersData = await ordersRes.json();
       setOrders(ordersData);
       if (enrollmentsRes.ok) {
-        const enrollmentsData = await enrollmentsRes.json();
-        setEnrollments(enrollmentsData);
+        setEnrollments(await enrollmentsRes.json());
+      }
+      if (messagesRes.ok) {
+        setMessages(await messagesRes.json());
       }
     } finally { setLoading(false); }
   }, [token, setLocation]);
@@ -176,6 +193,77 @@ export default function CustomerDashboard() {
                   </div>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {/* ── Messages ─────────────────────────────────────────────────── */}
+        {messages.length > 0 && (
+          <section className="mb-10">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary" />
+              {lang === "ar" ? "رسائلي" : lang === "fr" ? "Mes messages" : "My Messages"}
+              <span className="text-sm font-normal text-muted-foreground">({messages.length})</span>
+            </h2>
+            <div className="space-y-3">
+              {messages.map((msg) => (
+                <div key={msg.id} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  {/* Admin-initiated message */}
+                  {msg.isAdminInitiated && (
+                    <div className="bg-primary/5 border-b border-primary/10 px-5 py-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
+                          <Shield className="w-3.5 h-3.5 text-primary" />
+                        </div>
+                        <span className="text-xs font-bold text-primary">
+                          {lang === "ar" ? "رسالة من الإدارة" : lang === "fr" ? "Message de l'administration" : "Message from Admin"}
+                        </span>
+                        <span className="text-xs text-muted-foreground ms-auto">
+                          {format(new Date(msg.createdAt), "d MMM yyyy", { locale: lang === "ar" ? ar : lang === "fr" ? fr : enUS })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{msg.message}</p>
+                    </div>
+                  )}
+
+                  {/* Customer message (non-admin initiated) */}
+                  {!msg.isAdminInitiated && (
+                    <div className="px-5 py-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {lang === "ar" ? "رسالتك" : lang === "fr" ? "Votre message" : "Your message"}
+                        </span>
+                        <span className="text-xs text-muted-foreground ms-auto">
+                          {format(new Date(msg.createdAt), "d MMM yyyy", { locale: lang === "ar" ? ar : lang === "fr" ? fr : enUS })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground">{msg.message}</p>
+                    </div>
+                  )}
+
+                  {/* Admin reply (for customer-initiated messages) */}
+                  {!msg.isAdminInitiated && msg.adminReply && (
+                    <div className="bg-primary/5 border-t border-primary/10 px-5 py-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Shield className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-xs font-bold text-primary">
+                          {lang === "ar" ? "رد الإدارة" : lang === "fr" ? "Réponse" : "Admin Reply"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{msg.adminReply}</p>
+                    </div>
+                  )}
+
+                  {/* Pending reply */}
+                  {!msg.isAdminInitiated && !msg.adminReply && (
+                    <div className="bg-muted/40 border-t border-border px-5 py-2.5">
+                      <p className="text-xs text-muted-foreground">
+                        {lang === "ar" ? "في انتظار رد الإدارة..." : lang === "fr" ? "En attente de réponse..." : "Awaiting admin reply..."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </section>
         )}

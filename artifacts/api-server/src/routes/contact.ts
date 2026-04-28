@@ -74,19 +74,20 @@ router.post("/contact/session", async (req, res): Promise<void> => {
 
     // Return messages by customer_id OR (same session + same customer name)
     const result = await db.execute(
-      sql`SELECT id, customer_name, message, admin_reply, created_at
+      sql`SELECT id, customer_name, message, admin_reply, is_admin_initiated, created_at
           FROM contact_messages
           WHERE customer_id = ${cid}
           ORDER BY created_at ASC`
     );
     res.json((result.rows as Array<{
       id: number; customer_name: string; message: string;
-      admin_reply: string | null; created_at: string;
+      admin_reply: string | null; is_admin_initiated: boolean; created_at: string;
     }>).map(r => ({
       id: r.id,
       customerName: r.customer_name,
       message: r.message,
       adminReply: r.admin_reply ?? null,
+      isAdminInitiated: r.is_admin_initiated,
       createdAt: r.created_at,
     })));
     return;
@@ -114,6 +115,52 @@ router.post("/contact/session", async (req, res): Promise<void> => {
     adminReply: r.admin_reply ?? null,
     createdAt: r.created_at,
   })));
+});
+
+// ─── POST /api/admin/contact-messages/send — admin initiates message ─────────
+router.post("/admin/contact-messages/send", requireAdmin, async (req, res): Promise<void> => {
+  const { customerId, customerName, phone, message } = req.body ?? {};
+  if (!message || typeof message !== "string" || message.trim().length < 1) {
+    res.status(400).json({ error: "الرسالة مطلوبة" }); return;
+  }
+  if (!customerId && !phone) {
+    res.status(400).json({ error: "معرّف العميل أو رقم الهاتف مطلوب" }); return;
+  }
+
+  // Resolve customerId from phone if not given
+  let resolvedCustomerId: number | null = customerId ? parseInt(customerId) : null;
+  let resolvedName: string = customerName ?? "عميل";
+  let resolvedPhone: string | null = phone ?? null;
+
+  if (!resolvedCustomerId && phone) {
+    const r = await db.execute(sql`SELECT id, name FROM customers WHERE phone = ${phone.trim()} LIMIT 1`);
+    if (!r.rows.length) {
+      res.status(404).json({ error: "لم يُعثر على حساب لهذا الرقم" }); return;
+    }
+    const row = r.rows[0] as { id: number; name: string };
+    resolvedCustomerId = row.id;
+    resolvedName = row.name;
+  }
+
+  const result = await db.execute(
+    sql`INSERT INTO contact_messages (customer_name, phone, message, is_admin_initiated, customer_id)
+        VALUES (${resolvedName}, ${resolvedPhone},
+                ${message.trim()}, true, ${resolvedCustomerId})
+        RETURNING id, customer_name, phone, message, is_admin_initiated, customer_id, created_at`
+  );
+  const row = result.rows[0] as {
+    id: number; customer_name: string; phone: string | null;
+    message: string; is_admin_initiated: boolean; customer_id: number | null; created_at: string;
+  };
+  res.status(201).json({
+    id: row.id,
+    customerName: row.customer_name,
+    phone: row.phone,
+    message: row.message,
+    isAdminInitiated: row.is_admin_initiated,
+    customerId: row.customer_id,
+    createdAt: row.created_at,
+  });
 });
 
 // ─── GET /api/admin/contact-messages ─────────────────────────────────────────
