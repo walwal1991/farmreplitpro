@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   GraduationCap, Phone, Calendar, CheckCircle2, Clock,
-  Link2, Save, Send, MessageSquare, ChevronDown, ChevronUp,
+  Link2, Save, Send, MessageSquare, ChevronDown, ChevronUp, MailCheck,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -19,6 +19,7 @@ interface Enrollment {
   courseId: string;
   status: string;
   trainingLink: string | null;
+  messageSentAt: string | null;
   createdAt: string;
 }
 
@@ -97,6 +98,15 @@ export default function AdminEnrollments() {
       body: JSON.stringify({ phone: enroll.phone, customerName: enroll.customerName, message: msg }),
     });
     if (res.ok) {
+      // Stamp the sent time on the enrollment
+      const markRes = await fetch(`${API}/api/admin/enrollments/${enroll.id}/mark-sent`, {
+        method: "PATCH",
+        headers: { "x-admin-token": token ?? "" },
+      });
+      if (markRes.ok) {
+        const updated: Enrollment = await markRes.json();
+        setEnrollments((prev) => prev.map((e) => (e.id === enroll.id ? updated : e)));
+      }
       setMsgInputs((prev) => ({ ...prev, [enroll.id]: "" }));
       setMsgOpenId(null);
       toast({ title: "تم إرسال الرسالة", description: `سيراها ${enroll.customerName} في لوحة حسابه` });
@@ -159,6 +169,17 @@ export default function AdminEnrollments() {
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${enroll.status === "confirmed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"}`}>
                           {enroll.status === "confirmed" ? "مؤكّد" : "جديد"}
                         </span>
+                        {enroll.messageSentAt ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            <MailCheck className="w-3 h-3" />
+                            أُرسل الرابط — {format(new Date(enroll.messageSentAt), "d MMM، HH:mm", { locale: ar })}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            لم يُرسل بعد
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /><span dir="ltr">{enroll.phone}</span></span>

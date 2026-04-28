@@ -69,6 +69,19 @@ router.patch("/admin/enrollments/:id/status", requireAdmin, async (req, res): Pr
   res.json(row);
 });
 
+// ─── PATCH /api/admin/enrollments/:id/mark-sent — stamp message_sent_at ──────
+router.patch("/admin/enrollments/:id/mark-sent", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [row] = await db
+    .update(courseEnrollmentsTable)
+    .set({ messageSentAt: new Date() })
+    .where(eq(courseEnrollmentsTable.id, id))
+    .returning();
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(row);
+});
+
 // ─── PATCH /api/admin/enrollments/:id/link — save training link ──────────────
 router.patch("/admin/enrollments/:id/link", requireAdmin, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
