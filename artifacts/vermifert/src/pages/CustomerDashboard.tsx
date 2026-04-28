@@ -5,7 +5,7 @@ import OrderTracker from "@/components/OrderTracker";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
-import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag } from "lucide-react";
+import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag, GraduationCap, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ar, fr, enUS } from "date-fns/locale";
 
@@ -24,11 +24,29 @@ interface Order {
   assignedDriverName?: string | null;
 }
 
+interface Enrollment {
+  id: number;
+  customerName: string;
+  phone: string;
+  courseId: string;
+  status: string;
+  trainingLink: string | null;
+  createdAt: string;
+}
+
+const COURSE_LABELS: Record<string, { ar: string; en: string; fr: string }> = {
+  beginner:     { ar: "دورة المبتدئين", en: "Beginner Course", fr: "Cours débutant" },
+  intermediate: { ar: "دورة الإنتاج المتكامل", en: "Intermediate Course", fr: "Cours intermédiaire" },
+  workshop:     { ar: "ورشة عملية ميدانية", en: "Field Workshop", fr: "Atelier pratique" },
+  professional: { ar: "برنامج التكوين المهني", en: "Professional Program", fr: "Programme professionnel" },
+};
+
 export default function CustomerDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { t, lang } = useLang();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -58,10 +76,17 @@ export default function CustomerDashboard() {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/customer/orders`, { headers: { "x-customer-token": token } });
-      if (res.status === 401) { setLocation("/customer/login"); return; }
-      const data = await res.json();
-      setOrders(data);
+      const [ordersRes, enrollmentsRes] = await Promise.all([
+        fetch(`${API}/api/customer/orders`, { headers: { "x-customer-token": token } }),
+        fetch(`${API}/api/customer/enrollments`, { headers: { "x-customer-token": token } }),
+      ]);
+      if (ordersRes.status === 401) { setLocation("/customer/login"); return; }
+      const ordersData = await ordersRes.json();
+      setOrders(ordersData);
+      if (enrollmentsRes.ok) {
+        const enrollmentsData = await enrollmentsRes.json();
+        setEnrollments(enrollmentsData);
+      }
     } finally { setLoading(false); }
   }, [token, setLocation]);
 
@@ -105,6 +130,55 @@ export default function CustomerDashboard() {
             </Button>
           </div>
         </div>
+
+        {/* ── My Courses ───────────────────────────────────────────────────── */}
+        {enrollments.length > 0 && (
+          <section className="mb-10">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-primary" />
+              {lang === "ar" ? "دوراتي التكوينية" : lang === "fr" ? "Mes formations" : "My Courses"}
+              <span className="text-sm font-normal text-muted-foreground">({enrollments.length})</span>
+            </h2>
+            <div className="space-y-3">
+              {enrollments.map((enroll) => {
+                const label = COURSE_LABELS[enroll.courseId]?.[lang] ?? enroll.courseId;
+                const isConfirmed = enroll.status === "confirmed";
+                return (
+                  <div key={enroll.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-bold text-sm">{label}</span>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isConfirmed ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"}`}>
+                          {isConfirmed
+                            ? (lang === "ar" ? "مؤكّدة" : lang === "fr" ? "Confirmée" : "Confirmed")
+                            : (lang === "ar" ? "قيد المعالجة" : lang === "fr" ? "En attente" : "Pending")}
+                        </span>
+                      </div>
+                      {enroll.trainingLink ? (
+                        <a
+                          href={enroll.trainingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm text-primary font-semibold hover:underline"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          {lang === "ar" ? "الدخول إلى الدورة" : lang === "fr" ? "Accéder à la formation" : "Access course"}
+                        </a>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          {lang === "ar" ? "سيتوفر رابط الدورة قريباً — سنتواصل معك" : lang === "fr" ? "Le lien sera disponible bientôt" : "Course link coming soon — we'll contact you"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Package className="w-5 h-5 text-primary" />

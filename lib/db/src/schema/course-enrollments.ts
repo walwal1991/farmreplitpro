@@ -6,6 +6,7 @@ export const courseEnrollmentsTable = pgTable("course_enrollments", {
   phone: text("phone").notNull(),
   courseId: text("course_id").notNull(),
   status: text("status").notNull().default("new"),
+  trainingLink: text("training_link"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
