@@ -110,13 +110,13 @@ function ChatView() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const customerToken = localStorage.getItem("customerToken") ?? "";
-
   const fetchMessages = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
+      // Always read token fresh from localStorage to avoid stale closure issues
+      const token = localStorage.getItem("customerToken") ?? "";
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (customerToken) headers["x-customer-token"] = customerToken;
+      if (token) headers["x-customer-token"] = token;
       const res = await fetch(`${API}/api/contact/session`, {
         method: "POST",
         headers,
@@ -130,7 +130,7 @@ function ChatView() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [sessionId, customerToken]);
+  }, [sessionId]);
 
   useEffect(() => {
     fetchMessages();
@@ -153,8 +153,9 @@ function ChatView() {
     if (!text.trim() || !name.trim()) return;
     setSending(true);
     try {
+      const token = localStorage.getItem("customerToken") ?? "";
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (customerToken) headers["x-customer-token"] = customerToken;
+      if (token) headers["x-customer-token"] = token;
       const res = await fetch(`${API}/api/contact`, {
         method: "POST",
         headers,

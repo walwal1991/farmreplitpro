@@ -60,11 +60,23 @@ router.post("/contact/session", async (req, res): Promise<void> => {
   const customerUser = customerToken ? await getCustomerSessionUser(customerToken) : null;
 
   if (customerUser) {
-    // Return ALL messages for this customer account (by customer_id)
+    const cid = customerUser.id;
+
+    // Auto-fix: associate any messages in this session that are missing customer_id
+    if (sessionId && UUID_RE.test(sessionId)) {
+      await db.execute(
+        sql`UPDATE contact_messages
+            SET customer_id = ${cid}
+            WHERE session_id = ${sessionId}
+              AND customer_id IS NULL`
+      );
+    }
+
+    // Return messages by customer_id OR (same session + same customer name)
     const result = await db.execute(
       sql`SELECT id, customer_name, message, admin_reply, created_at
           FROM contact_messages
-          WHERE customer_id = ${customerUser.id}
+          WHERE customer_id = ${cid}
           ORDER BY created_at ASC`
     );
     res.json((result.rows as Array<{
