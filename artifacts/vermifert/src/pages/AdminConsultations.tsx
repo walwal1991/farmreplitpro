@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Sprout, MessageCircle, Trash2, Check, MailOpen } from "lucide-react";
+import { Eye, Sprout, MessageCircle, Trash2, Send, RefreshCw } from "lucide-react";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -26,7 +26,151 @@ interface ContactMessage {
   message: string;
   isRead: boolean;
   adminReply: string | null;
+  sessionId: string | null;
   createdAt: string;
+}
+
+// Group messages by session
+interface Session {
+  sessionId: string;
+  customerName: string;
+  phone: string | null;
+  messages: ContactMessage[];
+  hasUnread: boolean;
+  lastActivity: string;
+}
+
+function groupBySessions(msgs: ContactMessage[]): Session[] {
+  const map = new Map<string, Session>();
+  for (const m of msgs) {
+    const key = m.sessionId ?? `solo_${m.id}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        sessionId: key,
+        customerName: m.customerName,
+        phone: m.phone,
+        messages: [],
+        hasUnread: false,
+        lastActivity: m.createdAt,
+      });
+    }
+    const s = map.get(key)!;
+    s.messages.push(m);
+    if (!m.isRead) s.hasUnread = true;
+    if (m.createdAt > s.lastActivity) s.lastActivity = m.createdAt;
+  }
+  return Array.from(map.values()).sort((a, b) =>
+    new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
+  );
+}
+
+function ChatThread({
+  session, token, onRefresh,
+}: { session: Session; token: string; onRefresh: () => void }) {
+  const { toast } = useToast();
+  const [reply, setReply] = useState<Record<number, string>>({});
+  const [saving, setSaving] = useState<number | null>(null);
+
+  const saveReply = async (msgId: number) => {
+    const text = (reply[msgId] ?? "").trim();
+    if (!text) return;
+    setSaving(msgId);
+    try {
+      const res = await fetch(`${API}/api/admin/contact-messages/${msgId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
+        body: JSON.stringify({ isRead: true, adminReply: text }),
+      });
+      if (res.ok) {
+        toast({ title: "تم حفظ الردّ" });
+        setReply(prev => ({ ...prev, [msgId]: "" }));
+        onRefresh();
+      }
+    } finally { setSaving(null); }
+  };
+
+  const deleteMsg = async (msgId: number) => {
+    await fetch(`${API}/api/admin/contact-messages/${msgId}`, {
+      method: "DELETE", headers: { "x-admin-token": token },
+    });
+    onRefresh();
+  };
+
+  const markRead = async (msgId: number) => {
+    await fetch(`${API}/api/admin/contact-messages/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "x-admin-token": token },
+      body: JSON.stringify({ isRead: true }),
+    });
+    onRefresh();
+  };
+
+  return (
+    <div className="space-y-4">
+      {session.messages.map(msg => (
+        <div key={msg.id} className={`rounded-xl border p-4 transition-colors ${msg.isRead ? "border-border bg-card" : "border-primary/30 bg-primary/5"}`}>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                {!msg.isRead && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+                <span className="font-bold text-sm">{msg.customerName}</span>
+                {msg.phone && <span className="text-xs text-muted-foreground" dir="ltr">{msg.phone}</span>}
+                <span className="text-xs text-muted-foreground mr-auto">
+                  {format(new Date(msg.createdAt), "d MMM yyyy · HH:mm", { locale: ar })}
+                </span>
+              </div>
+              {/* Customer message bubble */}
+              <div className="mt-2 bg-primary text-primary-foreground rounded-xl rounded-tr-sm px-3 py-2 text-sm inline-block max-w-full whitespace-pre-wrap">
+                {msg.message}
+              </div>
+            </div>
+            <div className="flex gap-1 shrink-0">
+              {!msg.isRead && (
+                <button onClick={() => markRead(msg.id)} title="وضع علامة مقروء"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-xs">✓</button>
+              )}
+              <button onClick={() => deleteMsg(msg.id)} title="حذف"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Existing reply */}
+          {msg.adminReply && (
+            <div className="mb-3 flex justify-end">
+              <div className="border-l-2 border-primary pl-3 max-w-[90%]">
+                <p className="text-xs text-primary font-bold mb-0.5">ردّك:</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{msg.adminReply}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Reply input */}
+          <div className="flex gap-2 items-end mt-2">
+            <Textarea
+              rows={2}
+              placeholder="اردّ على هذه الرسالة..."
+              value={reply[msg.id] ?? ""}
+              onChange={e => setReply(prev => ({ ...prev, [msg.id]: e.target.value }))}
+              className="text-sm resize-none flex-1"
+            />
+            <Button
+              size="sm"
+              className="gap-1.5 shrink-0 h-auto py-2"
+              onClick={() => saveReply(msg.id)}
+              disabled={saving === msg.id || !(reply[msg.id] ?? "").trim()}
+            >
+              {saving === msg.id
+                ? <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                : <><Send className="w-3.5 h-3.5" />ردّ</>
+              }
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function AdminConsultations() {
@@ -45,10 +189,9 @@ export default function AdminConsultations() {
   );
   const updateStatus = useUpdateConsultationStatus({ request: { headers: { "x-admin-token": token || "" } } });
 
-  // ── Contact Messages ──────────────────────────────────────────────────────
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [msgLoading, setMsgLoading] = useState(true);
-  const [replyText, setReplyText] = useState<Record<number, string>>({});
+  const [activeSession, setActiveSession] = useState<string | null>(null);
 
   const fetchMessages = useCallback(async () => {
     if (!token) return;
@@ -57,62 +200,36 @@ export default function AdminConsultations() {
       const res = await fetch(`${API}/api/admin/contact-messages`, {
         headers: { "x-admin-token": token },
       });
-      if (res.ok) setMessages(await res.json());
+      if (res.ok) {
+        const data: ContactMessage[] = await res.json();
+        setMessages(data);
+        if (!activeSession && data.length > 0) {
+          const sessions = groupBySessions(data);
+          if (sessions.length > 0) setActiveSession(sessions[0].sessionId);
+        }
+      }
     } finally { setMsgLoading(false); }
-  }, [token]);
+  }, [token, activeSession]);
 
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
 
-  const markRead = async (id: number) => {
-    await fetch(`${API}/api/admin/contact-messages/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-token": token! },
-      body: JSON.stringify({ isRead: true }),
-    });
-    fetchMessages();
-  };
+  const sessions = groupBySessions(messages);
+  const unreadCount = sessions.filter(s => s.hasUnread).length;
+  const currentSession = sessions.find(s => s.sessionId === activeSession);
 
-  const sendReply = async (id: number) => {
-    const reply = (replyText[id] ?? "").trim();
-    if (!reply) return;
-    const res = await fetch(`${API}/api/admin/contact-messages/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-token": token! },
-      body: JSON.stringify({ isRead: true, adminReply: reply }),
-    });
-    if (res.ok) {
-      toast({ title: "تم حفظ الردّ" });
-      setReplyText(prev => ({ ...prev, [id]: "" }));
-      fetchMessages();
-    }
-  };
-
-  const deleteMessage = async (id: number) => {
-    await fetch(`${API}/api/admin/contact-messages/${id}`, {
-      method: "DELETE",
-      headers: { "x-admin-token": token! },
-    });
-    fetchMessages();
-  };
-
-  // ── Consultations helpers ─────────────────────────────────────────────────
   const handleStatusChange = (id: number, newStatus: ConsultationStatusUpdateStatus) => {
     updateStatus.mutate({ id, data: { status: newStatus } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListConsultationsQueryKey() });
-        toast({ title: "تم التحديث", description: "تم تحديث حالة الاستشارة بنجاح" });
+        toast({ title: "تم التحديث" });
       },
-      onError: () => {
-        toast({ title: "خطأ", description: "حدث خطأ أثناء التحديث", variant: "destructive" });
-      }
+      onError: () => toast({ title: "خطأ", variant: "destructive" }),
     });
   };
 
   const getStatusLabel = (s: string) => ({ new: "جديدة", in_progress: "قيد المعالجة", answered: "تم الرد" }[s] ?? s);
   const getStatusColor = (s: string) => ({ new: "bg-blue-500/10 text-blue-600", in_progress: "bg-yellow-500/10 text-yellow-600", answered: "bg-green-500/10 text-green-600" }[s] ?? "bg-muted text-muted-foreground");
   const getSoilLabel = (t: string) => ({ sandy: "رملية", clay: "طينية", silt: "غرينية", loam: "مزيجية", rocky: "صخرية", other: "أخرى" }[t] ?? t);
-
-  const unreadCount = messages.filter(m => !m.isRead).length;
 
   if (!token) return null;
 
@@ -129,7 +246,7 @@ export default function AdminConsultations() {
                 <MessageCircle className="w-4 h-4" />
                 رسائل التواصل
                 {unreadCount > 0 && (
-                  <span className="ml-1.5 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full">
+                  <span className="mr-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full">
                     {unreadCount}
                   </span>
                 )}
@@ -140,85 +257,74 @@ export default function AdminConsultations() {
               </TabsTrigger>
             </TabsList>
 
-            {/* ── Contact Messages Tab ── */}
+            {/* ── Messages Tab ── */}
             <TabsContent value="messages">
               {msgLoading ? (
                 <div className="space-y-3">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="bg-card border border-border rounded-xl p-4 animate-pulse">
-                      <div className="h-4 bg-muted rounded w-1/4 mb-2" />
-                      <div className="h-3 bg-muted rounded w-3/4" />
-                    </div>
-                  ))}
+                  {[1,2,3].map(i => <div key={i} className="bg-card border border-border rounded-xl p-4 animate-pulse h-20" />)}
                 </div>
-              ) : messages.length === 0 ? (
+              ) : sessions.length === 0 ? (
                 <div className="text-center py-20 text-muted-foreground bg-card border border-dashed border-border rounded-2xl">
                   <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
                   <p className="font-medium">لا توجد رسائل بعد</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {messages.map(msg => (
-                    <div key={msg.id} className={`bg-card border rounded-xl p-5 transition-colors ${msg.isRead ? "border-border" : "border-primary/40 ring-1 ring-primary/20"}`}>
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            {!msg.isRead && (
-                              <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                            )}
-                            <span className="font-bold text-sm">{msg.customerName}</span>
-                            {msg.phone && (
-                              <span className="text-xs text-muted-foreground" dir="ltr">{msg.phone}</span>
-                            )}
-                            <span className="text-xs text-muted-foreground mr-auto">
-                              {format(new Date(msg.createdAt), "d MMMM yyyy · HH:mm", { locale: ar })}
-                            </span>
-                          </div>
-                          <p className="text-sm leading-relaxed bg-muted/40 rounded-lg px-3 py-2 border border-border mt-2">
-                            {msg.message}
-                          </p>
-                          {msg.adminReply && (
-                            <div className="mt-3 border-r-2 border-primary pr-3">
-                              <p className="text-xs text-primary font-bold mb-1">ردّ الإدارة:</p>
-                              <p className="text-sm text-muted-foreground">{msg.adminReply}</p>
-                            </div>
-                          )}
-
-                          {/* Reply textarea */}
-                          <div className="mt-3 flex gap-2">
-                            <Textarea
-                              rows={2}
-                              placeholder="اكتب ردّاً (يُحفظ فقط — لا يُرسل تلقائياً)..."
-                              value={replyText[msg.id] ?? ""}
-                              onChange={e => setReplyText(prev => ({ ...prev, [msg.id]: e.target.value }))}
-                              className="text-sm resize-none"
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="shrink-0 h-auto"
-                              onClick={() => sendReply(msg.id)}
-                              disabled={!(replyText[msg.id] ?? "").trim()}
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex flex-col gap-1.5 shrink-0">
-                          {!msg.isRead && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8" title="وضع علامة مقروء" onClick={() => markRead(msg.id)}>
-                              <MailOpen className="w-4 h-4 text-muted-foreground" />
-                            </Button>
-                          )}
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteMessage(msg.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
+                <div className="grid grid-cols-[280px_1fr] gap-4 items-start">
+                  {/* Sessions sidebar */}
+                  <div className="bg-card border border-border rounded-xl overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                      <span className="text-sm font-bold">المحادثات ({sessions.length})</span>
+                      <button onClick={() => fetchMessages()} title="تحديث" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  ))}
+                    <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
+                      {sessions.map(s => (
+                        <button
+                          key={s.sessionId}
+                          onClick={() => setActiveSession(s.sessionId)}
+                          className={`w-full text-right px-4 py-3 flex items-start gap-2 transition-colors ${activeSession === s.sessionId ? "bg-primary/10" : "hover:bg-muted/50"}`}
+                        >
+                          {s.hasUnread && <span className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm truncate">{s.customerName}</p>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {s.messages[s.messages.length - 1]?.message}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {format(new Date(s.lastActivity), "d MMM · HH:mm", { locale: ar })}
+                            </p>
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0 mt-0.5">{s.messages.length}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Thread panel */}
+                  <div className="bg-card border border-border rounded-xl p-5">
+                    {currentSession ? (
+                      <>
+                        <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
+                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                            {currentSession.customerName[0]}
+                          </div>
+                          <div>
+                            <p className="font-bold">{currentSession.customerName}</p>
+                            {currentSession.phone && <p className="text-xs text-muted-foreground" dir="ltr">{currentSession.phone}</p>}
+                          </div>
+                          <span className="mr-auto text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                            {currentSession.messages.length} رسالة
+                          </span>
+                        </div>
+                        <ChatThread session={currentSession} token={token} onRefresh={fetchMessages} />
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
+                        اختر محادثة من القائمة
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </TabsContent>
@@ -271,14 +377,10 @@ export default function AdminConsultations() {
                               <div className="flex items-center justify-end gap-3">
                                 <Dialog>
                                   <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <Eye className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                                    </Button>
+                                    <Button variant="ghost" size="icon"><Eye className="w-4 h-4 text-muted-foreground" /></Button>
                                   </DialogTrigger>
                                   <DialogContent className="rtl">
-                                    <DialogHeader>
-                                      <DialogTitle>تفاصيل الاستشارة #{item.id}</DialogTitle>
-                                    </DialogHeader>
+                                    <DialogHeader><DialogTitle>تفاصيل الاستشارة #{item.id}</DialogTitle></DialogHeader>
                                     <div className="space-y-4 py-4">
                                       <div className="grid grid-cols-2 gap-4">
                                         <div><p className="text-sm text-muted-foreground mb-1">الاسم</p><p className="font-bold">{item.customerName}</p></div>
@@ -297,9 +399,7 @@ export default function AdminConsultations() {
                                   defaultValue={item.status}
                                   onValueChange={(val: ConsultationStatusUpdateStatus) => handleStatusChange(item.id, val)}
                                 >
-                                  <SelectTrigger className="w-[120px] h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
+                                  <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="new">جديدة</SelectItem>
                                     <SelectItem value="in_progress">قيد المعالجة</SelectItem>
@@ -311,9 +411,7 @@ export default function AdminConsultations() {
                           </tr>
                         ))
                       ) : (
-                        <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">لا توجد استشارات</td>
-                        </tr>
+                        <tr><td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">لا توجد استشارات</td></tr>
                       )}
                     </tbody>
                   </table>

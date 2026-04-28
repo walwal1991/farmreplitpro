@@ -7,64 +7,76 @@ const router: IRouter = Router();
 
 // ─── POST /api/contact ────────────────────────────────────────────────────────
 router.post("/contact", async (req, res): Promise<void> => {
-  const { customerName, phone, message } = req.body ?? {};
+  const { customerName, phone, message, sessionId } = req.body ?? {};
 
   if (!customerName || typeof customerName !== "string" || customerName.trim().length < 2) {
     res.status(400).json({ error: "الاسم مطلوب" }); return;
   }
-  if (!message || typeof message !== "string" || message.trim().length < 5) {
-    res.status(400).json({ error: "يرجى كتابة رسالتك أو سؤالك (5 أحرف على الأقل)" }); return;
+  if (!message || typeof message !== "string" || message.trim().length < 1) {
+    res.status(400).json({ error: "يرجى كتابة رسالتك أو سؤالك" }); return;
+  }
+  if (!sessionId || typeof sessionId !== "string") {
+    res.status(400).json({ error: "معرّف الجلسة مطلوب" }); return;
   }
 
   const result = await db.execute(
-    sql`INSERT INTO contact_messages (customer_name, phone, message)
-        VALUES (${customerName.trim()}, ${(phone ?? "").toString().trim() || null}, ${message.trim()})
-        RETURNING id, customer_name, phone, message, created_at`
+    sql`INSERT INTO contact_messages (customer_name, phone, message, session_id)
+        VALUES (${customerName.trim()}, ${(phone ?? "").toString().trim() || null},
+                ${message.trim()}, ${sessionId})
+        RETURNING id, customer_name, message, session_id, created_at`
   );
-  const row = result.rows[0] as { id: number; customer_name: string; phone: string | null; message: string; created_at: string };
+  const row = result.rows[0] as {
+    id: number; customer_name: string; message: string;
+    session_id: string; created_at: string;
+  };
 
   res.status(201).json({
     id: row.id,
     customerName: row.customer_name,
-    phone: row.phone,
     message: row.message,
+    adminReply: null,
+    sessionId: row.session_id,
     createdAt: row.created_at,
   });
 });
 
-// ─── GET /api/contact/:id  (public — customer checks reply) ──────────────────
-router.get("/contact/:id", async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "رقم غير صالح" }); return; }
+// ─── GET /api/contact/session/:sessionId  (customer polls their chat) ──────────
+router.get("/contact/session/:sessionId", async (req, res): Promise<void> => {
+  const { sessionId } = req.params;
+  if (!sessionId || sessionId.length < 8) {
+    res.status(400).json({ error: "معرّف الجلسة غير صالح" }); return;
+  }
 
   const result = await db.execute(
     sql`SELECT id, customer_name, message, admin_reply, created_at
-        FROM contact_messages WHERE id = ${id}`
+        FROM contact_messages
+        WHERE session_id = ${sessionId}
+        ORDER BY created_at ASC`
   );
-  if (!result.rows.length) { res.status(404).json({ error: "لم يتم العثور على الرسالة" }); return; }
 
-  const r = result.rows[0] as {
+  res.json((result.rows as Array<{
     id: number; customer_name: string; message: string;
     admin_reply: string | null; created_at: string;
-  };
-  res.json({
+  }>).map(r => ({
     id: r.id,
     customerName: r.customer_name,
     message: r.message,
-    adminReply: r.admin_reply,
+    adminReply: r.admin_reply ?? null,
     createdAt: r.created_at,
-  });
+  })));
 });
 
 // ─── GET /api/admin/contact-messages ─────────────────────────────────────────
+// Returns sessions grouped (latest message per session)
 router.get("/admin/contact-messages", requireAdmin, async (_req, res): Promise<void> => {
   const result = await db.execute(
-    sql`SELECT id, customer_name, phone, message, is_read, admin_reply, created_at
+    sql`SELECT id, customer_name, phone, message, is_read, admin_reply, session_id, created_at
         FROM contact_messages ORDER BY created_at DESC`
   );
   res.json((result.rows as Array<{
     id: number; customer_name: string; phone: string | null;
-    message: string; is_read: boolean; admin_reply: string | null; created_at: string;
+    message: string; is_read: boolean; admin_reply: string | null;
+    session_id: string | null; created_at: string;
   }>).map(r => ({
     id: r.id,
     customerName: r.customer_name,
@@ -72,6 +84,7 @@ router.get("/admin/contact-messages", requireAdmin, async (_req, res): Promise<v
     message: r.message,
     isRead: r.is_read,
     adminReply: r.admin_reply,
+    sessionId: r.session_id,
     createdAt: r.created_at,
   })));
 });
@@ -90,11 +103,18 @@ router.patch("/admin/contact-messages/:id", requireAdmin, async (req, res): Prom
 
   const result = await db.execute(
     sql`UPDATE contact_messages SET ${sql.raw(updates.join(", "))} WHERE id = ${id}
-        RETURNING id, customer_name, phone, message, is_read, admin_reply, created_at`
+        RETURNING id, customer_name, phone, message, is_read, admin_reply, session_id, created_at`
   );
   if (!result.rows.length) { res.status(404).json({ error: "الرسالة غير موجودة" }); return; }
-  const r = result.rows[0] as { id: number; customer_name: string; phone: string | null; message: string; is_read: boolean; admin_reply: string | null; created_at: string };
-  res.json({ id: r.id, customerName: r.customer_name, phone: r.phone, message: r.message, isRead: r.is_read, adminReply: r.admin_reply, createdAt: r.created_at });
+  const r = result.rows[0] as {
+    id: number; customer_name: string; phone: string | null; message: string;
+    is_read: boolean; admin_reply: string | null; session_id: string | null; created_at: string;
+  };
+  res.json({
+    id: r.id, customerName: r.customer_name, phone: r.phone,
+    message: r.message, isRead: r.is_read, adminReply: r.admin_reply,
+    sessionId: r.session_id, createdAt: r.created_at,
+  });
 });
 
 // ─── DELETE /api/admin/contact-messages/:id ───────────────────────────────────
