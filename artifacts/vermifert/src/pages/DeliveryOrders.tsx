@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Truck, LogOut, MapPin, Phone, Package, RefreshCw, Home } from "lucide-react";
+import { Truck, LogOut, MapPin, Phone, Package, RefreshCw, Home, Navigation, X } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import StickerPrint from "@/components/StickerPrint";
@@ -41,6 +41,92 @@ const NEXT_STATUS: Record<string, { value: string; label: string; color: string 
   shipped: { value: "delivered", label: "تأكيد التوصيل", color: "bg-green-600 hover:bg-green-700 text-white" },
 };
 
+// ── Map helpers ────────────────────────────────────────────────────────────
+function buildDestination(order: Order) {
+  return encodeURIComponent(`${order.address}, ${order.city}, الجزائر`);
+}
+function googleMapsNavUrl(order: Order) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${buildDestination(order)}&travelmode=driving`;
+}
+function wazeNavUrl(order: Order) {
+  return `https://waze.com/ul?q=${buildDestination(order)}&navigate=yes`;
+}
+function openStreetMapUrl(order: Order) {
+  return `https://www.openstreetmap.org/search?query=${buildDestination(order)}`;
+}
+
+// ── Map modal ──────────────────────────────────────────────────────────────
+function MapModal({ order, onClose }: { order: Order; onClose: () => void }) {
+  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=-8.6914,18.9906,9.5166,37.3399&layer=mapnik&marker=&query=${buildDestination(order)}`;
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 h-14 bg-card border-b border-border shrink-0">
+        <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm truncate">{order.customerName}</p>
+          <p className="text-xs text-muted-foreground truncate">{order.address}، {order.city}</p>
+        </div>
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full shrink-0">طلب #{order.id}</span>
+      </div>
+
+      {/* Map iframe */}
+      <div className="flex-1 relative overflow-hidden">
+        <iframe
+          title="خريطة العنوان"
+          src={mapSrc}
+          className="w-full h-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+        />
+        {/* Pin overlay label */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-sm border border-border rounded-full px-4 py-1.5 text-xs font-medium shadow-lg pointer-events-none">
+          <MapPin className="w-3 h-3 inline ml-1 text-primary" />
+          {order.address}، {order.city}
+        </div>
+      </div>
+
+      {/* Navigation buttons */}
+      <div className="px-4 py-4 bg-card border-t border-border grid grid-cols-3 gap-3 shrink-0">
+        <a
+          href={googleMapsNavUrl(order)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-1.5 bg-primary text-primary-foreground rounded-xl py-3 font-bold text-xs hover:bg-primary/90 transition-colors"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+          Google Maps
+        </a>
+        <a
+          href={wazeNavUrl(order)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-1.5 bg-[#05c8f7] text-white rounded-xl py-3 font-bold text-xs hover:opacity-90 transition-colors"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.54 6.63C19.38 4.46 17.28 3 15 3c-.96 0-1.86.25-2.65.68C11.57 3.25 10.77 3 10 3 7.58 3 5.5 4.5 4.39 6.73 3.3 8.93 3.5 11.5 5 13.5L12 21l7-7.5c1.5-2 1.68-4.73.54-6.87z"/>
+          </svg>
+          Waze
+        </a>
+        <a
+          href={openStreetMapUrl(order)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-1.5 bg-muted text-foreground rounded-xl py-3 font-bold text-xs hover:bg-muted/80 transition-colors border border-border"
+        >
+          <MapPin className="w-5 h-5" />
+          OpenStreetMap
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function DeliveryOrders() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -48,6 +134,7 @@ export default function DeliveryOrders() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<number | null>(null);
   const [stickerOrder, setStickerOrder] = useState<Order | null>(null);
+  const [mapOrder, setMapOrder] = useState<Order | null>(null);
 
   const token = localStorage.getItem("deliveryToken");
   const userStr = localStorage.getItem("deliveryUser");
@@ -253,6 +340,17 @@ export default function DeliveryOrders() {
                     </div>
                   </div>
 
+                  {/* Navigate bar */}
+                  <div className="px-5 pb-3">
+                    <button
+                      onClick={() => setMapOrder(order)}
+                      className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors"
+                    >
+                      <Navigation className="w-4 h-4" />
+                      الملاحة إلى العنوان
+                    </button>
+                  </div>
+
                   {/* Actions */}
                   <div className="px-5 pb-4 flex gap-2">
                     {next && (
@@ -286,6 +384,8 @@ export default function DeliveryOrders() {
         open={!!stickerOrder}
         onClose={() => setStickerOrder(null)}
       />
+
+      {mapOrder && <MapModal order={mapOrder} onClose={() => setMapOrder(null)} />}
     </div>
   );
 }
