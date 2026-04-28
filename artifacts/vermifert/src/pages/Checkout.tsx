@@ -9,7 +9,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, CheckCircle2, Copy, LayoutDashboard } from "lucide-react";
+import { Truck, CheckCircle2, Copy, LayoutDashboard, PenLine } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,6 +35,7 @@ export default function Checkout() {
   const { toast } = useToast();
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [requiresSignature, setRequiresSignature] = useState(false);
 
   const { data: product, isLoading } = useGetProduct(productId, {
     query: { enabled: !!productId, queryKey: getGetProductQueryKey(productId) }
@@ -70,7 +71,7 @@ export default function Checkout() {
       const res = await fetch(`${API}/api/orders`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ ...data, productId }),
+        body: JSON.stringify({ ...data, productId, requiresSignature }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -195,6 +196,29 @@ export default function Checkout() {
               <div className="space-y-2">
                 <Label htmlFor="notes">ملاحظات إضافية (اختياري)</Label>
                 <Textarea id="notes" rows={3} {...form.register("notes")} />
+              </div>
+
+              {/* Signature requirement toggle */}
+              <div
+                className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors cursor-pointer select-none ${
+                  requiresSignature
+                    ? "bg-amber-50 border-amber-300"
+                    : "bg-muted/40 border-border hover:border-primary/40"
+                }`}
+                onClick={() => setRequiresSignature((v) => !v)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${requiresSignature ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"}`}>
+                    <PenLine className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">أريد التوقيع عند استلام الطلب</div>
+                    <div className="text-xs text-muted-foreground">سيطلب السائق منك التوقيع كإثبات للاستلام</div>
+                  </div>
+                </div>
+                <div className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${requiresSignature ? "bg-amber-500" : "bg-muted-foreground/30"}`}>
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${requiresSignature ? "translate-x-5" : "translate-x-0.5"}`} />
+                </div>
               </div>
             </form>
           </div>

@@ -58,6 +58,7 @@ router.post("/orders", async (req, res): Promise<void> => {
   }
 
   const trackingNumber = generateTrackingNumber();
+  const requiresSignature = typeof req.body.requiresSignature === "boolean" ? req.body.requiresSignature : false;
 
   const [row] = await db
     .insert(ordersTable)
@@ -75,6 +76,7 @@ router.post("/orders", async (req, res): Promise<void> => {
       quantity: parsed.data.quantity,
       totalPrice,
       status: "pending",
+      requiresSignature,
     })
     .returning();
   res.status(201).json({ ...parseOrder(row), trackingNumber: row.trackingNumber });
