@@ -21,13 +21,27 @@ import { ar } from "date-fns/locale";
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 // ── Session helpers ─────────────────────────────────────────────────────────
+function getLoggedInCustomer(): { id: number; name: string } | null {
+  try {
+    return JSON.parse(localStorage.getItem("customerUser") ?? "null");
+  } catch { return null; }
+}
+
 function getOrCreateSession(): { sessionId: string; customerName: string | null } {
-  let sessionId = localStorage.getItem("chatSessionId");
+  const customer = getLoggedInCustomer();
+
+  // Use a per-account key so different accounts never share the same session
+  const sessionKey = customer ? `chatSessionId_account_${customer.id}` : "chatSessionId_guest";
+  const nameKey    = customer ? null : "chatCustomerName_guest";
+
+  let sessionId = localStorage.getItem(sessionKey);
   if (!sessionId) {
     sessionId = crypto.randomUUID();
-    localStorage.setItem("chatSessionId", sessionId);
+    localStorage.setItem(sessionKey, sessionId);
   }
-  const customerName = localStorage.getItem("chatCustomerName");
+
+  // Logged-in customers always use their account name
+  const customerName = customer ? customer.name : (nameKey ? localStorage.getItem(nameKey) : null);
   return { sessionId, customerName };
 }
 
@@ -84,13 +98,15 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
 function ChatView() {
   const { toast } = useToast();
   const [phase, setPhase] = useState<"intro" | "chat">("intro");
-  const [nameInput, setNameInput] = useState("");
+  const loggedInCustomer = getLoggedInCustomer();
+  const session = getOrCreateSession();
+  const [nameInput, setNameInput] = useState(session.customerName ?? "");
   const [msgInput, setMsgInput] = useState("");
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sessionId] = useState(() => getOrCreateSession().sessionId);
-  const [customerName, setCustomerName] = useState(() => getOrCreateSession().customerName ?? "");
+  const [sessionId] = useState(() => session.sessionId);
+  const [customerName, setCustomerName] = useState(() => session.customerName ?? "");
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -156,10 +172,13 @@ function ChatView() {
 
   const handleStartChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nameInput.trim() || !msgInput.trim()) return;
-    localStorage.setItem("chatCustomerName", nameInput.trim());
-    setCustomerName(nameInput.trim());
-    await sendMessage(msgInput, nameInput);
+    const name = loggedInCustomer ? loggedInCustomer.name : nameInput.trim();
+    if (!name || !msgInput.trim()) return;
+    if (!loggedInCustomer) {
+      localStorage.setItem("chatCustomerName_guest", name);
+    }
+    setCustomerName(name);
+    await sendMessage(msgInput, name);
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -202,17 +221,26 @@ function ChatView() {
 
         {/* Intro form */}
         <form onSubmit={handleStartChat} className="px-6 pb-6 space-y-3">
-          <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl px-3 py-2.5">
-            <User className="w-4 h-4 text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              value={nameInput}
-              onChange={e => setNameInput(e.target.value)}
-              placeholder="اسمك الكامل..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              required
-            />
-          </div>
+          {/* Show name field only for guests */}
+          {!loggedInCustomer ? (
+            <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl px-3 py-2.5">
+              <User className="w-4 h-4 text-muted-foreground shrink-0" />
+              <input
+                type="text"
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                placeholder="اسمك الكامل..."
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                required
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl px-3 py-2.5">
+              <User className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-sm font-medium text-primary">{loggedInCustomer.name}</span>
+              <span className="text-xs text-muted-foreground mr-auto">مسجّل دخولك</span>
+            </div>
+          )}
           <div className="flex gap-2 items-end">
             <textarea
               value={msgInput}
@@ -225,7 +253,7 @@ function ChatView() {
             />
             <button
               type="submit"
-              disabled={sending || !nameInput.trim() || !msgInput.trim()}
+              disabled={sending || (!loggedInCustomer && !nameInput.trim()) || !msgInput.trim()}
               className="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 disabled:opacity-50 transition-colors shrink-0"
             >
               <Send className="w-4 h-4 rotate-180" />
