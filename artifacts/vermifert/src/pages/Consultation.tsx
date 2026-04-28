@@ -97,7 +97,11 @@ function ChatView() {
   const fetchMessages = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await fetch(`${API}/api/contact/session/${sessionId}`);
+      const res = await fetch(`${API}/api/contact/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
       if (res.ok) {
         const data: ChatMsg[] = await res.json();
         setMessages(data);

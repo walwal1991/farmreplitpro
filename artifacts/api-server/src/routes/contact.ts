@@ -40,10 +40,12 @@ router.post("/contact", async (req, res): Promise<void> => {
   });
 });
 
-// ─── GET /api/contact/session/:sessionId  (customer polls their chat) ──────────
-router.get("/contact/session/:sessionId", async (req, res): Promise<void> => {
-  const { sessionId } = req.params;
-  if (!sessionId || sessionId.length < 8) {
+// ─── POST /api/contact/session  (customer polls their chat — body carries the secret sessionId) ─
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+router.post("/contact/session", async (req, res): Promise<void> => {
+  const { sessionId } = req.body ?? {};
+  if (!sessionId || typeof sessionId !== "string" || !UUID_RE.test(sessionId)) {
     res.status(400).json({ error: "معرّف الجلسة غير صالح" }); return;
   }
 
