@@ -32,6 +32,30 @@ router.post("/contact", async (req, res): Promise<void> => {
   });
 });
 
+// ─── GET /api/contact/:id  (public — customer checks reply) ──────────────────
+router.get("/contact/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "رقم غير صالح" }); return; }
+
+  const result = await db.execute(
+    sql`SELECT id, customer_name, message, admin_reply, created_at
+        FROM contact_messages WHERE id = ${id}`
+  );
+  if (!result.rows.length) { res.status(404).json({ error: "لم يتم العثور على الرسالة" }); return; }
+
+  const r = result.rows[0] as {
+    id: number; customer_name: string; message: string;
+    admin_reply: string | null; created_at: string;
+  };
+  res.json({
+    id: r.id,
+    customerName: r.customer_name,
+    message: r.message,
+    adminReply: r.admin_reply,
+    createdAt: r.created_at,
+  });
+});
+
 // ─── GET /api/admin/contact-messages ─────────────────────────────────────────
 router.get("/admin/contact-messages", requireAdmin, async (_req, res): Promise<void> => {
   const result = await db.execute(
