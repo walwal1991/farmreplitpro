@@ -402,6 +402,94 @@ export const translations = {
   consult_err_soil: { ar: "نوع التربة مطلوب", en: "Soil type is required", fr: "Le type de sol est requis" },
   consult_err_crop: { ar: "نوع المحصول مطلوب", en: "Crop type is required", fr: "Le type de culture est requis" },
   consult_err_problem: { ar: "يرجى وصف المشكلة بتفصيل أكثر (10 أحرف على الأقل)", en: "Please describe the problem in more detail (at least 10 characters)", fr: "Veuillez décrire le problème avec plus de détails (au moins 10 caractères)" },
+
+  // ── Learn page ────────────────────────────────────────────────────────────
+  nav_learn: { ar: "التعليم والتكوين", en: "Learn & Train", fr: "Formation" },
+  nav_learn_desc: { ar: "دليل إنشاء المزرعة والدورات التكوينية", en: "Farm setup guide and training courses", fr: "Guide de création de ferme et formations" },
+
+  learn_page_title: { ar: "التعليم والتكوين الزراعي", en: "Agricultural Learning & Training", fr: "Formation et apprentissage agricole" },
+  learn_page_sub: { ar: "كل ما تحتاجه لبناء مزرعة ديدان ناجحة — من الصفر إلى الإنتاج", en: "Everything you need to build a successful worm farm — from scratch to production", fr: "Tout ce qu'il vous faut pour créer une ferme à vers prospère — de zéro à la production" },
+
+  // Farm section
+  farm_section_title: { ar: "كيف أنشأ مزرعتي", en: "How I Build My Farm", fr: "Comment créer ma ferme" },
+  farm_section_sub: { ar: "دليل خطوة بخطوة لبدء مزرعة سماد الديدان من الصفر", en: "A step-by-step guide to starting a worm castings farm from scratch", fr: "Guide étape par étape pour démarrer une ferme de vers de terre à partir de zéro" },
+
+  farm_step1_num: { ar: "١", en: "1", fr: "1" },
+  farm_step1_title: { ar: "اختيار الموقع المناسب", en: "Choosing the Right Location", fr: "Choisir le bon emplacement" },
+  farm_step1_desc: { ar: "اختر مكاناً في الظل بعيداً عن أشعة الشمس المباشرة، تتراوح حرارته بين 15 و 25 درجة. يمكن أن يكون داخلياً (مخزن، غرفة) أو خارجياً تحت سقف مظلل. تجنب الأماكن ذات الروائح لأن الإجهاد يضر الديدان.", en: "Choose a shaded spot away from direct sunlight, with temperatures between 15–25°C. It can be indoors (storage room, garage) or outdoors under a covered shelter. Avoid extremely smelly environments as stress harms the worms.", fr: "Choisissez un endroit ombragé, à l'abri du soleil direct, avec des températures entre 15 et 25°C. Peut être intérieur (débarras, garage) ou extérieur sous un abri. Évitez les endroits trop odorants car le stress nuit aux vers." },
+
+  farm_step2_num: { ar: "٢", en: "2", fr: "2" },
+  farm_step2_title: { ar: "تحضير الحاوية", en: "Preparing the Container", fr: "Préparer le bac" },
+  farm_step2_desc: { ar: "استخدم صندوقاً خشبياً أو حاوية بلاستيكية كبيرة (50 لتراً على الأقل). اثقب فتحات تهوية في الأجناب والقاع لتصريف السائل (الشاي السائل). يمكنك بناء نظام متعدد الطوابق لتسهيل الحصاد لاحقاً.", en: "Use a wooden crate or large plastic container (at least 50L). Drill ventilation holes in the sides and drainage holes in the bottom for leachate collection. You can build a multi-tray system to simplify harvesting later.", fr: "Utilisez une caisse en bois ou un grand bac plastique (au moins 50L). Percez des trous de ventilation sur les côtés et des trous de drainage au fond pour recueillir le lixiviat. Un système à plusieurs étages facilitera la récolte ultérieure." },
+
+  farm_step3_num: { ar: "٣", en: "3", fr: "3" },
+  farm_step3_title: { ar: "تحضير الفراش الأساسي", en: "Preparing the Bedding", fr: "Préparer la litière" },
+  farm_step3_desc: { ar: "ابدأ بطبقة سميكة من الورق المقوى الممزق أو ليف جوز الهند أو التبن المبلل. يجب أن يكون الفراش رطباً كالإسفنجة لا متشبعاً بالماء. يُشكّل هذا البيئة التي ستعيش فيها الديدان وتنتج فيها السماد.", en: "Start with a thick layer of shredded cardboard, coconut coir, or damp straw. The bedding should be moist like a sponge, not dripping wet. This forms the living environment for your worms and where composting begins.", fr: "Commencez par une épaisse couche de carton déchiqueté, de fibre de coco ou de paille humide. La litière doit être humide comme une éponge, non détrempée. C'est l'environnement dans lequel vivront vos vers et débutera le compostage." },
+
+  farm_step4_num: { ar: "٤", en: "4", fr: "4" },
+  farm_step4_title: { ar: "إضافة الديدان", en: "Adding the Worms", fr: "Ajouter les vers" },
+  farm_step4_desc: { ar: "أفضل نوع هو Eisenia fetida (الديدان الحمراء). ابدأ بـ 500 غرام إلى كيلوغرام واحد لكل متر مربع. ضعها فوق الفراش وأضف بعض الطعام الأول، ثم اتركها تستقر 48 ساعة قبل التدخل مجدداً.", en: "The best species is Eisenia fetida (red wigglers). Start with 500g to 1kg per square meter. Place them on top of the bedding, add some initial food, then leave them to settle for 48 hours before disturbing again.", fr: "La meilleure espèce est Eisenia fetida (vers rouges). Commencez avec 500g à 1kg par m². Placez-les sur la litière, ajoutez de la nourriture initiale, puis laissez-les s'installer 48h avant toute intervention." },
+
+  farm_step5_num: { ar: "٥", en: "5", fr: "5" },
+  farm_step5_title: { ar: "التغذية المنتظمة", en: "Regular Feeding", fr: "Alimentation régulière" },
+  farm_step5_desc: { ar: "أطعم الديدان مرة كل 2-3 أيام بمخلفات المطبخ: قشور الخضار والفواكه، بقايا القهوة، قشور البيض. تجنب اللحوم والحمضيات والبصل والثوم. الكمية المثالية: ما يساوي نصف وزن الديدان يومياً.", en: "Feed worms every 2–3 days with kitchen scraps: vegetable and fruit peels, coffee grounds, eggshells. Avoid meat, citrus, onion, and garlic. Ideal quantity: half the worm weight daily.", fr: "Nourrissez les vers tous les 2–3 jours avec des déchets de cuisine : épluchures de légumes et de fruits, marc de café, coquilles d'œufs. Évitez la viande, les agrumes, les oignons et l'ail. Quantité idéale : la moitié du poids des vers par jour." },
+
+  farm_step6_num: { ar: "٦", en: "6", fr: "6" },
+  farm_step6_title: { ar: "الرعاية اليومية", en: "Daily Care", fr: "Entretien quotidien" },
+  farm_step6_desc: { ar: "تحقق من مستوى الرطوبة يومياً — يجب أن تكون كالإسفنجة المبللة. راقب درجة الحرارة وتأكد من التهوية. قلّب الطبقات العليا بلطف أسبوعياً لتهويتها. لا تضيف طعاماً جديداً إلا بعد استهلاك السابق.", en: "Check moisture daily — it should feel like a damp sponge. Monitor temperature and ensure ventilation. Gently turn the top layers weekly for aeration. Don't add new food until the previous batch is consumed.", fr: "Vérifiez l'humidité quotidiennement — comme une éponge humide. Surveillez la température et assurez la ventilation. Retournez délicatement les couches supérieures chaque semaine. N'ajoutez pas de nouvelle nourriture tant que la précédente n'est pas consommée." },
+
+  farm_step7_num: { ar: "٧", en: "7", fr: "7" },
+  farm_step7_title: { ar: "الحصاد والتعبئة", en: "Harvesting & Packaging", fr: "Récolte et conditionnement" },
+  farm_step7_desc: { ar: "بعد 3-6 أشهر يصبح السماد جاهزاً — مظهره ترابي داكن بدون بقايا طعام. انقل الديدان إلى جانب واحد أو اعتمد نظام الطوابق للفصل الطبيعي. جفّف السماد جزئياً ثم علّبه. السائل المتجمع هو \"شاي الديدان\" مخفف 1:10 رائع للزراعة.", en: "After 3–6 months the castings are ready — dark, earthy, no visible food scraps. Move worms to one side or use a multi-tray system for natural separation. Partially dry the castings then package. The collected liquid is \"worm tea\" — dilute 1:10 for an excellent plant feed.", fr: "Après 3–6 mois, le compost est prêt — sombre, terreux, sans déchets visibles. Déplacez les vers d'un côté ou utilisez un système à étages pour la séparation naturelle. Séchez partiellement le compost puis emballez. Le liquide collecté est le \"thé de vers\" — dilué 1:10 pour une excellente alimentation des plantes." },
+
+  farm_tip_title: { ar: "نصيحة ذهبية", en: "Golden Tip", fr: "Conseil en or" },
+  farm_tip_desc: { ar: "ابدأ صغيراً وتوسع تدريجياً. مزرعة 1 متر مربع كافية لإنتاج سماد عائلتك. بعد 6 أشهر ستجد نفسك تبيع الفائض لجيرانك!", en: "Start small and scale gradually. A 1 m² farm is enough to cover your family's fertilizer needs. After 6 months you'll find yourself selling the surplus to your neighbors!", fr: "Commencez petit et développez progressivement. Une ferme de 1m² suffit à couvrir les besoins en engrais de votre famille. Après 6 mois, vous vous retrouverez à vendre le surplus à vos voisins !" },
+
+  // Courses section
+  course_section_title: { ar: "الدورات التكوينية", en: "Training Courses", fr: "Formations" },
+  course_section_sub: { ar: "برامج تدريبية متخصصة تأخذك من المبتدئ إلى المحترف في عالم الزراعة بالديدان", en: "Specialized training programs taking you from beginner to professional in vermiculture", fr: "Des programmes de formation spécialisés pour vous emmener du débutant au professionnel en vermiculture" },
+
+  course_free_badge: { ar: "مجاني", en: "Free", fr: "Gratuit" },
+  course_paid_badge: { ar: "مدفوع", en: "Paid", fr: "Payant" },
+  course_online_badge: { ar: "أونلاين", en: "Online", fr: "En ligne" },
+  course_onsite_badge: { ar: "حضوري", en: "In-person", fr: "Présentiel" },
+  course_duration: { ar: "المدة", en: "Duration", fr: "Durée" },
+  course_level: { ar: "المستوى", en: "Level", fr: "Niveau" },
+  course_enroll: { ar: "سجّل الآن", en: "Enroll Now", fr: "S'inscrire" },
+  course_contact: { ar: "تواصل للاستفسار", en: "Contact Us", fr: "Nous contacter" },
+
+  course1_title: { ar: "دورة المبتدئين — أساسيات الزراعة بالديدان", en: "Beginner's Course — Vermiculture Fundamentals", fr: "Cours débutant — Fondamentaux de la vermiculture" },
+  course1_level: { ar: "مبتدئ", en: "Beginner", fr: "Débutant" },
+  course1_duration: { ar: "4 ساعات", en: "4 hours", fr: "4 heures" },
+  course1_mode: { ar: "أونلاين", en: "Online", fr: "En ligne" },
+  course1_price: { ar: "مجاني", en: "Free", fr: "Gratuit" },
+  course1_desc: { ar: "تعرّف على دورة حياة الدودة، أنواع الديدان المناسبة، وكيفية إنشاء مزرعتك الأولى من الصفر. يشمل فيديوهات تعليمية ومواد مرئية.", en: "Learn about the worm life cycle, suitable worm species, and how to set up your first farm from scratch. Includes educational videos and visual materials.", fr: "Apprenez le cycle de vie des vers, les espèces adaptées et comment créer votre première ferme. Comprend des vidéos éducatives et des supports visuels." },
+
+  course2_title: { ar: "دورة الإنتاج المتكامل", en: "Integrated Production Course", fr: "Cours de production intégrée" },
+  course2_level: { ar: "متوسط", en: "Intermediate", fr: "Intermédiaire" },
+  course2_duration: { ar: "يومان", en: "2 days", fr: "2 jours" },
+  course2_mode: { ar: "حضوري", en: "In-person", fr: "Présentiel" },
+  course2_price: { ar: "مدفوع", en: "Paid", fr: "Payant" },
+  course2_desc: { ar: "تحسين إنتاجية المزرعة، إدارة التكاثر، معالجة وتعبئة السماد، وأسس التسويق للمنتجات العضوية. يُعقد في مقر الشركة.", en: "Optimize farm productivity, manage reproduction, process and package castings, and learn organic product marketing basics. Held at company premises.", fr: "Optimisez la productivité, gérez la reproduction, traitez et emballez le compost, et apprenez les bases du marketing de produits biologiques. Organisé dans nos locaux." },
+
+  course3_title: { ar: "ورشة عملية ميدانية", en: "Hands-On Field Workshop", fr: "Atelier pratique sur le terrain" },
+  course3_level: { ar: "متقدم", en: "Advanced", fr: "Avancé" },
+  course3_duration: { ar: "يوم واحد", en: "1 day", fr: "1 jour" },
+  course3_mode: { ar: "حضوري", en: "In-person", fr: "Présentiel" },
+  course3_price: { ar: "مدفوع", en: "Paid", fr: "Payant" },
+  course3_desc: { ar: "تجربة ميدانية مباشرة في مزرعة حقيقية: تشخيص المشكلات، الحصاد، فرز الديدان، وإنتاج شاي الديدان. مجموعات صغيرة (10 أشخاص كحد أقصى).", en: "Direct field experience at a real farm: diagnosing problems, harvesting, sorting worms, and producing worm tea. Small groups (max 10 people).", fr: "Expérience de terrain directe dans une vraie ferme : diagnostic des problèmes, récolte, tri des vers et production de thé de vers. Petits groupes (10 personnes max)." },
+
+  course4_title: { ar: "برنامج التكوين المهني", en: "Professional Training Program", fr: "Programme de formation professionnelle" },
+  course4_level: { ar: "احترافي", en: "Professional", fr: "Professionnel" },
+  course4_duration: { ar: "5 أيام", en: "5 days", fr: "5 jours" },
+  course4_mode: { ar: "حضوري + أونلاين", en: "In-person + Online", fr: "Présentiel + En ligne" },
+  course4_price: { ar: "مدفوع", en: "Paid", fr: "Payant" },
+  course4_desc: { ar: "برنامج شامل يمنحك شهادة معتمدة في إنتاج السماد العضوي. يغطي الجوانب التقنية والتجارية والتسويقية. مثالي لمن يريد تأسيس مشروعه الخاص.", en: "A comprehensive program granting you a certified certificate in organic fertilizer production. Covers technical, commercial, and marketing aspects. Ideal for those wanting to start their own business.", fr: "Un programme complet vous délivrant un certificat reconnu en production d'engrais biologiques. Couvre les aspects techniques, commerciaux et marketing. Idéal pour créer sa propre entreprise." },
+
+  learn_cta_title: { ar: "مستعد للبدء؟", en: "Ready to Start?", fr: "Prêt à commencer ?" },
+  learn_cta_sub: { ar: "تواصل معنا للاستفسار عن الدورات أو اطلب استشارة مجانية", en: "Contact us to inquire about courses or request a free consultation", fr: "Contactez-nous pour vous renseigner sur les formations ou demander une consultation gratuite" },
+  learn_cta_btn: { ar: "راسلنا الآن", en: "Contact Us Now", fr: "Nous contacter" },
+  learn_cta_products: { ar: "تصفح المنتجات", en: "Browse Products", fr: "Voir les produits" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

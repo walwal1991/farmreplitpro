@@ -21,6 +21,7 @@ import AdminOrders from "@/pages/AdminOrders";
 import AdminChangePassword from "@/pages/AdminChangePassword";
 import AdminConsultations from "@/pages/AdminConsultations";
 import SmartDiagnosis from "@/pages/SmartDiagnosis";
+import Learn from "@/pages/Learn";
 import DeliveryLogin from "@/pages/DeliveryLogin";
 import DeliveryOrders from "@/pages/DeliveryOrders";
 import AdminDeliveryUsers from "@/pages/AdminDeliveryUsers";
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/guide" component={Guide} />
       <Route path="/cart" component={Cart} />
       <Route path="/diagnosis" component={SmartDiagnosis} />
+      <Route path="/learn" component={Learn} />
       
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />

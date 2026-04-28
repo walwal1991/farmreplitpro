@@ -11,8 +11,13 @@ Arabic/RTL e-commerce platform selling worm-castings fertilizer (vermicompost).
 
 ## Features
 - Public storefront: product catalog, product detail, guest checkout (cash on delivery)
-- Agronomy consultation form
-- Admin dashboard at `/admin` (password gate via `ADMIN_PASSWORD`): stats, recent activity, products CRUD, orders management, consultations management
+- Multi-language support: Arabic (RTL), English, French via `useLang()` / `t()` hook — all keys in `translations.ts`
+- Agronomy consultation form + live chat
+- Smart soil diagnosis tool (`/diagnosis`)
+- Usage guide (`/guide`)
+- **Learn & Train page (`/learn`)**: 7-step worm farm creation guide + 4 training course cards (fully i18n)
+- Customer account, order tracking, delivery portal
+- Admin dashboard at `/admin` (password gate via `ADMIN_PASSWORD`): stats, recent activity, products CRUD, orders management, consultations management, customer management, reviews
 - Generated product images served from `/api/img/<file>.png` (api-server static mount)
 
 ## Notable conventions
