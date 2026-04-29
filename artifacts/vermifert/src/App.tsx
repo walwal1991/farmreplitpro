@@ -31,8 +31,6 @@ import AdminEnrollments from "@/pages/AdminEnrollments";
 import CustomerLogin from "@/pages/CustomerLogin";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import TrackOrder from "@/pages/TrackOrder";
-import AdminBatches from "@/pages/AdminBatches";
-import BatchScan from "@/pages/BatchScan";
 import WasteCollection from "@/pages/WasteCollection";
 import AdminWasteCollections from "@/pages/AdminWasteCollections";
 
@@ -69,8 +67,6 @@ function Router() {
       <Route path="/track" component={TrackOrder} />
       <Route path="/track/:trackingNumber" component={TrackOrder} />
 
-      <Route path="/admin/batches" component={AdminBatches} />
-      <Route path="/batch/:code" component={BatchScan} />
       <Route path="/admin/waste-collections" component={AdminWasteCollections} />
       <Route path="/waste-collection" component={WasteCollection} />
 
