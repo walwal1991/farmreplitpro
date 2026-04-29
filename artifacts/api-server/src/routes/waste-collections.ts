@@ -91,8 +91,8 @@ router.patch("/admin/waste-collections/:id/status", requireAdmin, async (req, re
     .where(eq(wasteCollections.id, id))
     .returning();
 
-  // ── Award green points when marked completed ─────────────────────────────
-  if (status === "completed" && current.status !== "completed") {
+  // ── Award green points when marked collected ─────────────────────────────
+  if (status === "collected" && current.status !== "collected") {
     const donorRows = await db
       .select()
       .from(donors)
