@@ -31,6 +31,8 @@ import AdminEnrollments from "@/pages/AdminEnrollments";
 import CustomerLogin from "@/pages/CustomerLogin";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import TrackOrder from "@/pages/TrackOrder";
+import AdminBatches from "@/pages/AdminBatches";
+import BatchScan from "@/pages/BatchScan";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +66,9 @@ function Router() {
       <Route path="/customer/dashboard" component={CustomerDashboard} />
       <Route path="/track" component={TrackOrder} />
       <Route path="/track/:trackingNumber" component={TrackOrder} />
+
+      <Route path="/admin/batches" component={AdminBatches} />
+      <Route path="/batch/:code" component={BatchScan} />
 
       <Route component={NotFound} />
     </Switch>

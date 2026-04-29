@@ -10,6 +10,7 @@ import customerRouter from "./customer";
 import reviewsRouter from "./reviews";
 import contactRouter from "./contact";
 import enrollmentsRouter from "./enrollments";
+import batchesRouter from "./batches";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(customerRouter);
 router.use(reviewsRouter);
 router.use(contactRouter);
 router.use(enrollmentsRouter);
+router.use(batchesRouter);
 
 export default router;

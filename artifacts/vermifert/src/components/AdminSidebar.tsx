@@ -11,6 +11,7 @@ import {
   Users,
   Star,
   GraduationCap,
+  Recycle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ export default function AdminSidebar() {
     { href: "/admin/customers", label: "العملاء", icon: Users },
     { href: "/admin/reviews", label: "التقييمات", icon: Star },
     { href: "/admin/enrollments", label: "تسجيلات الدورات", icon: GraduationCap },
+    { href: "/admin/batches", label: "دفعات السماد", icon: Recycle },
     { href: "/admin/change-password", label: "كلمة المرور", icon: KeyRound },
   ];
 
