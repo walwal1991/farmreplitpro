@@ -11,3 +11,4 @@ export * from "./reviews";
 export * from "./course-enrollments";
 export * from "./fertilizer-batches";
 export * from "./waste-collections";
+export * from "./donors";
