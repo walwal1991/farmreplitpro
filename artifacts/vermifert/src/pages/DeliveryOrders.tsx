@@ -2,10 +2,11 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Truck, LogOut, MapPin, Phone, Package, RefreshCw, Home, Navigation, X, Camera, PenLine, CheckCircle, Trash2, ImageIcon, PlayCircle, Flag } from "lucide-react";
+import { Truck, LogOut, MapPin, Phone, Package, RefreshCw, Home, Navigation, X, Camera, PenLine, CheckCircle, Trash2, ImageIcon, PlayCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import StickerPrint from "@/components/StickerPrint";
+import TripMap from "@/components/TripMap";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -42,13 +43,6 @@ const NEXT_STATUS: Record<string, { value: string; label: string; color: string 
   shipped: { value: "delivered", label: "تأكيد التوصيل", color: "bg-green-600 hover:bg-green-700 text-white" },
 };
 
-// ── Map helpers ────────────────────────────────────────────────────────────
-function buildDestination(order: Order) {
-  return encodeURIComponent(`${order.address}, ${order.city}, الجزائر`);
-}
-function googleMapsNavUrl(order: Order) {
-  return `https://www.google.com/maps/dir/?api=1&destination=${buildDestination(order)}&travelmode=driving`;
-}
 
 // ── Signature Pad ──────────────────────────────────────────────────────────
 function SignaturePad({ onSignature }: { onSignature: (data: string | null) => void }) {
@@ -265,35 +259,7 @@ function ProofModal({
   );
 }
 
-// ── Car SVG icon ────────────────────────────────────────────────────────────
-function CarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Shadow */}
-      <ellipse cx="32" cy="58" rx="18" ry="4" fill="rgba(0,0,0,0.18)" />
-      {/* Body */}
-      <rect x="10" y="28" width="44" height="22" rx="6" fill="#2d6a4f" />
-      {/* Cabin */}
-      <rect x="16" y="16" width="32" height="16" rx="5" fill="#40916c" />
-      {/* Windshield front */}
-      <rect x="18" y="17" width="12" height="11" rx="3" fill="#b7e4c7" opacity="0.85" />
-      {/* Windshield rear */}
-      <rect x="34" y="17" width="12" height="11" rx="3" fill="#b7e4c7" opacity="0.85" />
-      {/* Left wheels */}
-      <circle cx="18" cy="50" r="6" fill="#1b4332" />
-      <circle cx="18" cy="50" r="3" fill="#74c69d" />
-      {/* Right wheels */}
-      <circle cx="46" cy="50" r="6" fill="#1b4332" />
-      <circle cx="46" cy="50" r="3" fill="#74c69d" />
-      {/* Headlights */}
-      <rect x="11" y="32" width="5" height="3" rx="1.5" fill="#ffd166" />
-      {/* Taillights */}
-      <rect x="48" y="32" width="5" height="3" rx="1.5" fill="#ef233c" />
-    </svg>
-  );
-}
-
-// ── Trip modal (Uber-style) ─────────────────────────────────────────────────
+// ── Trip modal (Uber-style with in-app Leaflet map) ───────────────────────────
 function TripModal({
   order,
   onClose,
@@ -304,53 +270,17 @@ function TripModal({
   onArrive: () => void;
 }) {
   const [tripStarted, setTripStarted] = useState(false);
-  const [currentPos, setCurrentPos] = useState<{ lat: number; lng: number } | null>(null);
-  const [geoError, setGeoError] = useState(false);
-  const destination = buildDestination(order);
-
-  // Try to get driver's real location for a proper route
-  useEffect(() => {
-    if (!navigator.geolocation) { setGeoError(true); return; }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setCurrentPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => setGeoError(true),
-      { timeout: 8000, maximumAge: 30000 },
-    );
-  }, []);
-
-  // Build map src: directions (with route line) when we have location, destination-only fallback
-  const mapSrc = currentPos
-    ? `https://maps.google.com/maps?saddr=${currentPos.lat},${currentPos.lng}&daddr=${destination}&output=embed`
-    : geoError
-    ? `https://maps.google.com/maps?q=${destination}&output=embed&z=14`
-    : null; // still loading location
 
   function startTrip() {
     setTripStarted(true);
-    window.open(googleMapsNavUrl(order), "_blank", "noopener,noreferrer");
+    // Open native maps app via geo: URI — lets the driver pick their preferred navigation app
+    const dest = `${order.address}, ${order.city}, الجزائر`;
+    const geoUri = `geo:0,0?q=${encodeURIComponent(dest)}`;
+    window.open(geoUri, "_blank");
   }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background" dir="rtl">
-      <style>{`
-        @keyframes car-float {
-          0%, 100% { transform: translateY(0px) rotate(-2deg); }
-          50%       { transform: translateY(-6px) rotate(2deg); }
-        }
-        @keyframes car-drive {
-          0%, 100% { transform: translateY(0px) rotate(-1deg); }
-          25%       { transform: translateY(-4px) rotate(1.5deg); }
-          75%       { transform: translateY(-2px) rotate(-1.5deg); }
-        }
-        @keyframes ping-dot {
-          0%   { transform: scale(1); opacity: 1; }
-          100% { transform: scale(2.5); opacity: 0; }
-        }
-        .car-idle    { animation: car-float 3s ease-in-out infinite; }
-        .car-moving  { animation: car-drive 1.2s ease-in-out infinite; }
-        .ping-ring   { animation: ping-dot 1.4s ease-out infinite; }
-      `}</style>
-
       {/* Header */}
       <div className="flex items-center gap-3 px-4 h-14 bg-card border-b border-border shrink-0 relative z-10">
         <button
@@ -361,62 +291,25 @@ function TripModal({
         </button>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm truncate">توصيل — {order.customerName}</p>
-          <p className="text-xs text-muted-foreground">{order.address}، {order.city}</p>
+          <p className="text-xs text-muted-foreground truncate">{order.address}، {order.city}</p>
         </div>
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full shrink-0">
-          #{order.id}
-        </span>
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full shrink-0">#{order.id}</span>
       </div>
 
-      {/* Map + Car overlay */}
+      {/* In-app Leaflet map — car at real GPS position, road route drawn */}
       <div className="flex-1 relative overflow-hidden">
-        {/* Google Maps iframe — directions embed once location is known */}
-        {mapSrc ? (
-          <iframe
-            key={mapSrc}
-            title="خريطة الوجهة"
-            src={mapSrc}
-            className="absolute inset-0 w-full h-full border-0"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-popups"
-          />
-        ) : (
-          /* Loading state while waiting for geolocation */
-          <div className="absolute inset-0 bg-muted flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-            <p className="text-sm text-muted-foreground font-medium">جاري تحديد موقعك…</p>
-          </div>
-        )}
+        <TripMap
+          orderAddress={order.address}
+          orderCity={order.city}
+          tripStarted={tripStarted}
+        />
 
-        {/* Gradient fade at bottom so card sits over map cleanly */}
-        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+        {/* Gradient fade so bottom panel blends into map */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card to-transparent pointer-events-none" />
 
-        {/* Animated car icon — center of map */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="relative flex flex-col items-center">
-            {/* Pulsing location ring */}
-            <div className="relative mb-1">
-              <div
-                className="ping-ring absolute inset-0 rounded-full bg-primary/30"
-                style={{ width: 56, height: 56, top: "50%", left: "50%", transform: "translate(-50%,-50%)" }}
-              />
-              <div className="w-3 h-3 rounded-full bg-primary border-2 border-white shadow-md" />
-            </div>
-            {/* Car */}
-            <CarIcon className={`w-16 h-16 drop-shadow-xl ${tripStarted ? "car-moving" : "car-idle"}`} />
-          </div>
-        </div>
-
-        {/* Destination pin label */}
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-sm border border-border rounded-full px-3 py-1 flex items-center gap-1.5 shadow-lg pointer-events-none">
-          <Flag className="w-3 h-3 text-green-600 shrink-0" />
-          <span className="text-xs font-medium truncate max-w-[200px]">{order.address}، {order.city}</span>
-        </div>
-
-        {/* Trip-started indicator */}
+        {/* "في الطريق" pill while trip active */}
         {tripStarted && (
-          <div className="absolute bottom-32 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 pointer-events-none">
             <Navigation className="w-3 h-3" />
             في الطريق
           </div>
@@ -425,7 +318,7 @@ function TripModal({
 
       {/* Bottom panel */}
       <div className="bg-card border-t border-border px-5 pt-3 pb-5 space-y-3 shrink-0">
-        {/* Compact order row */}
+        {/* Order info row */}
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Package className="w-3.5 h-3.5 shrink-0" />
@@ -460,7 +353,7 @@ function TripModal({
               className="w-full h-10 rounded-xl bg-muted text-foreground font-medium text-sm flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
             >
               <Navigation className="w-4 h-4" />
-              إعادة فتح الملاحة
+              ملاحة خارجية
             </button>
           </>
         )}
