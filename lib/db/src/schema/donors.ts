@@ -3,6 +3,7 @@ import { pgTable, serial, varchar, text, integer, numeric, boolean, timestamp } 
 export const donors = pgTable("donors", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 120 }).notNull(),
+  username: varchar("username", { length: 60 }).notNull().unique(),
   phone: varchar("phone", { length: 20 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   greenPoints: integer("green_points").notNull().default(0),

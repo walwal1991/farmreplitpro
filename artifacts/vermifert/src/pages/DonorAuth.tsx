@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Recycle, User, Phone, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Recycle, User, Phone, Lock, Eye, EyeOff, ArrowRight, AtSign } from "lucide-react";
 import { Link } from "wouter";
 
 const API = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
@@ -12,7 +12,7 @@ export default function DonorAuth() {
   const [error, setError] = useState("");
   const [showPass, setShowPass] = useState(false);
 
-  const [form, setForm] = useState({ name: "", phone: "", password: "" });
+  const [form, setForm] = useState({ name: "", username: "", phone: "", password: "" });
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
 
@@ -23,8 +23,8 @@ export default function DonorAuth() {
     try {
       const endpoint = tab === "login" ? "/api/donors/login" : "/api/donors/register";
       const body = tab === "login"
-        ? { phone: form.phone, password: form.password }
-        : { name: form.name, phone: form.phone, password: form.password };
+        ? { username: form.username, password: form.password }
+        : { name: form.name, username: form.username, phone: form.phone, password: form.password };
 
       const res = await fetch(`${API}${endpoint}`, {
         method: "POST",
@@ -89,17 +89,37 @@ export default function DonorAuth() {
 
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <Phone size={14} /> رقم الهاتف
+                <AtSign size={14} /> اسم المستخدم
               </label>
               <input
-                value={form.phone}
-                onChange={e => set("phone", e.target.value)}
-                placeholder="06xxxxxxxx"
+                value={form.username}
+                onChange={e => set("username", e.target.value)}
+                placeholder="mohammed_99"
                 dir="ltr"
                 required
+                autoComplete="username"
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
               />
+              {tab === "register" && (
+                <p className="text-xs text-gray-400">أحرف إنجليزية وأرقام و_ فقط (3-60 حرف)</p>
+              )}
             </div>
+
+            {tab === "register" && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                  <Phone size={14} /> رقم الهاتف
+                </label>
+                <input
+                  value={form.phone}
+                  onChange={e => set("phone", e.target.value)}
+                  placeholder="06xxxxxxxx"
+                  dir="ltr"
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+              </div>
+            )}
 
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-1">

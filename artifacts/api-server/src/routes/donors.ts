@@ -56,18 +56,25 @@ function requireDonor(req: any, res: any, next: any) {
 
 // ── Register ─────────────────────────────────────────────────────────────────
 router.post("/donors/register", async (req, res): Promise<void> => {
-  const { name, phone, password } = req.body ?? {};
-  if (!name || !phone || !password) {
-    res.status(400).json({ error: "الاسم والهاتف وكلمة المرور مطلوبة" }); return;
+  const { name, username, phone, password } = req.body ?? {};
+  if (!name || !username || !phone || !password) {
+    res.status(400).json({ error: "الاسم واسم المستخدم والهاتف وكلمة المرور مطلوبة" }); return;
   }
   if (password.length < 6) {
     res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" }); return;
   }
-  const existing = await db.select().from(donors).where(eq(donors.phone, phone));
-  if (existing.length) { res.status(409).json({ error: "رقم الهاتف مسجّل مسبقاً" }); return; }
+  if (!/^[a-zA-Z0-9_]{3,60}$/.test(username)) {
+    res.status(400).json({ error: "اسم المستخدم يجب أن يكون من 3-60 حرف (أحرف إنجليزية وأرقام و_)" }); return;
+  }
+
+  const existingUsername = await db.select().from(donors).where(eq(donors.username, username));
+  if (existingUsername.length) { res.status(409).json({ error: "اسم المستخدم مأخوذ، جرّب اسماً آخر" }); return; }
+
+  const existingPhone = await db.select().from(donors).where(eq(donors.phone, phone));
+  if (existingPhone.length) { res.status(409).json({ error: "رقم الهاتف مسجّل مسبقاً" }); return; }
 
   const [donor] = await db.insert(donors).values({
-    name, phone,
+    name, username, phone,
     passwordHash: hashPassword(password),
   }).returning();
 
@@ -78,12 +85,12 @@ router.post("/donors/register", async (req, res): Promise<void> => {
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 router.post("/donors/login", async (req, res): Promise<void> => {
-  const { phone, password } = req.body ?? {};
-  if (!phone || !password) { res.status(400).json({ error: "الهاتف وكلمة المرور مطلوبان" }); return; }
+  const { username, password } = req.body ?? {};
+  if (!username || !password) { res.status(400).json({ error: "اسم المستخدم وكلمة المرور مطلوبان" }); return; }
 
-  const [donor] = await db.select().from(donors).where(eq(donors.phone, phone));
+  const [donor] = await db.select().from(donors).where(eq(donors.username, username));
   if (!donor || donor.passwordHash !== hashPassword(password)) {
-    res.status(401).json({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" }); return;
+    res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" }); return;
   }
   const token = randomToken();
   await db.insert(donorSessions).values({ donorId: donor.id, token });
