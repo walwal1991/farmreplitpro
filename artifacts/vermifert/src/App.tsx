@@ -33,6 +33,8 @@ import CustomerDashboard from "@/pages/CustomerDashboard";
 import TrackOrder from "@/pages/TrackOrder";
 import WasteCollection from "@/pages/WasteCollection";
 import AdminWasteCollections from "@/pages/AdminWasteCollections";
+import DonorAuth from "@/pages/DonorAuth";
+import DonorDashboard from "@/pages/DonorDashboard";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +71,8 @@ function Router() {
 
       <Route path="/admin/waste-collections" component={AdminWasteCollections} />
       <Route path="/waste-collection" component={WasteCollection} />
+      <Route path="/donor/login" component={DonorAuth} />
+      <Route path="/donor/dashboard" component={DonorDashboard} />
 
       <Route component={NotFound} />
     </Switch>

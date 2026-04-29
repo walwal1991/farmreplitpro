@@ -276,7 +276,12 @@ export default function WasteCollection() {
             <Recycle size={36} />
             <h1 className="text-3xl font-bold">من النفايات إلى السماد</h1>
           </div>
-          <p className="text-green-100 text-lg mb-6">تبرّع بنفاياتك العضوية — نحوّلها إلى Vermicompost طبيعي</p>
+          <p className="text-green-100 text-lg mb-4">تبرّع بنفاياتك العضوية — نحوّلها إلى Vermicompost طبيعي</p>
+          <Link href="/donor/login">
+            <button className="text-xs text-green-200 hover:text-white underline underline-offset-2 mb-4 flex items-center gap-1 mx-auto">
+              <User size={13} /> تسجيل الدخول / إنشاء حساب متبرع
+            </button>
+          </Link>
 
           {/* Mode tabs */}
           <div className="inline-flex bg-white/20 rounded-2xl p-1 gap-1">
