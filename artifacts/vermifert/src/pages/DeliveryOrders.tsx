@@ -273,10 +273,8 @@ function TripModal({
 
   function startTrip() {
     setTripStarted(true);
-    // Open native maps app via geo: URI — lets the driver pick their preferred navigation app
-    const dest = `${order.address}, ${order.city}, الجزائر`;
-    const geoUri = `geo:0,0?q=${encodeURIComponent(dest)}`;
-    window.open(geoUri, "_blank");
+    const dest = encodeURIComponent(`${order.address}, ${order.city}, الجزائر`);
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`, "_blank", "noopener,noreferrer");
   }
 
   return (
