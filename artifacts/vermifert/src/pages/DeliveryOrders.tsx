@@ -304,8 +304,26 @@ function TripModal({
   onArrive: () => void;
 }) {
   const [tripStarted, setTripStarted] = useState(false);
+  const [currentPos, setCurrentPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoError, setGeoError] = useState(false);
   const destination = buildDestination(order);
-  const mapSrc = `https://maps.google.com/maps?q=${destination}&output=embed&z=14`;
+
+  // Try to get driver's real location for a proper route
+  useEffect(() => {
+    if (!navigator.geolocation) { setGeoError(true); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCurrentPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setGeoError(true),
+      { timeout: 8000, maximumAge: 30000 },
+    );
+  }, []);
+
+  // Build map src: directions (with route line) when we have location, destination-only fallback
+  const mapSrc = currentPos
+    ? `https://maps.google.com/maps?saddr=${currentPos.lat},${currentPos.lng}&daddr=${destination}&output=embed`
+    : geoError
+    ? `https://maps.google.com/maps?q=${destination}&output=embed&z=14`
+    : null; // still loading location
 
   function startTrip() {
     setTripStarted(true);
@@ -352,15 +370,24 @@ function TripModal({
 
       {/* Map + Car overlay */}
       <div className="flex-1 relative overflow-hidden">
-        {/* Google Maps iframe */}
-        <iframe
-          title="خريطة الوجهة"
-          src={mapSrc}
-          className="absolute inset-0 w-full h-full border-0"
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          sandbox="allow-scripts allow-same-origin allow-popups"
-        />
+        {/* Google Maps iframe — directions embed once location is known */}
+        {mapSrc ? (
+          <iframe
+            key={mapSrc}
+            title="خريطة الوجهة"
+            src={mapSrc}
+            className="absolute inset-0 w-full h-full border-0"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-popups"
+          />
+        ) : (
+          /* Loading state while waiting for geolocation */
+          <div className="absolute inset-0 bg-muted flex flex-col items-center justify-center gap-3">
+            <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+            <p className="text-sm text-muted-foreground font-medium">جاري تحديد موقعك…</p>
+          </div>
+        )}
 
         {/* Gradient fade at bottom so card sits over map cleanly */}
         <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-background to-transparent pointer-events-none" />
