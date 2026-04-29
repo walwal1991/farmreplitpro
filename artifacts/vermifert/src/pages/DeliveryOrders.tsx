@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Truck, LogOut, MapPin, Phone, Package, RefreshCw, Home, Navigation, X, Camera, PenLine, CheckCircle, Trash2, ImageIcon } from "lucide-react";
+import { Truck, LogOut, MapPin, Phone, Package, RefreshCw, Home, Navigation, X, Camera, PenLine, CheckCircle, Trash2, ImageIcon, PlayCircle, Flag } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import StickerPrint from "@/components/StickerPrint";
@@ -48,12 +48,6 @@ function buildDestination(order: Order) {
 }
 function googleMapsNavUrl(order: Order) {
   return `https://www.google.com/maps/dir/?api=1&destination=${buildDestination(order)}&travelmode=driving`;
-}
-function wazeNavUrl(order: Order) {
-  return `https://waze.com/ul?q=${buildDestination(order)}&navigate=yes`;
-}
-function openStreetMapUrl(order: Order) {
-  return `https://www.openstreetmap.org/search?query=${buildDestination(order)}`;
 }
 
 // ── Signature Pad ──────────────────────────────────────────────────────────
@@ -271,69 +265,122 @@ function ProofModal({
   );
 }
 
-// ── Map modal ──────────────────────────────────────────────────────────────
-function MapModal({ order, onClose }: { order: Order; onClose: () => void }) {
-  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=-8.6914,18.9906,9.5166,37.3399&layer=mapnik&marker=&query=${buildDestination(order)}`;
+// ── Trip modal (Uber-style) ─────────────────────────────────────────────────
+function TripModal({
+  order,
+  onClose,
+  onArrive,
+}: {
+  order: Order;
+  onClose: () => void;
+  onArrive: () => void;
+}) {
+  const [tripStarted, setTripStarted] = useState(false);
+
+  function startTrip() {
+    setTripStarted(true);
+    window.open(googleMapsNavUrl(order), "_blank", "noopener,noreferrer");
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background" dir="rtl">
+      {/* Header */}
       <div className="flex items-center gap-3 px-4 h-14 bg-card border-b border-border shrink-0">
-        <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors">
+        <button
+          onClick={onClose}
+          className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors"
+        >
           <X className="w-5 h-5" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm truncate">{order.customerName}</p>
-          <p className="text-xs text-muted-foreground truncate">{order.address}، {order.city}</p>
-        </div>
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full shrink-0">طلب #{order.id}</span>
-      </div>
-
-      <div className="flex-1 relative overflow-hidden">
-        <iframe
-          title="خريطة العنوان"
-          src={mapSrc}
-          className="w-full h-full border-0"
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          sandbox="allow-scripts allow-same-origin allow-popups"
-        />
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-sm border border-border rounded-full px-4 py-1.5 text-xs font-medium shadow-lg pointer-events-none">
-          <MapPin className="w-3 h-3 inline ml-1 text-primary" />
-          {order.address}، {order.city}
+          <p className="font-bold text-sm truncate">توصيل — {order.customerName}</p>
+          <p className="text-xs text-muted-foreground">طلب #{order.id}</p>
         </div>
       </div>
 
-      <div className="px-4 py-4 bg-card border-t border-border grid grid-cols-3 gap-3 shrink-0">
-        <a
-          href={googleMapsNavUrl(order)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1.5 bg-primary text-primary-foreground rounded-xl py-3 font-bold text-xs hover:bg-primary/90 transition-colors"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-          </svg>
-          Google Maps
-        </a>
-        <a
-          href={wazeNavUrl(order)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1.5 bg-[#05c8f7] text-white rounded-xl py-3 font-bold text-xs hover:opacity-90 transition-colors"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20.54 6.63C19.38 4.46 17.28 3 15 3c-.96 0-1.86.25-2.65.68C11.57 3.25 10.77 3 10 3 7.58 3 5.5 4.5 4.39 6.73 3.3 8.93 3.5 11.5 5 13.5L12 21l7-7.5c1.5-2 1.68-4.73.54-6.87z"/>
-          </svg>
-          Waze
-        </a>
-        <a
-          href={openStreetMapUrl(order)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1.5 bg-muted text-foreground rounded-xl py-3 font-bold text-xs hover:bg-muted/80 transition-colors border border-border"
-        >
-          <MapPin className="w-5 h-5" />
-          OpenStreetMap
-        </a>
+      {/* Body */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
+        {/* Destination card */}
+        <div className="w-full bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+          {/* Route indicator */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-primary border-2 border-background ring-2 ring-primary shrink-0" />
+              <span className="text-sm text-muted-foreground">موقعك الحالي</span>
+            </div>
+            <div className="flex items-start gap-3 mr-1 border-r-2 border-dashed border-border pr-4">
+              <div className="w-full">
+                <div className="h-4" /> {/* spacer */}
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Flag className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-bold text-foreground">{order.customerName}</p>
+                <p className="text-sm text-muted-foreground">{order.address}، {order.city}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border" />
+
+          {/* Order info */}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Package className="w-4 h-4 shrink-0" />
+              <span>{order.productName} × {order.quantity}</span>
+            </div>
+            <span className="font-bold text-primary">{order.totalPrice.toLocaleString("ar-DZ")} د.ج</span>
+          </div>
+
+          {/* Phone */}
+          <a
+            href={`tel:${order.phone}`}
+            className="flex items-center gap-2 text-sm text-primary hover:underline"
+          >
+            <Phone className="w-4 h-4 shrink-0" />
+            <span dir="ltr">{order.phone}</span>
+          </a>
+        </div>
+
+        {/* Status label */}
+        {tripStarted && (
+          <div className="flex items-center gap-2 text-sm text-primary font-medium animate-pulse">
+            <Navigation className="w-4 h-4" />
+            الملاحة جارية — اضغط وصلت عند الوصول
+          </div>
+        )}
+      </div>
+
+      {/* Bottom actions */}
+      <div className="px-5 py-5 border-t border-border bg-card space-y-3 shrink-0">
+        {!tripStarted ? (
+          <button
+            onClick={startTrip}
+            className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-base flex items-center justify-center gap-3 shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all"
+          >
+            <PlayCircle className="w-6 h-6" />
+            بدء الرحلة
+          </button>
+        ) : (
+          <button
+            onClick={() => { onClose(); onArrive(); }}
+            className="w-full h-14 rounded-2xl bg-green-600 text-white font-bold text-base flex items-center justify-center gap-3 shadow-lg hover:bg-green-700 active:scale-[0.98] transition-all"
+          >
+            <CheckCircle className="w-6 h-6" />
+            وصلت
+          </button>
+        )}
+        {tripStarted && (
+          <button
+            onClick={startTrip}
+            className="w-full h-10 rounded-xl bg-muted text-foreground font-medium text-sm flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
+          >
+            <Navigation className="w-4 h-4" />
+            إعادة فتح الملاحة
+          </button>
+        )}
       </div>
     </div>
   );
@@ -572,14 +619,14 @@ export default function DeliveryOrders() {
                     </div>
                   </div>
 
-                  {/* Navigate bar */}
+                  {/* Trip button */}
                   <div className="px-5 pb-3">
                     <button
                       onClick={() => setMapOrder(order)}
-                      className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors"
+                      className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm transition-colors"
                     >
-                      <Navigation className="w-4 h-4" />
-                      الملاحة إلى العنوان
+                      <PlayCircle className="w-4 h-4" />
+                      بدء الرحلة
                     </button>
                   </div>
 
@@ -617,7 +664,13 @@ export default function DeliveryOrders() {
         onClose={() => setStickerOrder(null)}
       />
 
-      {mapOrder && <MapModal order={mapOrder} onClose={() => setMapOrder(null)} />}
+      {mapOrder && (
+        <TripModal
+          order={mapOrder}
+          onClose={() => setMapOrder(null)}
+          onArrive={() => { setMapOrder(null); setProofOrder(mapOrder); }}
+        />
+      )}
 
       {proofOrder && (
         <ProofModal
