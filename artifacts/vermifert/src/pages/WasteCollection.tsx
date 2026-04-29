@@ -294,36 +294,42 @@ export default function WasteCollection() {
     <div dir={dir} className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-700 to-emerald-600 text-white">
-        <div className="max-w-2xl mx-auto px-4 py-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <Recycle size={36} />
-            <h1 className="text-3xl font-bold">من النفايات إلى السماد</h1>
-          </div>
-          <p className="text-green-100 text-lg mb-4">تبرّع بنفاياتك العضوية — نحوّلها إلى Vermicompost طبيعي</p>
 
-          {/* Donor status pill */}
+        {/* Top nav bar */}
+        <div className="max-w-4xl mx-auto px-4 pt-3 pb-0 flex items-center justify-between">
+          <Link href="/">
+            <span className="text-green-200 hover:text-white text-xs flex items-center gap-1 transition">
+              <ArrowRight size={13} className="rotate-180" /> المتجر
+            </span>
+          </Link>
           {donor ? (
             <Link href="/donor/dashboard">
-              <div className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-2xl px-4 py-2 mb-4 cursor-pointer transition">
-                <div className="w-7 h-7 bg-white/30 rounded-full flex items-center justify-center">
-                  <User size={14} className="text-white" />
+              <div className="flex items-center gap-2 bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl px-3 py-1.5 cursor-pointer transition">
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                  {donor.name.charAt(0)}
                 </div>
-                <div className="text-right">
-                  <p className="text-white text-sm font-bold leading-tight">{donor.name}</p>
-                  <p className="text-green-200 text-xs leading-tight flex items-center gap-1">
-                    <Star size={10} /> {donor.greenPoints} نقطة · {BADGE_LABELS[donor.badge] ?? donor.badge}
-                  </p>
+                <div className="text-right leading-none">
+                  <p className="text-white text-xs font-semibold">{donor.name}</p>
+                  <p className="text-green-300 text-[10px] mt-0.5">{donor.greenPoints} نقطة · {BADGE_LABELS[donor.badge] ?? donor.badge}</p>
                 </div>
-                <ArrowRight size={14} className="text-green-200 mr-1 rotate-180" />
               </div>
             </Link>
           ) : (
             <Link href="/donor/login">
-              <button className="inline-flex items-center gap-1.5 text-xs text-green-200 hover:text-white border border-white/30 hover:border-white/60 rounded-xl px-3 py-1.5 mb-4 transition">
-                <LogIn size={13} /> تسجيل الدخول / إنشاء حساب متبرع
-              </button>
+              <span className="inline-flex items-center gap-1 text-[11px] text-green-200 hover:text-white border border-white/20 hover:border-white/40 rounded-xl px-3 py-1.5 transition">
+                <LogIn size={12} /> دخول المتبرع
+              </span>
             </Link>
           )}
+        </div>
+
+        {/* Page title */}
+        <div className="max-w-2xl mx-auto px-4 py-7 text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Recycle size={32} />
+            <h1 className="text-2xl font-bold">من النفايات إلى السماد</h1>
+          </div>
+          <p className="text-green-100 text-sm mb-6">تبرّع بنفاياتك العضوية — نحوّلها إلى Vermicompost طبيعي</p>
 
           {/* Mode tabs */}
           <div className="inline-flex bg-white/20 rounded-2xl p-1 gap-1">

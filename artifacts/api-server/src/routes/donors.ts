@@ -150,16 +150,34 @@ router.post("/donors/redeem", requireDonor, async (req: any, res): Promise<void>
   res.json(dc);
 });
 
-// ── Admin: award points when collection completed ─────────────────────────────
-// Called from admin waste-collection status update (internally)
-// Also: GET /api/admin/donors
-router.get("/admin/donors", async (req, res): Promise<void> => {
+// ── Admin helpers ─────────────────────────────────────────────────────────────
+async function requireAdmin(req: any, res: any): Promise<boolean> {
   const token = req.headers["x-admin-token"] as string;
-  if (!token) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const adminCheck = await db.query.adminSessions?.findFirst?.({ where: (t: any, { eq }: any) => eq(t.token, token) }).catch(() => null);
-  // simple check using raw query
+  if (!token) { res.status(401).json({ error: "Unauthorized" }); return false; }
+  return true;
+}
+
+router.get("/admin/donors", async (req, res): Promise<void> => {
+  if (!await requireAdmin(req, res)) return;
   const rows = await db.select().from(donors).orderBy(desc(donors.createdAt));
   res.json(rows.map(d => ({ ...d, passwordHash: undefined })));
+});
+
+router.post("/admin/donors/:id/reset-points", async (req, res): Promise<void> => {
+  if (!await requireAdmin(req, res)) return;
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.update(donors).set({ greenPoints: 0 }).where(eq(donors.id, id));
+  res.json({ ok: true });
+});
+
+router.delete("/admin/donors/:id", async (req, res): Promise<void> => {
+  if (!await requireAdmin(req, res)) return;
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(donorSessions).where(eq(donorSessions.donorId, id));
+  await db.delete(donors).where(eq(donors.id, id));
+  res.json({ ok: true });
 });
 
 // ── Logout ────────────────────────────────────────────────────────────────────
