@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "wouter";
 import {
@@ -6,9 +6,11 @@ import {
   CheckCircle, Recycle, Apple, Layers, Weight,
   Phone, MapPin, User, FileText, Info, Search,
   Clock, CalendarCheck, Truck, FlaskConical, CheckCircle2,
-  AlertCircle, ClipboardList,
+  AlertCircle, ClipboardList, Star, LogIn,
 } from "lucide-react";
 import { useLang } from "@/lib/i18n";
+
+type Donor = { id: number; name: string; phone: string; greenPoints: number; badge: string };
 
 const API = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
 
@@ -207,12 +209,17 @@ function TrackingResult({ item, onReset }: { item: WC; onReset: () => void }) {
   );
 }
 
+const BADGE_LABELS: Record<string, string> = { seedling: "بذرة 🌱", plant: "نبتة 🌿", tree: "شجرة 🌳" };
+
 export default function WasteCollection() {
   const { dir } = useLang();
   const [mode, setMode] = useState<"how" | "track">("how");
   const [step, setStep] = useState<"how" | "form" | "done">("how");
   const [submitting, setSubmitting] = useState(false);
   const [resultCode, setResultCode] = useState("");
+
+  // Logged-in donor
+  const [donor, setDonor] = useState<Donor | null>(null);
 
   // Tracking state
   const [trackCode, setTrackCode] = useState("");
@@ -226,6 +233,22 @@ export default function WasteCollection() {
 
   const sourceType = watch("sourceType");
   const wasteType = watch("wasteType");
+
+  // ── Load donor session on mount ───────────────────────────────────────────
+  useEffect(() => {
+    const token = localStorage.getItem("donorToken");
+    if (!token) return;
+    fetch(`${API}/api/donors/me`, { headers: { "x-donor-token": token } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        setDonor(data.donor);
+        // Auto-fill name & phone
+        setValue("contactName", data.donor.name);
+        setValue("contactPhone", data.donor.phone);
+      })
+      .catch(() => {});
+  }, []);
 
   async function onSubmit(data: FormData) {
     setSubmitting(true);
@@ -277,11 +300,30 @@ export default function WasteCollection() {
             <h1 className="text-3xl font-bold">من النفايات إلى السماد</h1>
           </div>
           <p className="text-green-100 text-lg mb-4">تبرّع بنفاياتك العضوية — نحوّلها إلى Vermicompost طبيعي</p>
-          <Link href="/donor/login">
-            <button className="text-xs text-green-200 hover:text-white underline underline-offset-2 mb-4 flex items-center gap-1 mx-auto">
-              <User size={13} /> تسجيل الدخول / إنشاء حساب متبرع
-            </button>
-          </Link>
+
+          {/* Donor status pill */}
+          {donor ? (
+            <Link href="/donor/dashboard">
+              <div className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-2xl px-4 py-2 mb-4 cursor-pointer transition">
+                <div className="w-7 h-7 bg-white/30 rounded-full flex items-center justify-center">
+                  <User size={14} className="text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-white text-sm font-bold leading-tight">{donor.name}</p>
+                  <p className="text-green-200 text-xs leading-tight flex items-center gap-1">
+                    <Star size={10} /> {donor.greenPoints} نقطة · {BADGE_LABELS[donor.badge] ?? donor.badge}
+                  </p>
+                </div>
+                <ArrowRight size={14} className="text-green-200 mr-1 rotate-180" />
+              </div>
+            </Link>
+          ) : (
+            <Link href="/donor/login">
+              <button className="inline-flex items-center gap-1.5 text-xs text-green-200 hover:text-white border border-white/30 hover:border-white/60 rounded-xl px-3 py-1.5 mb-4 transition">
+                <LogIn size={13} /> تسجيل الدخول / إنشاء حساب متبرع
+              </button>
+            </Link>
+          )}
 
           {/* Mode tabs */}
           <div className="inline-flex bg-white/20 rounded-2xl p-1 gap-1">
@@ -453,7 +495,14 @@ export default function WasteCollection() {
                 </div>
 
                 <div className="bg-white rounded-2xl border border-green-100 p-5 shadow-sm space-y-4">
-                  <h3 className="font-bold text-green-900">بياناتك</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-green-900">بياناتك</h3>
+                    {donor && (
+                      <span className="text-xs bg-green-100 text-green-700 border border-green-300 rounded-full px-2.5 py-0.5 font-medium flex items-center gap-1">
+                        <CheckCircle size={11} /> مُعبَّأ من حسابك
+                      </span>
+                    )}
+                  </div>
 
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
@@ -462,7 +511,10 @@ export default function WasteCollection() {
                     <input
                       {...register("contactName", { required: true })}
                       placeholder="محمد أحمد"
-                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 ${errors.contactName ? "border-red-400" : "border-gray-300"}`}
+                      readOnly={!!donor}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400
+                        ${errors.contactName ? "border-red-400" : "border-gray-300"}
+                        ${donor ? "bg-green-50 text-green-800 font-semibold cursor-default" : ""}`}
                     />
                     {errors.contactName && <p className="text-red-500 text-xs">الاسم مطلوب</p>}
                   </div>
@@ -475,7 +527,10 @@ export default function WasteCollection() {
                       {...register("contactPhone", { required: true })}
                       placeholder="06xxxxxxxx"
                       dir="ltr"
-                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 ${errors.contactPhone ? "border-red-400" : "border-gray-300"}`}
+                      readOnly={!!donor}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400
+                        ${errors.contactPhone ? "border-red-400" : "border-gray-300"}
+                        ${donor ? "bg-green-50 text-green-800 font-semibold cursor-default" : ""}`}
                     />
                     {errors.contactPhone && <p className="text-red-500 text-xs">رقم الهاتف مطلوب</p>}
                   </div>
