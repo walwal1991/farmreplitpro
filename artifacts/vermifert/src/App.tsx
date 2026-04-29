@@ -33,6 +33,8 @@ import CustomerDashboard from "@/pages/CustomerDashboard";
 import TrackOrder from "@/pages/TrackOrder";
 import AdminBatches from "@/pages/AdminBatches";
 import BatchScan from "@/pages/BatchScan";
+import WasteCollection from "@/pages/WasteCollection";
+import AdminWasteCollections from "@/pages/AdminWasteCollections";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +71,8 @@ function Router() {
 
       <Route path="/admin/batches" component={AdminBatches} />
       <Route path="/batch/:code" component={BatchScan} />
+      <Route path="/admin/waste-collections" component={AdminWasteCollections} />
+      <Route path="/waste-collection" component={WasteCollection} />
 
       <Route component={NotFound} />
     </Switch>

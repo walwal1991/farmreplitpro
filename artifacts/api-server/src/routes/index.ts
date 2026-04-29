@@ -11,6 +11,7 @@ import reviewsRouter from "./reviews";
 import contactRouter from "./contact";
 import enrollmentsRouter from "./enrollments";
 import batchesRouter from "./batches";
+import wasteCollectionsRouter from "./waste-collections";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(reviewsRouter);
 router.use(contactRouter);
 router.use(enrollmentsRouter);
 router.use(batchesRouter);
+router.use(wasteCollectionsRouter);
 
 export default router;

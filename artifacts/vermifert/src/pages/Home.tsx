@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Leaf, Sprout, ShieldCheck, HeartHandshake, ShoppingBag } from "lucide-react";
+import { Leaf, Sprout, ShieldCheck, HeartHandshake, ShoppingBag, Recycle, ArrowLeft } from "lucide-react";
 import { useListProducts } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,6 +51,29 @@ export default function Home() {
             <Button asChild size="lg" variant="outline" className="text-base px-8 h-12 bg-white/10 hover:bg-white/20 text-white border-white/40 backdrop-blur">
               <Link href="/consultation">{t("home_free_consult")}</Link>
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Waste Collection Banner */}
+      <section className="bg-gradient-to-l from-green-800 to-emerald-700 text-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 rounded-full p-3">
+                <Recycle size={28} />
+              </div>
+              <div>
+                <p className="font-bold text-lg">من النفايات إلى السماد</p>
+                <p className="text-green-200 text-sm">تبرّع بنفاياتك العضوية — نحوّلها إلى Vermicompost ونجمعها مجاناً</p>
+              </div>
+            </div>
+            <Link href="/waste-collection">
+              <button className="bg-white text-green-800 font-bold px-6 py-2.5 rounded-xl hover:bg-green-50 transition flex items-center gap-2 shrink-0">
+                سجّل طلب الجمع
+                <ArrowLeft size={16} />
+              </button>
+            </Link>
           </div>
         </div>
       </section>
