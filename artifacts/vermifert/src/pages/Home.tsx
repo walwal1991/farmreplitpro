@@ -55,29 +55,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Waste Collection Banner */}
-      <section className="bg-gradient-to-l from-green-800 to-emerald-700 text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="bg-white/20 rounded-full p-3">
-                <Recycle size={28} />
-              </div>
-              <div>
-                <p className="font-bold text-lg">من النفايات إلى السماد</p>
-                <p className="text-green-200 text-sm">تبرّع بنفاياتك العضوية — نحوّلها إلى Vermicompost ونجمعها مجاناً</p>
-              </div>
-            </div>
-            <Link href="/waste-collection">
-              <button className="bg-white text-green-800 font-bold px-6 py-2.5 rounded-xl hover:bg-green-50 transition flex items-center gap-2 shrink-0">
-                سجّل طلب الجمع
-                <ArrowLeft size={16} />
-              </button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* Features Section */}
       <section className="py-20 bg-card">
         <div className="container mx-auto px-4">
@@ -107,6 +84,29 @@ export default function Home() {
               <h3 className="text-xl font-bold">{t("home_feat3_title")}</h3>
               <p className="text-muted-foreground">{t("home_feat3_body")}</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Waste Collection Banner */}
+      <section className="bg-gradient-to-l from-green-800 to-emerald-700 text-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 rounded-full p-3">
+                <Recycle size={28} />
+              </div>
+              <div>
+                <p className="font-bold text-lg">من النفايات إلى السماد</p>
+                <p className="text-green-200 text-sm">تبرّع بنفاياتك العضوية — نحوّلها إلى Vermicompost ونجمعها مجاناً</p>
+              </div>
+            </div>
+            <Link href="/waste-collection">
+              <button className="bg-white text-green-800 font-bold px-6 py-2.5 rounded-xl hover:bg-green-50 transition flex items-center gap-2 shrink-0">
+                سجّل طلب الجمع
+                <ArrowLeft size={16} />
+              </button>
+            </Link>
           </div>
         </div>
       </section>
