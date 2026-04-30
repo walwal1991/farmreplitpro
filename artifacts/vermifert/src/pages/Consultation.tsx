@@ -10,8 +10,9 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateConsultation } from "@workspace/api-client-react";
 import {
-  CheckCircle2, Sprout, MessageCircle, Send, RefreshCw, User,
+  CheckCircle2, Sprout, MessageCircle, Send, RefreshCw, User, Recycle, ArrowLeft,
 } from "lucide-react";
+import { Link } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ConsultationInputSoilType } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
@@ -471,6 +472,29 @@ export default function Consultation() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Waste Collection Banner */}
+      <section className="bg-gradient-to-l from-green-800 to-emerald-700 text-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 rounded-full p-3">
+                <Recycle size={28} />
+              </div>
+              <div>
+                <p className="font-bold text-lg">من النفايات إلى السماد</p>
+                <p className="text-green-200 text-sm">تبرّع بنفاياتك العضوية — نحوّلها إلى Vermicompost ونجمعها مجاناً</p>
+              </div>
+            </div>
+            <Link href="/waste-collection">
+              <button className="bg-white text-green-800 font-bold px-6 py-2.5 rounded-xl hover:bg-green-50 transition flex items-center gap-2 shrink-0">
+                سجّل طلب الجمع
+                <ArrowLeft size={16} />
+              </button>
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
