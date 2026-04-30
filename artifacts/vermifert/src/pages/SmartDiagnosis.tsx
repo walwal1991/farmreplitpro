@@ -4,13 +4,168 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useListProducts } from "@workspace/api-client-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useCart } from "@/lib/cart";
 import { useLang } from "@/lib/i18n";
-import { FlaskConical, Leaf, Ruler, Sprout, CheckCircle2, ShoppingCart } from "lucide-react";
+import {
+  FlaskConical, Leaf, Ruler, Sprout, CheckCircle2, ShoppingCart,
+  MapPin, Droplets, Wind, CloudRain, Sun, CloudSun, Cloud, Loader2,
+} from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 import { useToast } from "@/hooks/use-toast";
 import type { Lang } from "@/lib/translations";
+
+// ── Weather helpers ───────────────────────────────────────────────────────────
+
+interface WeatherData {
+  city: string;
+  temp: number;
+  feelsLike: number;
+  humidity: number;
+  windSpeed: number;
+  precipitation: number;
+  weatherCode: number;
+  uvIndex: number;
+  forecast: { date: string; maxTemp: number; minTemp: number; precip: number; code: number }[];
+}
+
+function wmoLabel(code: number): string {
+  if (code === 0) return "صافٍ";
+  if (code <= 3) return "غائم جزئياً";
+  if (code <= 49) return "ضبابي";
+  if (code <= 67) return "مطر";
+  if (code <= 77) return "ثلج";
+  if (code <= 82) return "زخات مطر";
+  if (code <= 99) return "عاصفة";
+  return "غير معروف";
+}
+
+function WmoIcon({ code, size = 20 }: { code: number; size?: number }) {
+  if (code === 0) return <Sun size={size} className="text-yellow-500" />;
+  if (code <= 3) return <CloudSun size={size} className="text-yellow-400" />;
+  if (code <= 67) return <CloudRain size={size} className="text-blue-400" />;
+  return <Cloud size={size} className="text-gray-400" />;
+}
+
+async function geocode(city: string): Promise<{ lat: number; lon: number; display: string } | null> {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`;
+  const res = await fetch(url, { headers: { "Accept-Language": "ar", "User-Agent": "vermifert-app" } });
+  const data = await res.json();
+  if (!data.length) return null;
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name.split(",").slice(0, 2).join("،") };
+}
+
+async function fetchWeather(lat: number, lon: number, display: string): Promise<WeatherData> {
+  const url = new URL("https://api.open-meteo.com/v1/forecast");
+  url.searchParams.set("latitude", String(lat));
+  url.searchParams.set("longitude", String(lon));
+  url.searchParams.set("current", "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code,uv_index");
+  url.searchParams.set("daily", "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum");
+  url.searchParams.set("forecast_days", "5");
+  url.searchParams.set("timezone", "auto");
+
+  const res = await fetch(url.toString());
+  const d = await res.json();
+  const c = d.current;
+
+  return {
+    city: display,
+    temp: Math.round(c.temperature_2m),
+    feelsLike: Math.round(c.apparent_temperature),
+    humidity: c.relative_humidity_2m,
+    windSpeed: Math.round(c.wind_speed_10m),
+    precipitation: c.precipitation,
+    weatherCode: c.weather_code,
+    uvIndex: Math.round(c.uv_index ?? 0),
+    forecast: d.daily.time.slice(1, 5).map((date: string, i: number) => ({
+      date,
+      maxTemp: Math.round(d.daily.temperature_2m_max[i + 1]),
+      minTemp: Math.round(d.daily.temperature_2m_min[i + 1]),
+      precip: d.daily.precipitation_sum[i + 1],
+      code: d.daily.weather_code[i + 1],
+    })),
+  };
+}
+
+function WeatherCard({ weather, loading, error }: { weather: WeatherData | null; loading: boolean; error: string }) {
+  if (loading) return (
+    <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground text-sm">
+      <Loader2 className="w-4 h-4 animate-spin" /> جارٍ تحميل بيانات الطقس...
+    </div>
+  );
+  if (error) return <p className="text-red-500 text-sm py-2">{error}</p>;
+  if (!weather) return null;
+
+  const days = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
+
+  return (
+    <div className="mt-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-sky-50 to-blue-50 p-4 space-y-3">
+      {/* Current */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mb-0.5">
+            <MapPin size={11} /> {weather.city}
+          </p>
+          <div className="flex items-end gap-2">
+            <span className="text-4xl font-extrabold text-sky-700">{weather.temp}°</span>
+            <span className="text-sm text-muted-foreground mb-1">/ يشعر كـ {weather.feelsLike}°</span>
+          </div>
+          <p className="text-sm text-sky-600 font-medium">{wmoLabel(weather.weatherCode)}</p>
+        </div>
+        <WmoIcon code={weather.weatherCode} size={48} />
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { icon: <Droplets size={13} className="text-blue-500" />, label: "رطوبة", val: `${weather.humidity}%` },
+          { icon: <Wind size={13} className="text-gray-500" />,     label: "ريح", val: `${weather.windSpeed} كم/س` },
+          { icon: <CloudRain size={13} className="text-blue-400" />, label: "تساقط", val: `${weather.precipitation} مم` },
+          { icon: <Sun size={13} className="text-orange-400" />,    label: "UV", val: weather.uvIndex },
+        ].map(({ icon, label, val }) => (
+          <div key={label} className="bg-white/70 rounded-xl p-2 text-center border border-white">
+            <div className="flex justify-center mb-1">{icon}</div>
+            <p className="text-[10px] text-muted-foreground">{label}</p>
+            <p className="text-xs font-bold text-gray-700">{val}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Forecast */}
+      <div className="grid grid-cols-4 gap-1.5">
+        {weather.forecast.map(f => {
+          const day = days[new Date(f.date).getDay()];
+          return (
+            <div key={f.date} className="bg-white/70 rounded-xl p-2 text-center border border-white">
+              <p className="text-[10px] text-muted-foreground mb-1">{day}</p>
+              <div className="flex justify-center mb-1"><WmoIcon code={f.code} size={14} /></div>
+              <p className="text-xs font-bold">{f.maxTemp}°</p>
+              <p className="text-[10px] text-muted-foreground">{f.minTemp}°</p>
+              {f.precip > 0 && <p className="text-[10px] text-blue-400">{f.precip}مم</p>}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Agri tip based on weather */}
+      {weather.temp > 35 && (
+        <p className="text-xs bg-orange-50 border border-orange-200 text-orange-700 rounded-xl px-3 py-2">
+          🌡️ درجة الحرارة مرتفعة — ينصح بالتسميد في الصباح الباكر أو المساء لتجنب تبخر المواد الغذائية.
+        </p>
+      )}
+      {weather.precipitation > 5 && (
+        <p className="text-xs bg-blue-50 border border-blue-200 text-blue-700 rounded-xl px-3 py-2">
+          🌧️ يُتوقع هطول مطر — يمكن تخفيف جرعة السماد السائل لهذا الأسبوع.
+        </p>
+      )}
+      {weather.humidity > 80 && (
+        <p className="text-xs bg-teal-50 border border-teal-200 text-teal-700 rounded-xl px-3 py-2">
+          💧 رطوبة عالية — تأكد من تهوية التربة جيداً قبل الإضافة.
+        </p>
+      )}
+    </div>
+  );
+}
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -112,6 +267,28 @@ export default function SmartDiagnosis() {
   const [crop, setCrop] = useState("tomato");
   const [submitted, setSubmitted] = useState(false);
 
+  // Weather state
+  const [cityInput, setCityInput] = useState("");
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!cityInput.trim()) { setWeather(null); setWeatherError(""); return; }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setWeatherLoading(true);
+      setWeatherError("");
+      try {
+        const geo = await geocode(cityInput.trim());
+        if (!geo) { setWeatherError("لم يُعثر على الموقع — تأكد من اسم المدينة أو المنطقة."); setWeather(null); }
+        else { setWeather(await fetchWeather(geo.lat, geo.lon, geo.display)); }
+      } catch { setWeatherError("تعذّر تحميل بيانات الطقس، يُرجى المحاولة مجدداً."); }
+      finally { setWeatherLoading(false); }
+    }, 800);
+  }, [cityInput]);
+
   const solidProducts = useMemo(() => products?.filter((p) => p.category === "solid" && p.active) ?? [], [products]);
   const liquidProducts = useMemo(() => products?.filter((p) => p.category === "liquid" && p.active) ?? [], [products]);
 
@@ -151,7 +328,8 @@ export default function SmartDiagnosis() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          {/* Form */}
+          {/* Left column: form + weather */}
+          <div className="space-y-4">
           <Card className="border-border/60">
             <CardContent className="p-6 space-y-5">
               <div className="grid grid-cols-2 gap-4">
@@ -198,6 +376,20 @@ export default function SmartDiagnosis() {
                   </Label>
                   <Input id="area" type="number" min="1" value={area} onChange={(e) => { setArea(e.target.value); setSubmitted(false); }} dir="ltr" />
                 </div>
+
+                <div className="space-y-2 col-span-2">
+                  <Label className="flex items-center gap-1.5 text-sm font-medium">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    موقع المزرعة (المدينة أو المنطقة)
+                  </Label>
+                  <Input
+                    type="text"
+                    value={cityInput}
+                    onChange={e => setCityInput(e.target.value)}
+                    placeholder="مثال: الجزائر العاصمة، ورقلة، تيزي وزو..."
+                    dir="rtl"
+                  />
+                </div>
               </div>
 
               <Button className="w-full h-12 text-base font-bold" onClick={() => setSubmitted(true)} disabled={!ph || !area || parseFloat(area) <= 0}>
@@ -205,6 +397,12 @@ export default function SmartDiagnosis() {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Weather Card */}
+          {(cityInput.trim() || weatherLoading) && (
+            <WeatherCard weather={weather} loading={weatherLoading} error={weatherError} />
+          )}
+          </div>{/* end left column */}
 
           {/* Results */}
           {submitted && recommendations.length > 0 ? (
