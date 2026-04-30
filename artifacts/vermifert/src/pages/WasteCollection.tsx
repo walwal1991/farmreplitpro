@@ -296,28 +296,28 @@ export default function WasteCollection() {
       <div className="bg-gradient-to-r from-green-700 to-emerald-600 text-white">
 
         {/* Top nav bar */}
-        <div className="max-w-4xl mx-auto px-4 pt-3 pb-0 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 pt-4 pb-0 flex items-center justify-between">
           <Link href="/">
-            <span className="text-green-200 hover:text-white text-xs flex items-center gap-1 transition">
-              <ArrowRight size={13} className="rotate-180" /> المتجر
+            <span className="inline-flex items-center gap-1.5 bg-white text-green-800 hover:bg-green-50 font-semibold text-sm px-4 py-2 rounded-xl shadow transition">
+              <ArrowRight size={14} className="rotate-180" /> العودة إلى المتجر
             </span>
           </Link>
           {donor ? (
             <Link href="/donor/dashboard">
-              <div className="flex items-center gap-2 bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl px-3 py-1.5 cursor-pointer transition">
-                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+              <div className="flex items-center gap-2 bg-white hover:bg-green-50 shadow rounded-xl px-3 py-2 cursor-pointer transition">
+                <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0">
                   {donor.name.charAt(0)}
                 </div>
                 <div className="text-right leading-none">
-                  <p className="text-white text-xs font-semibold">{donor.name}</p>
-                  <p className="text-green-300 text-[10px] mt-0.5">{donor.greenPoints} نقطة · {BADGE_LABELS[donor.badge] ?? donor.badge}</p>
+                  <p className="text-green-900 text-sm font-bold">{donor.name}</p>
+                  <p className="text-green-600 text-[11px] mt-0.5">{donor.greenPoints} نقطة · {BADGE_LABELS[donor.badge] ?? donor.badge}</p>
                 </div>
               </div>
             </Link>
           ) : (
             <Link href="/donor/login">
-              <span className="inline-flex items-center gap-1 text-[11px] text-green-200 hover:text-white border border-white/20 hover:border-white/40 rounded-xl px-3 py-1.5 transition">
-                <LogIn size={12} /> دخول المتبرع
+              <span className="inline-flex items-center gap-1.5 bg-white text-green-800 hover:bg-green-50 font-semibold text-sm px-4 py-2 rounded-xl shadow transition">
+                <LogIn size={14} /> دخول المتبرع
               </span>
             </Link>
           )}
