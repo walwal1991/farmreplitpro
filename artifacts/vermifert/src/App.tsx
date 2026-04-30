@@ -36,6 +36,7 @@ import AdminWasteCollections from "@/pages/AdminWasteCollections";
 import DonorAuth from "@/pages/DonorAuth";
 import DonorDashboard from "@/pages/DonorDashboard";
 import AdminDonors from "@/pages/AdminDonors";
+import AdminSensors from "@/pages/AdminSensors";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ function Router() {
 
       <Route path="/admin/waste-collections" component={AdminWasteCollections} />
       <Route path="/admin/donors" component={AdminDonors} />
+      <Route path="/admin/sensors" component={AdminSensors} />
       <Route path="/waste-collection" component={WasteCollection} />
       <Route path="/donor/login" component={DonorAuth} />
       <Route path="/donor/dashboard" component={DonorDashboard} />

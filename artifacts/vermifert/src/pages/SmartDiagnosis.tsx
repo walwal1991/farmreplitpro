@@ -4,16 +4,182 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useListProducts } from "@workspace/api-client-react";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useCart } from "@/lib/cart";
 import { useLang } from "@/lib/i18n";
 import {
   FlaskConical, Leaf, Ruler, Sprout, CheckCircle2, ShoppingCart,
-  MapPin, Droplets, Wind, CloudRain, Sun, CloudSun, Cloud, Loader2,
+  MapPin, Droplets, Wind, CloudRain, Sun, CloudSun, Cloud, Loader2, Thermometer, Cpu,
 } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 import { useToast } from "@/hooks/use-toast";
 import type { Lang } from "@/lib/translations";
+
+// ── IoT Moisture Widget ───────────────────────────────────────────────────────
+
+const MOISTURE_TIERS = [
+  { max: 20, label: "جاف جداً — ري عاجل!",     tip: "🚨 التربة في حالة جفاف حرج. تحتاج ريّاً فورياً قبل إضافة أي سماد.", gauge: "#ef4444" },
+  { max: 40, label: "جاف — ري موصى به",         tip: "⚠️ الرطوبة منخفضة. يُنصح بالريّ قبل إضافة السماد لضمان الامتصاص الجيد.", gauge: "#f97316" },
+  { max: 65, label: "مناسب — وضع مثالي",        tip: "✅ رطوبة التربة مثالية. الآن هو أفضل وقت لتطبيق سماد الديدان.", gauge: "#22c55e" },
+  { max: 85, label: "رطب — أجّل التسميد",       tip: "💧 التربة رطبة أكثر من اللازم. انتظر حتى تجف قليلاً قبل التسميد.", gauge: "#3b82f6" },
+  { max: 101, label: "مشبع — خطر تعفّن الجذور", tip: "🌊 التربة مشبعة بالماء. لا تسمّد الآن وتحقق من الصرف.", gauge: "#8b5cf6" },
+];
+
+function getMoistureTier(m: number) {
+  return MOISTURE_TIERS.find(t => m < t.max) ?? MOISTURE_TIERS[MOISTURE_TIERS.length - 1];
+}
+
+interface SensorReading { moisture: number; temperature: number | null; createdAt: string }
+interface SensorInfo { deviceId: string; name: string; location: string | null; reading: SensorReading | null }
+
+function IoTWidget({ apiBase }: { apiBase: string }) {
+  const [pending, setPending] = useState("");
+  const [sensor, setSensor] = useState<SensorInfo | null>(null);
+  const [history, setHistory] = useState<SensorReading[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchSensor = useCallback(async (id: string, silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/sensors/${encodeURIComponent(id)}/latest`);
+      if (!res.ok) { setError("الجهاز غير موجود. تأكد من معرّف الجهاز."); setSensor(null); return; }
+      setSensor(await res.json()); setError("");
+
+      const hRes = await fetch(`${apiBase}/api/sensors/${encodeURIComponent(id)}/history?limit=20`);
+      if (hRes.ok) setHistory(await hRes.json());
+    } catch { if (!silent) setError("تعذّر الاتصال بالخادم"); }
+    finally { if (!silent) setLoading(false); }
+  }, [apiBase]);
+
+  const connect = (id: string) => {
+    if (!id.trim()) return;
+    fetchSensor(id.trim());
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => fetchSensor(id.trim(), true), 30_000);
+  };
+
+  useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
+
+  const tier = sensor?.reading ? getMoistureTier(sensor.reading.moisture) : null;
+  const moisture = sensor?.reading?.moisture ?? 0;
+  const circumference = 2 * Math.PI * 26;
+  const dash = (moisture / 100) * circumference;
+
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-green-50 to-emerald-50 p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-1">
+        <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center">
+          <Cpu className="w-4 h-4 text-primary" />
+        </div>
+        <p className="font-bold text-sm">حساس رطوبة التربة (IoT)</p>
+      </div>
+
+      {/* Device ID input */}
+      <form onSubmit={e => { e.preventDefault(); connect(pending); }} className="flex gap-2">
+        <input
+          value={pending}
+          onChange={e => setPending(e.target.value)}
+          placeholder="أدخل معرّف الجهاز (Device ID)..."
+          dir="ltr"
+          className="flex-1 bg-white/80 border border-border rounded-xl px-3 py-2 text-xs font-mono outline-none focus:ring-1 focus:ring-primary"
+        />
+        <button type="submit" disabled={!pending.trim()} className="bg-primary text-white text-xs font-bold px-3 py-2 rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors">
+          ربط
+        </button>
+      </form>
+
+      {loading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+          <Loader2 className="w-4 h-4 animate-spin" /> جارٍ التحميل...
+        </div>
+      )}
+      {error && <p className="text-red-500 text-xs">{error}</p>}
+
+      {sensor && sensor.reading && tier && (
+        <div className="space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold text-sm">{sensor.name}</p>
+              {sensor.location && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin size={10} />{sensor.location}</p>}
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              يتجدد كل 30 ث
+            </span>
+          </div>
+
+          {/* Gauge + stats */}
+          <div className="flex items-center gap-4">
+            {/* Circular gauge */}
+            <div className="relative w-24 h-24 shrink-0">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="26" fill="none" stroke="#e5e7eb" strokeWidth="5" />
+                <circle cx="30" cy="30" r="26" fill="none"
+                  stroke={tier.gauge} strokeWidth="5"
+                  strokeDasharray={`${dash} ${circumference - dash}`}
+                  strokeLinecap="round"
+                  style={{ transition: "stroke-dasharray 0.6s ease" }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-lg font-extrabold leading-none">{Math.round(moisture)}%</span>
+                <span className="text-[9px] text-muted-foreground">رطوبة</span>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="flex-1 space-y-2">
+              <div className="inline-block text-xs font-bold px-2.5 py-1 rounded-full border"
+                style={{ color: tier.gauge, backgroundColor: `${tier.gauge}15`, borderColor: `${tier.gauge}40` }}>
+                {tier.label}
+              </div>
+              {sensor.reading.temperature !== null && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Thermometer size={12} className="text-orange-500" />
+                  درجة الحرارة: <strong>{sensor.reading.temperature}°C</strong>
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                آخر قراءة:{" "}
+                {new Date(sensor.reading.createdAt).toLocaleTimeString("ar-DZ", { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            </div>
+          </div>
+
+          {/* History sparkline */}
+          {history.length > 1 && (
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-1">آخر {history.length} قراءة</p>
+              <div className="flex items-end gap-0.5 h-10">
+                {history.map((h, i) => {
+                  const t = getMoistureTier(h.moisture);
+                  return (
+                    <div key={i} title={`${Math.round(h.moisture)}%`}
+                      className="flex-1 rounded-sm transition-all"
+                      style={{ height: `${Math.max(4, h.moisture)}%`, backgroundColor: `${t.gauge}90` }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Tip */}
+          <p className="text-xs rounded-xl px-3 py-2 border leading-relaxed"
+            style={{ backgroundColor: `${tier.gauge}10`, borderColor: `${tier.gauge}30`, color: tier.gauge }}>
+            {tier.tip}
+          </p>
+        </div>
+      )}
+
+      {sensor && !sensor.reading && (
+        <p className="text-sm text-muted-foreground text-center py-3">لا توجد قراءات بعد — تأكد أن الجهاز يرسل البيانات.</p>
+      )}
+    </div>
+  );
+}
 
 // ── Weather helpers ───────────────────────────────────────────────────────────
 
@@ -402,6 +568,9 @@ export default function SmartDiagnosis() {
           {(cityInput.trim() || weatherLoading) && (
             <WeatherCard weather={weather} loading={weatherLoading} error={weatherError} />
           )}
+
+          {/* IoT Soil Moisture Widget */}
+          <IoTWidget apiBase={API} />
           </div>{/* end left column */}
 
           {/* Results */}

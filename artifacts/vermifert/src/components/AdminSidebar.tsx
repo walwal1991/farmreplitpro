@@ -13,6 +13,7 @@ import {
   GraduationCap,
   Leaf,
   HeartHandshake,
+  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,7 @@ export default function AdminSidebar() {
     { href: "/admin/enrollments", label: "تسجيلات الدورات", icon: GraduationCap },
     { href: "/admin/waste-collections", label: "جمع النفايات", icon: Leaf },
     { href: "/admin/donors", label: "المتبرعون", icon: HeartHandshake },
+    { href: "/admin/sensors", label: "حساسات التربة (IoT)", icon: Cpu },
     { href: "/admin/change-password", label: "كلمة المرور", icon: KeyRound },
   ];
 
