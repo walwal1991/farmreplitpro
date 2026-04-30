@@ -81,6 +81,7 @@ export default function Navbar() {
     { href: "/learn", label: t("nav_learn") },
     { href: "/guide", label: t("nav_guide") },
     { href: "/consultation", label: t("nav_consultation") },
+    { href: "/waste-collection", label: "من النفايات إلى السماد" },
   ];
 
   const PRODUCTS_DROPDOWN = [
