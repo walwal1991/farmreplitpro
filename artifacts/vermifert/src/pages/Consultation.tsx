@@ -10,7 +10,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateConsultation } from "@workspace/api-client-react";
 import {
-  CheckCircle2, Sprout, MessageCircle, Send, RefreshCw, User, Recycle, ArrowLeft,
+  CheckCircle2, Sprout, MessageCircle, Send, RefreshCw, User, Recycle, ArrowLeft, LogIn,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -173,6 +173,37 @@ function ChatView() {
     }
   };
 
+  // ── Require login ─────────────────────────────────────────────────────────
+  if (!loggedInCustomer) {
+    return (
+      <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden">
+        <div className="bg-primary px-6 py-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <Sprout className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="text-white font-bold text-sm">{t("consult_support_name")}</p>
+            <p className="text-white/70 text-xs">{t("consult_reply_time")}</p>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-5">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+            <LogIn className="w-7 h-7 text-primary" />
+          </div>
+          <div>
+            <p className="font-bold text-lg mb-1">تسجيل الدخول مطلوب</p>
+            <p className="text-muted-foreground text-sm">يجب أن يكون لديك حساب لبدء المحادثة مع فريق الدعم</p>
+          </div>
+          <Link href="/customer/login">
+            <button className="bg-primary text-white font-bold px-8 py-2.5 rounded-xl hover:bg-primary/90 transition flex items-center gap-2">
+              <LogIn className="w-4 h-4" /> تسجيل الدخول / إنشاء حساب
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === "intro" && !loading) {
     return (
       <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden">
@@ -195,25 +226,11 @@ function ChatView() {
         </div>
 
         <form onSubmit={handleStartChat} className="px-6 pb-6 space-y-3">
-          {!loggedInCustomer ? (
-            <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl px-3 py-2.5">
-              <User className="w-4 h-4 text-muted-foreground shrink-0" />
-              <input
-                type="text"
-                value={nameInput}
-                onChange={e => setNameInput(e.target.value)}
-                placeholder={t("consult_name_full_ph")}
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                required
-              />
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl px-3 py-2.5">
-              <User className="w-4 h-4 text-primary shrink-0" />
-              <span className="text-sm font-medium text-primary">{loggedInCustomer.name}</span>
-              <span className="text-xs text-muted-foreground mr-auto">{t("consult_logged_in")}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl px-3 py-2.5">
+            <User className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-sm font-medium text-primary">{loggedInCustomer.name}</span>
+            <span className="text-xs text-muted-foreground mr-auto">{t("consult_logged_in")}</span>
+          </div>
           <div className="flex gap-2 items-end">
             <textarea
               value={msgInput}
@@ -226,7 +243,7 @@ function ChatView() {
             />
             <button
               type="submit"
-              disabled={sending || (!loggedInCustomer && !nameInput.trim()) || !msgInput.trim()}
+              disabled={sending || !msgInput.trim()}
               className="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 disabled:opacity-50 transition-colors shrink-0"
             >
               <Send className="w-4 h-4 rotate-180" />
