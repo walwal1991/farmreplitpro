@@ -407,6 +407,13 @@ export default function ProductDetail() {
                       <div className="space-y-1.5">
                         <Label>{t("review_comment")} ({t("review_optional")})</Label>
                         <Textarea rows={4} placeholder={t("review_comment_ph")} value={comment} onChange={e => setComment(e.target.value)} />
+                        {rating >= 4 && (
+                          <p className={`text-xs flex items-center gap-1 ${comment.trim().length >= 10 ? "text-green-600" : "text-muted-foreground"}`}>
+                            {comment.trim().length >= 10
+                              ? "🎁 ستحصل على كوبون خصم 10% مكافأة على مراجعتك!"
+                              : `🎁 اكتب 10 أحرف على الأقل للحصول على كوبون خصم (${comment.trim().length}/10)`}
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2">

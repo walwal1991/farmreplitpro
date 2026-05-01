@@ -92,7 +92,7 @@ router.post("/products/:id/reviews", async (req: Request, res): Promise<void> =>
 
   // Auto-issue a review reward coupon for logged-in customers with great reviews
   let rewardCode: string | null = null;
-  if (customerId && parseInt(rating, 10) >= 4 && (comment ?? "").toString().trim().length >= 20) {
+  if (customerId && parseInt(rating, 10) >= 4 && (comment ?? "").toString().trim().length >= 10) {
     // Only one review reward per customer per product
     const alreadyRewarded = await db.execute(sql`
       SELECT 1 FROM discount_codes
