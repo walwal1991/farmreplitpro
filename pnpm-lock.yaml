@@ -166,6 +166,9 @@ importers:
 
   artifacts/api-server:
     dependencies:
+      '@chargily/chargily-pay':
+        specifier: ^2.1.0
+        version: 2.1.0
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
@@ -756,6 +759,9 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@chargily/chargily-pay@2.1.0':
+    resolution: {integrity: sha512-BMmvgowoZN2ETqNcSTle7VIVX4wHYvxTzk1Cu3o1TV+1Lj2P1hznIo6dgj7Die9ALUsBAnSR+SjuhYsrN1LlPw==}
 
   '@commander-js/extra-typings@14.0.0':
     resolution: {integrity: sha512-hIn0ncNaJRLkZrxBIp5AsW/eXEHNKYQBh0aPdoUqNgD+Io3NIykQqpKFyKcuasZhicGaEZJX/JBSIkZ4e5x8Dg==}
@@ -3386,6 +3392,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
+
+  '@chargily/chargily-pay@2.1.0': {}
 
   '@commander-js/extra-typings@14.0.0(commander@14.0.3)':
     dependencies:

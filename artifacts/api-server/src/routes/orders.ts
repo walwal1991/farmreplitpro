@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, desc, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { db, productsTable, ordersTable, deliveryUsersTable } from "@workspace/db";
+import { ChargilyClient } from "@chargily/chargily-pay";
 import {
   CreateOrderBody,
   ListOrdersResponse,
@@ -12,6 +13,17 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/admin-auth";
 import { getCustomerSessionUser } from "../middlewares/customer-auth";
+
+const CHARGILY_API_KEY = process.env.CHARGILY_API_KEY ?? "";
+const IS_LIVE = !CHARGILY_API_KEY.startsWith("test_");
+const chargilyClient = CHARGILY_API_KEY
+  ? new ChargilyClient({ api_key: CHARGILY_API_KEY, mode: IS_LIVE ? "live" : "test" })
+  : null;
+
+function getSiteUrl(): string {
+  const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").filter(Boolean);
+  return `https://${domains[0] ?? "localhost"}`;
+}
 
 function generateTrackingNumber(): string {
   const year = new Date().getFullYear();
@@ -80,22 +92,62 @@ router.post("/orders", async (req, res): Promise<void> => {
 
   const trackingNumber = generateTrackingNumber();
   const requiresSignature = typeof req.body.requiresSignature === "boolean" ? req.body.requiresSignature : false;
+  const paymentMethod = req.body.paymentMethod === "online" ? "online" : "cod";
 
   const [row] = await db.execute(sql`
     INSERT INTO orders (tracking_number, customer_id, customer_name, phone, address, city, notes,
       product_id, product_name, unit_price, quantity, total_price, status, requires_signature,
-      discount_code_used, discount_amount)
+      discount_code_used, discount_amount, payment_method, payment_status)
     VALUES (
       ${trackingNumber}, ${customerId}, ${parsed.data.customerName}, ${parsed.data.phone},
       ${parsed.data.address}, ${parsed.data.city}, ${parsed.data.notes ?? null},
       ${product.id}, ${product.name}, ${product.price}, ${parsed.data.quantity}, ${totalPrice},
-      'pending', ${requiresSignature}, ${discountCodeUsed}, ${discountAmount}
+      'pending', ${requiresSignature}, ${discountCodeUsed}, ${discountAmount},
+      ${paymentMethod}, 'pending'
     ) RETURNING *
   `).then(r => r.rows as Array<Record<string, unknown>>);
+
+  const orderId = row.id as number;
 
   // Mark discount code as used
   if (discountCodeUsed) {
     await db.execute(sql`UPDATE discount_codes SET used = true, used_at = NOW() WHERE UPPER(code) = ${discountCodeUsed}`);
+  }
+
+  // If online payment, create Chargily checkout session
+  if (paymentMethod === "online" && chargilyClient) {
+    try {
+      const siteUrl = getSiteUrl();
+      const basePath = process.env.BASE_PATH ?? "";
+      const amountCentimes = Math.round(totalPrice * 100);
+
+      const checkout = await chargilyClient.createCheckout({
+        amount: amountCentimes,
+        currency: "dzd",
+        payment_method: "edahabia",
+        success_url: `${siteUrl}${basePath}/payment/success?order=${orderId}`,
+        failure_url: `${siteUrl}${basePath}/payment/failed?order=${orderId}`,
+        webhook_endpoint: `${siteUrl}/api/payments/webhook`,
+        locale: "ar",
+        description: `طلب ${product.name} × ${parsed.data.quantity} — ${trackingNumber}`,
+        metadata: { orderId: String(orderId), trackingNumber },
+      });
+
+      const checkoutUrl = (checkout as unknown as { checkout_url: string }).checkout_url;
+      await db.execute(sql`
+        UPDATE orders SET chargily_checkout_id = ${checkout.id}, payment_status = 'awaiting'
+        WHERE id = ${orderId}
+      `);
+
+      res.status(201).json({ id: orderId, trackingNumber, checkoutUrl, discountAmount, discountCodeUsed });
+      return;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Fall back to COD if Chargily fails
+      await db.execute(sql`UPDATE orders SET payment_method = 'cod' WHERE id = ${orderId}`);
+      res.status(201).json({ ...parseOrder(row), trackingNumber, discountAmount, discountCodeUsed, chargilyError: msg });
+      return;
+    }
   }
 
   res.status(201).json({ ...parseOrder(row), trackingNumber: row.tracking_number, discountAmount, discountCodeUsed });

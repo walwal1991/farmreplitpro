@@ -9,7 +9,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, CheckCircle2, Copy, LayoutDashboard, PenLine, Tag, X, BadgePercent } from "lucide-react";
+import { Truck, CheckCircle2, Copy, LayoutDashboard, PenLine, Tag, X, BadgePercent, CreditCard, Banknote } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
@@ -40,6 +40,7 @@ export default function Checkout() {
   const [discountInput, setDiscountInput] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percent: number } | null>(null);
   const [discountLoading, setDiscountLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
 
   const { data: product, isLoading } = useGetProduct(productId, {
     query: { enabled: !!productId, queryKey: getGetProductQueryKey(productId) }
@@ -89,11 +90,20 @@ export default function Checkout() {
       const res = await fetch(`${API}/api/orders`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ ...data, productId, requiresSignature, discountCode: appliedDiscount?.code ?? null }),
+        body: JSON.stringify({
+          ...data, productId, requiresSignature,
+          discountCode: appliedDiscount?.code ?? null,
+          paymentMethod,
+        }),
       });
       const json = await res.json();
       if (!res.ok) {
         toast({ title: t("checkout_error"), description: json.error ?? t("checkout_error"), variant: "destructive" });
+        return;
+      }
+      // Online payment: redirect to Chargily checkout page
+      if (paymentMethod === "online" && json.checkoutUrl) {
+        window.location.href = json.checkoutUrl;
         return;
       }
       setOrderResult({ id: json.id, trackingNumber: json.trackingNumber });
@@ -227,6 +237,41 @@ export default function Checkout() {
                 </div>
               </div>
 
+              {/* Payment Method */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-primary" /> طريقة الدفع</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("cod")}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:border-primary/40"}`}
+                  >
+                    <Banknote className={`w-6 h-6 ${paymentMethod === "cod" ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="text-center">
+                      <div className={`text-sm font-semibold ${paymentMethod === "cod" ? "text-primary" : "text-foreground"}`}>الدفع عند الاستلام</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">ادفع نقداً عند التسليم</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("online")}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${paymentMethod === "online" ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:border-primary/40"}`}
+                  >
+                    <CreditCard className={`w-6 h-6 ${paymentMethod === "online" ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="text-center">
+                      <div className={`text-sm font-semibold ${paymentMethod === "online" ? "text-primary" : "text-foreground"}`}>دفع إلكتروني</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">EDAHABIA · CIB</div>
+                    </div>
+                  </button>
+                </div>
+                {paymentMethod === "online" && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+                    <span className="text-base">🔒</span>
+                    <span>ستُحوَّل إلى صفحة دفع آمنة عبر Chargily Pay (EDAHABIA / CIB)</span>
+                  </div>
+                )}
+              </div>
+
               {/* Discount Code */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5"><Tag className="w-4 h-4 text-primary" /> كود الخصم (اختياري)</Label>
@@ -303,12 +348,16 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  <div className="bg-primary/5 text-primary p-4 rounded-lg text-sm font-medium text-center">
-                    {t("checkout_cod_badge")}
+                  <div className={`p-4 rounded-lg text-sm font-medium text-center ${paymentMethod === "online" ? "bg-blue-50 text-blue-700 border border-blue-100" : "bg-primary/5 text-primary"}`}>
+                    {paymentMethod === "online"
+                      ? "🔒 ستُحوَّل إلى صفحة دفع Chargily Pay الآمنة"
+                      : t("checkout_cod_badge")}
                   </div>
 
                   <Button type="submit" form="checkout-form" className="w-full h-12 text-lg" disabled={submitting}>
-                    {submitting ? t("checkout_submitting") : t("checkout_confirm")}
+                    {submitting
+                      ? (paymentMethod === "online" ? "جارٍ الإعداد..." : t("checkout_submitting"))
+                      : (paymentMethod === "online" ? "الدفع إلكترونياً →" : t("checkout_confirm"))}
                   </Button>
                 </div>
               </div>
