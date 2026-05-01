@@ -9,7 +9,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, CheckCircle2, Copy, LayoutDashboard, PenLine, Tag, X, BadgePercent, CreditCard, Banknote } from "lucide-react";
+import { Truck, CheckCircle2, Copy, LayoutDashboard, PenLine, Tag, X, BadgePercent, CreditCard, Banknote, Clock, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
@@ -35,6 +35,7 @@ export default function Checkout() {
   const { toast } = useToast();
   const { t } = useLang();
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
+  const [onlineOrderPending, setOnlineOrderPending] = useState<{ id: number; trackingNumber: string; checkoutUrl: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [requiresSignature, setRequiresSignature] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
@@ -101,9 +102,13 @@ export default function Checkout() {
         toast({ title: t("checkout_error"), description: json.error ?? t("checkout_error"), variant: "destructive" });
         return;
       }
-      // Online payment: redirect to Chargily checkout page
+      // Online payment: open Chargily checkout page in new tab
       if (paymentMethod === "online" && json.checkoutUrl) {
-        window.location.href = json.checkoutUrl;
+        setOnlineOrderPending({ id: json.id, trackingNumber: json.trackingNumber, checkoutUrl: json.checkoutUrl });
+        const opened = window.open(json.checkoutUrl, "_blank");
+        if (!opened) {
+          window.location.href = json.checkoutUrl;
+        }
         return;
       }
       setOrderResult({ id: json.id, trackingNumber: json.trackingNumber });
@@ -111,6 +116,64 @@ export default function Checkout() {
       setSubmitting(false);
     }
   };
+
+  if (onlineOrderPending) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 container mx-auto px-4 py-20 flex items-center justify-center">
+          <div className="max-w-md w-full bg-card p-8 rounded-3xl text-center space-y-5 border border-border shadow-lg">
+            <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-600">
+              <Clock className="w-10 h-10" />
+            </div>
+            <h2 className="text-2xl font-bold">طلبك في انتظار الدفع</h2>
+            <p className="text-muted-foreground text-sm">
+              تم إنشاء طلبك بنجاح. أكمل الدفع في الصفحة التي فُتحت. إذا لم تفتح تلقائياً، اضغط الزر أدناه.
+            </p>
+            {onlineOrderPending.trackingNumber && (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                <p className="text-xs text-muted-foreground mb-2">رقم تتبع الطلب</p>
+                <div className="flex items-center justify-center gap-2">
+                  <code className="text-lg font-mono font-bold text-primary tracking-widest" dir="ltr">
+                    {onlineOrderPending.trackingNumber}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(onlineOrderPending.trackingNumber);
+                      toast({ title: t("checkout_tracking_copied") });
+                    }}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+            <div className="flex flex-col gap-2 pt-2">
+              <Button
+                onClick={() => window.open(onlineOrderPending.checkoutUrl, "_blank")}
+                className="w-full gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                فتح صفحة الدفع
+              </Button>
+              {customerUser && (
+                <Button asChild variant="outline">
+                  <Link href="/customer/dashboard">
+                    <LayoutDashboard className="w-4 h-4 me-2" />
+                    {t("checkout_my_orders")}
+                  </Link>
+                </Button>
+              )}
+              <Button asChild variant="ghost">
+                <a href="/">{t("checkout_go_home")}</a>
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (orderResult) {
     return (
