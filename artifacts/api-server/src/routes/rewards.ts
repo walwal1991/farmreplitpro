@@ -62,7 +62,7 @@ router.get("/discount/validate", async (req, res): Promise<void> => {
 
 // ─── GET /api/customer/referral  (customer auth required) ─────────────────────
 router.get("/customer/referral", requireCustomer, async (req, res): Promise<void> => {
-  const customer = (req as typeof req & { customer: { id: number } }).customer;
+  const customer = (req as typeof req & { customerUser: { id: number } }).customerUser;
 
   // Ensure referral code exists
   await db.execute(sql`
