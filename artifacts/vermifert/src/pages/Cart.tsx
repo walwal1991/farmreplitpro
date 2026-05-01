@@ -11,7 +11,7 @@ import { z } from "zod";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
-import { ShoppingBag, CheckCircle2, Trash2, Plus, Minus, Copy, LayoutDashboard, PenLine, CreditCard, Banknote, Clock, ExternalLink } from "lucide-react";
+import { ShoppingBag, CheckCircle2, Trash2, Plus, Minus, Copy, LayoutDashboard, PenLine, CreditCard, Banknote, Clock, ExternalLink, Tag, X, BadgePercent } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -37,6 +37,9 @@ export default function Cart() {
   const [requiresSignature, setRequiresSignature] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [onlineOrderPending, setOnlineOrderPending] = useState<{ orders: OrderResult[]; checkoutUrls: string[] } | null>(null);
+  const [discountInput, setDiscountInput] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percent: number } | null>(null);
+  const [discountLoading, setDiscountLoading] = useState(false);
 
   const customerToken = localStorage.getItem("customerToken") ?? "";
   const customerUser = (() => {
@@ -77,6 +80,7 @@ export default function Cart() {
             quantity: it.quantity,
             requiresSignature,
             paymentMethod,
+            discountCode: appliedDiscount?.code ?? null,
           }),
         });
         const json = await res.json();
@@ -100,6 +104,22 @@ export default function Cart() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const discountAmount = appliedDiscount ? Math.round(total * appliedDiscount.percent / 100) : 0;
+  const discountedTotal = total - discountAmount;
+
+  const applyDiscount = async () => {
+    const code = discountInput.trim().toUpperCase();
+    if (!code) return;
+    setDiscountLoading(true);
+    try {
+      const res = await fetch(`${API}/api/discount/validate?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error, variant: "destructive" }); return; }
+      setAppliedDiscount({ code: data.code, percent: data.discountPercent });
+      toast({ title: `✅ تم تطبيق كود الخصم — ${data.discountPercent}% خصم!` });
+    } finally { setDiscountLoading(false); }
   };
 
   function copyTracking(tn: string) {
@@ -284,6 +304,37 @@ export default function Cart() {
               </div>
             </div>
 
+            {/* Discount Code */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-1.5 text-sm font-medium">
+                <Tag className="w-4 h-4 text-primary" /> كود الخصم (اختياري)
+              </label>
+              {appliedDiscount ? (
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+                  <BadgePercent className="w-4 h-4 text-green-600 shrink-0" />
+                  <span className="text-sm font-bold text-green-700 font-mono">{appliedDiscount.code}</span>
+                  <span className="text-sm text-green-600 mr-auto">— {appliedDiscount.percent}% خصم</span>
+                  <button type="button" onClick={() => setAppliedDiscount(null)} className="text-green-600 hover:text-red-500">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    value={discountInput}
+                    onChange={e => setDiscountInput(e.target.value.toUpperCase())}
+                    onKeyDown={e => e.key === "Enter" && (e.preventDefault(), applyDiscount())}
+                    placeholder="WELCOME-XXXXXXXX أو REV-XXXXXXXX"
+                    dir="ltr"
+                    className="flex-1 font-mono uppercase"
+                  />
+                  <Button type="button" variant="outline" onClick={applyDiscount} disabled={discountLoading || !discountInput.trim()}>
+                    تطبيق
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {/* Payment Method */}
             <div className="space-y-3">
               <label className="flex items-center gap-1.5 text-sm font-medium">
@@ -324,7 +375,7 @@ export default function Cart() {
             <Button type="submit" size="lg" className="w-full h-12" disabled={submitting}>
               {submitting
                 ? (paymentMethod === "online" ? "جارٍ الإعداد..." : t("checkout_submitting"))
-                : (paymentMethod === "online" ? `الدفع إلكترونياً (${total} د.ج) →` : `${t("checkout_confirm")} (${total} د.ج)`)}
+                : (paymentMethod === "online" ? `الدفع إلكترونياً (${discountedTotal} د.ج) →` : `${t("checkout_confirm")} (${discountedTotal} د.ج)`)}
             </Button>
             {paymentMethod === "cod" && (
               <p className="text-xs text-center text-muted-foreground">{t("checkout_cod_badge")}</p>
@@ -356,9 +407,23 @@ export default function Cart() {
                 </div>
               ))}
             </div>
-            <div className="border-t border-border/60 pt-3 flex items-center justify-between">
-              <span className="text-muted-foreground">{t("drawer_total")}</span>
-              <span className="text-xl font-extrabold text-primary tabular-nums">{total} د.ج</span>
+            <div className="border-t border-border/60 pt-3 space-y-1.5">
+              {appliedDiscount && (
+                <>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>{t("checkout_total")}</span>
+                    <span className="line-through tabular-nums">{total} د.ج</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-green-600 font-medium">
+                    <span>خصم {appliedDiscount.percent}%</span>
+                    <span className="tabular-nums">- {discountAmount} د.ج</span>
+                  </div>
+                </>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">{t("drawer_total")}</span>
+                <span className="text-xl font-extrabold text-primary tabular-nums">{discountedTotal} د.ج</span>
+              </div>
             </div>
           </aside>
         </div>
