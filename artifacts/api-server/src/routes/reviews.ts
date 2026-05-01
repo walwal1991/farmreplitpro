@@ -3,6 +3,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import { db, reviewsTable, productsTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/admin-auth";
 import { getCustomerSessionUser } from "../middlewares/customer-auth";
+import { issueDiscount } from "./rewards";
 import type { Request } from "express";
 
 const router: IRouter = Router();
@@ -89,6 +90,21 @@ router.post("/products/:id/reviews", async (req: Request, res): Promise<void> =>
     comment: string; image_url: string | null; created_at: string;
   };
 
+  // Auto-issue a review reward coupon for logged-in customers with great reviews
+  let rewardCode: string | null = null;
+  if (customerId && parseInt(rating, 10) >= 4 && (comment ?? "").toString().trim().length >= 20) {
+    // Only one review reward per customer per product
+    const alreadyRewarded = await db.execute(sql`
+      SELECT 1 FROM discount_codes
+      WHERE customer_id = ${customerId} AND source = 'review_reward'
+      AND created_at > NOW() - INTERVAL '30 days'
+      LIMIT 1
+    `);
+    if (!alreadyRewarded.rows.length) {
+      rewardCode = await issueDiscount({ customerId, source: "review_reward", percent: 10, daysValid: 30 });
+    }
+  }
+
   res.status(201).json({
     id: review.id,
     customerName: review.customer_name,
@@ -96,6 +112,7 @@ router.post("/products/:id/reviews", async (req: Request, res): Promise<void> =>
     comment: review.comment,
     imageUrl: review.image_url ?? null,
     createdAt: review.created_at,
+    rewardCode,
   });
 });
 

@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, desc, sql } from "drizzle-orm";
 import { db, customersTable, customerSessionsTable, ordersTable } from "@workspace/db";
 import bcrypt from "bcryptjs";
+import { issueDiscount } from "./rewards";
 import { randomBytes } from "node:crypto";
 import {
   requireCustomer,
@@ -41,10 +42,35 @@ router.post("/customer/register", async (req, res): Promise<void> => {
     return;
   }
   const passwordHash = await bcrypt.hash(password, 10);
-  const [customer] = await db.insert(customersTable).values({ name, email, phone, passwordHash }).returning();
+
+  // Resolve referrer from ?ref= query or body
+  const refCode = ((req.query.ref ?? req.body.refCode) as string | undefined)?.trim().toUpperCase() ?? null;
+  let referrerId: number | null = null;
+  if (refCode) {
+    const refRow = await db.execute(sql`SELECT id FROM customers WHERE UPPER(referral_code) = ${refCode} LIMIT 1`);
+    referrerId = (refRow.rows[0] as { id: number } | undefined)?.id ?? null;
+  }
+
+  const [customer] = await db.insert(customersTable)
+    .values({ name, email, phone, passwordHash, referredById: referrerId } as typeof customersTable.$inferInsert)
+    .returning();
+
+  // Backfill referral code for new customer
+  const newRefCode = "REF" + Buffer.from(`${customer.id}${email}`).toString("hex").slice(0, 8).toUpperCase();
+  await db.execute(sql`UPDATE customers SET referral_code = ${newRefCode} WHERE id = ${customer.id} AND referral_code IS NULL`);
+
+  // Issue coupons for both referrer and new joiner
+  let welcomeCode: string | null = null;
+  if (referrerId) {
+    // New joiner gets 10% welcome coupon
+    welcomeCode = await issueDiscount({ customerId: customer.id, source: "referral_joinee", percent: 10, daysValid: 60 });
+    // Referrer gets 15% coupon
+    await issueDiscount({ customerId: referrerId, source: "referral_referrer", percent: 15, daysValid: 60 });
+  }
+
   const token = customerToken();
   await createCustomerSession(customer.id, token);
-  res.status(201).json({ token, id: customer.id, name: customer.name, email: customer.email, phone: customer.phone });
+  res.status(201).json({ token, id: customer.id, name: customer.name, email: customer.email, phone: customer.phone, welcomeCode });
 });
 
 // ─── Login ────────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +12,20 @@ const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function CustomerLogin() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { toast } = useToast();
   const { t } = useLang();
   const [tab, setTab] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
 
+  const refCode = new URLSearchParams(search).get("ref") ?? "";
+
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [regForm, setRegForm] = useState({ name: "", email: "", phone: "", password: "", confirm: "" });
+
+  useEffect(() => {
+    if (refCode) setTab("register");
+  }, [refCode]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +53,10 @@ export default function CustomerLogin() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/customer/register`, {
+      const registerUrl = refCode
+        ? `${API}/api/customer/register?ref=${encodeURIComponent(refCode)}`
+        : `${API}/api/customer/register`;
+      const res = await fetch(registerUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: regForm.name, email: regForm.email, phone: regForm.phone, password: regForm.password }),
@@ -56,6 +66,9 @@ export default function CustomerLogin() {
       localStorage.setItem("customerToken", data.token);
       localStorage.setItem("customerUser", JSON.stringify({ id: data.id, name: data.name, email: data.email, phone: data.phone }));
       toast({ title: t("register_success") + data.name });
+      if (data.welcomeCode) {
+        setTimeout(() => toast({ title: "🎁 هدية ترحيبية!", description: `كود الخصم ${data.welcomeCode} — خصم 10% على أول طلب` }), 500);
+      }
       setLocation("/customer/dashboard");
     } finally { setLoading(false); }
   }
@@ -89,6 +102,16 @@ export default function CustomerLogin() {
               {t("login_tab_register")}
             </button>
           </div>
+
+          {refCode && tab === "register" && (
+            <div className="mb-4 flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
+              <span className="text-xl">🎁</span>
+              <div>
+                <div className="font-bold">تمت دعوتك من صديق!</div>
+                <div className="text-green-700">ستحصل على خصم 10% على أول طلب عند التسجيل.</div>
+              </div>
+            </div>
+          )}
 
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
             {tab === "login" ? (

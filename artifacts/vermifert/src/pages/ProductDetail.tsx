@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, ShoppingBag, ArrowRight, CheckCircle2, Star, MessageSquare, Send, ImagePlus, X } from "lucide-react";
+import { ShoppingCart, ShoppingBag, ArrowRight, CheckCircle2, Star, MessageSquare, Send, ImagePlus, X, Gift, Copy } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 import { useCart } from "@/lib/cart";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -91,6 +91,7 @@ export default function ProductDetail() {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [rewardCode, setRewardCode] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const RATING_LABELS: Record<string, string[]> = {
@@ -156,8 +157,8 @@ export default function ProductDetail() {
         headers,
         body: JSON.stringify({ rating, comment, customerName: name, imageUrl: imageBase64 ?? null }),
       });
+      const d = await res.json();
       if (!res.ok) {
-        const d = await res.json();
         toast({ title: t("login_error"), description: d.error, variant: "destructive" });
         return;
       }
@@ -167,13 +168,49 @@ export default function ProductDetail() {
       setGuestName("");
       clearImage();
       fetchReviews();
-      toast({ title: t("review_thanks") });
+      if (d.rewardCode) {
+        setRewardCode(d.rewardCode);
+      } else {
+        toast({ title: t("review_thanks") });
+      }
     } finally { setSubmitting(false); }
+  };
+
+  const copyRewardCode = () => {
+    if (!rewardCode) return;
+    navigator.clipboard.writeText(rewardCode);
+    toast({ title: "تم نسخ الكود!" });
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
+
+      {/* Reward Code Modal */}
+      {rewardCode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Gift className="w-10 h-10 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">شكراً على تقييمك! 🌱</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              كمكافأة على مراجعتك القيّمة، حصلت على كوبون خصم 10% لطلبك القادم:
+            </p>
+            <div
+              onClick={copyRewardCode}
+              className="flex items-center justify-center gap-3 bg-primary/5 border-2 border-primary/20 rounded-2xl px-6 py-4 mb-6 cursor-pointer hover:border-primary/50 transition-colors group"
+            >
+              <code className="text-xl font-mono font-bold text-primary tracking-widest">{rewardCode}</code>
+              <Copy className="w-5 h-5 text-primary/50 group-hover:text-primary transition-colors" />
+            </div>
+            <p className="text-xs text-muted-foreground mb-6">انقر على الكود لنسخه — صالح لمدة 90 يوماً</p>
+            <Button onClick={() => setRewardCode(null)} className="w-full">
+              رائع، شكراً!
+            </Button>
+          </div>
+        </div>
+      )}
       <main className="flex-1 container mx-auto px-4 py-8">
         <Link href="/products" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors">
           <ArrowRight className="w-4 h-4" />

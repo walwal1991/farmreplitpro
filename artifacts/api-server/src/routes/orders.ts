@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { db, productsTable, ordersTable, deliveryUsersTable } from "@workspace/db";
 import {
@@ -47,7 +47,7 @@ router.post("/orders", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Product is not available" });
     return;
   }
-  const totalPrice = product.price * parsed.data.quantity;
+  let totalPrice = product.price * parsed.data.quantity;
 
   // Link to customer account if token provided
   const customerToken = (req.header("x-customer-token") ?? "").trim();
@@ -57,29 +57,48 @@ router.post("/orders", async (req, res): Promise<void> => {
     if (customer) customerId = customer.id;
   }
 
+  // Validate discount code if provided
+  const discountCodeRaw = ((req.body.discountCode ?? "") as string).trim().toUpperCase();
+  let discountCodeUsed: string | null = null;
+  let discountAmount = 0;
+
+  if (discountCodeRaw) {
+    const dcResult = await db.execute(sql`
+      SELECT id, code, discount_percent, used, expires_at
+      FROM discount_codes WHERE UPPER(code) = ${discountCodeRaw} LIMIT 1
+    `);
+    const dc = dcResult.rows[0] as {
+      id: number; code: string; discount_percent: number; used: boolean; expires_at: string | null;
+    } | undefined;
+
+    if (dc && !dc.used && (!dc.expires_at || new Date(dc.expires_at) >= new Date())) {
+      discountAmount = Math.round(totalPrice * dc.discount_percent / 100);
+      totalPrice = Math.max(0, totalPrice - discountAmount);
+      discountCodeUsed = dc.code;
+    }
+  }
+
   const trackingNumber = generateTrackingNumber();
   const requiresSignature = typeof req.body.requiresSignature === "boolean" ? req.body.requiresSignature : false;
 
-  const [row] = await db
-    .insert(ordersTable)
-    .values({
-      trackingNumber,
-      customerId,
-      customerName: parsed.data.customerName,
-      phone: parsed.data.phone,
-      address: parsed.data.address,
-      city: parsed.data.city,
-      notes: parsed.data.notes ?? null,
-      productId: product.id,
-      productName: product.name,
-      unitPrice: product.price,
-      quantity: parsed.data.quantity,
-      totalPrice,
-      status: "pending",
-      requiresSignature,
-    })
-    .returning();
-  res.status(201).json({ ...parseOrder(row), trackingNumber: row.trackingNumber });
+  const [row] = await db.execute(sql`
+    INSERT INTO orders (tracking_number, customer_id, customer_name, phone, address, city, notes,
+      product_id, product_name, unit_price, quantity, total_price, status, requires_signature,
+      discount_code_used, discount_amount)
+    VALUES (
+      ${trackingNumber}, ${customerId}, ${parsed.data.customerName}, ${parsed.data.phone},
+      ${parsed.data.address}, ${parsed.data.city}, ${parsed.data.notes ?? null},
+      ${product.id}, ${product.name}, ${product.price}, ${parsed.data.quantity}, ${totalPrice},
+      'pending', ${requiresSignature}, ${discountCodeUsed}, ${discountAmount}
+    ) RETURNING *
+  `).then(r => r.rows as Array<Record<string, unknown>>);
+
+  // Mark discount code as used
+  if (discountCodeUsed) {
+    await db.execute(sql`UPDATE discount_codes SET used = true, used_at = NOW() WHERE UPPER(code) = ${discountCodeUsed}`);
+  }
+
+  res.status(201).json({ ...parseOrder(row), trackingNumber: row.tracking_number, discountAmount, discountCodeUsed });
 });
 
 router.get(

@@ -9,7 +9,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, CheckCircle2, Copy, LayoutDashboard, PenLine } from "lucide-react";
+import { Truck, CheckCircle2, Copy, LayoutDashboard, PenLine, Tag, X, BadgePercent } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
@@ -37,6 +37,9 @@ export default function Checkout() {
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [requiresSignature, setRequiresSignature] = useState(false);
+  const [discountInput, setDiscountInput] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percent: number } | null>(null);
+  const [discountLoading, setDiscountLoading] = useState(false);
 
   const { data: product, isLoading } = useGetProduct(productId, {
     query: { enabled: !!productId, queryKey: getGetProductQueryKey(productId) }
@@ -60,7 +63,22 @@ export default function Checkout() {
   });
 
   const quantity = form.watch("quantity") || 1;
-  const totalPrice = product ? product.price * quantity : 0;
+  const basePrice = product ? product.price * quantity : 0;
+  const discountAmount = appliedDiscount ? Math.round(basePrice * appliedDiscount.percent / 100) : 0;
+  const totalPrice = basePrice - discountAmount;
+
+  const applyDiscount = async () => {
+    const code = discountInput.trim().toUpperCase();
+    if (!code) return;
+    setDiscountLoading(true);
+    try {
+      const res = await fetch(`${API}/api/discount/validate?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error, variant: "destructive" }); return; }
+      setAppliedDiscount({ code: data.code, percent: data.discountPercent });
+      toast({ title: `✅ تم تطبيق كود الخصم — ${data.discountPercent}% خصم!` });
+    } finally { setDiscountLoading(false); }
+  };
 
   const onSubmit = async (data: CheckoutForm) => {
     setSubmitting(true);
@@ -71,7 +89,7 @@ export default function Checkout() {
       const res = await fetch(`${API}/api/orders`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ ...data, productId, requiresSignature }),
+        body: JSON.stringify({ ...data, productId, requiresSignature, discountCode: appliedDiscount?.code ?? null }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -208,6 +226,35 @@ export default function Checkout() {
                   <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${requiresSignature ? "translate-x-5" : "translate-x-0.5"}`} />
                 </div>
               </div>
+
+              {/* Discount Code */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5"><Tag className="w-4 h-4 text-primary" /> كود الخصم (اختياري)</Label>
+                {appliedDiscount ? (
+                  <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+                    <BadgePercent className="w-4 h-4 text-green-600 shrink-0" />
+                    <span className="text-sm font-bold text-green-700 font-mono">{appliedDiscount.code}</span>
+                    <span className="text-sm text-green-600 mr-auto">— {appliedDiscount.percent}% خصم</span>
+                    <button type="button" onClick={() => setAppliedDiscount(null)} className="text-green-600 hover:text-red-500">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      value={discountInput}
+                      onChange={e => setDiscountInput(e.target.value.toUpperCase())}
+                      onKeyDown={e => e.key === "Enter" && (e.preventDefault(), applyDiscount())}
+                      placeholder="REV-XXXXXXXX"
+                      dir="ltr"
+                      className="flex-1 font-mono uppercase"
+                    />
+                    <Button type="button" variant="outline" onClick={applyDiscount} disabled={discountLoading || !discountInput.trim()}>
+                      تطبيق
+                    </Button>
+                  </div>
+                )}
+              </div>
             </form>
           </div>
 
@@ -237,9 +284,23 @@ export default function Checkout() {
                     <Input id="quantity" type="number" min="1" max={product.stock} {...form.register("quantity")} />
                   </div>
 
-                  <div className="flex justify-between items-center py-4 border-t border-border">
-                    <span className="font-bold">{t("checkout_total")}</span>
-                    <span className="text-xl font-bold text-primary">{totalPrice} د.ج</span>
+                  <div className="py-4 border-t border-border space-y-1">
+                    {appliedDiscount && (
+                      <>
+                        <div className="flex justify-between items-center text-sm text-muted-foreground">
+                          <span>{t("checkout_total")}</span>
+                          <span className="line-through">{basePrice} د.ج</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm text-green-600 font-medium">
+                          <span>خصم {appliedDiscount.percent}%</span>
+                          <span>- {discountAmount} د.ج</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">{t("checkout_total")}</span>
+                      <span className="text-xl font-bold text-primary">{totalPrice} د.ج</span>
+                    </div>
                   </div>
 
                   <div className="bg-primary/5 text-primary p-4 rounded-lg text-sm font-medium text-center">

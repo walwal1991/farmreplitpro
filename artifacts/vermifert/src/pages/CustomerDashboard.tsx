@@ -5,7 +5,7 @@ import OrderTracker from "@/components/OrderTracker";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
-import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag, GraduationCap, ExternalLink, MessageSquare, Shield } from "lucide-react";
+import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag, GraduationCap, ExternalLink, MessageSquare, Shield, Gift, BadgePercent, Share2, Users } from "lucide-react";
 import { format } from "date-fns";
 import { ar, fr, enUS } from "date-fns/locale";
 
@@ -57,6 +57,9 @@ export default function CustomerDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [coupons, setCoupons] = useState<{ code: string; discountPercent: number; source: string; used: boolean; expiresAt: string | null; createdAt: string }[]>([]);
+  const [totalReferrals, setTotalReferrals] = useState(0);
+  const [referralCode, setReferralCode] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -86,7 +89,7 @@ export default function CustomerDashboard() {
     if (!token) return;
     setLoading(true);
     try {
-      const [ordersRes, enrollmentsRes, messagesRes] = await Promise.all([
+      const [ordersRes, enrollmentsRes, messagesRes, referralRes] = await Promise.all([
         fetch(`${API}/api/customer/orders`, { headers: { "x-customer-token": token } }),
         fetch(`${API}/api/customer/enrollments`, { headers: { "x-customer-token": token } }),
         fetch(`${API}/api/contact/session`, {
@@ -94,6 +97,7 @@ export default function CustomerDashboard() {
           headers: { "Content-Type": "application/json", "x-customer-token": token },
           body: JSON.stringify({ sessionId: null }),
         }),
+        fetch(`${API}/api/customer/referral`, { headers: { "x-customer-token": token } }),
       ]);
       if (ordersRes.status === 401) { setLocation("/customer/login"); return; }
       const ordersData = await ordersRes.json();
@@ -103,6 +107,12 @@ export default function CustomerDashboard() {
       }
       if (messagesRes.ok) {
         setMessages(await messagesRes.json());
+      }
+      if (referralRes.ok) {
+        const refData = await referralRes.json();
+        setReferralCode(refData.referralCode ?? "");
+        setCoupons(refData.coupons ?? []);
+        setTotalReferrals(refData.totalReferrals ?? 0);
       }
     } finally { setLoading(false); }
   }, [token, setLocation]);
@@ -124,6 +134,20 @@ export default function CustomerDashboard() {
   function copyTracking(tn: string) {
     navigator.clipboard.writeText(tn).then(() => toast({ title: t("dash_copy_tracking"), description: tn }));
   }
+
+  function copyReferralLink() {
+    if (!referralCode) return;
+    const base = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, "");
+    const link = `${base}/customer/login?ref=${referralCode}`;
+    navigator.clipboard.writeText(link).then(() => toast({ title: "تم نسخ رابط الدعوة!", description: link }));
+  }
+
+  const SOURCE_LABELS: Record<string, string> = {
+    review: "مكافأة مراجعة",
+    referral_sender: "دعوة صديق (مُرسِل)",
+    referral_receiver: "دعوة صديق (مُستقبِل)",
+    donor: "نقاط المتبرع",
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -267,6 +291,104 @@ export default function CustomerDashboard() {
             </div>
           </section>
         )}
+
+        {/* ── Rewards & Referral ─────────────────────────────────────────── */}
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Gift className="w-5 h-5 text-primary" />
+            {lang === "ar" ? "المكافآت والدعوة" : lang === "fr" ? "Récompenses & Parrainage" : "Rewards & Referral"}
+          </h2>
+
+          {/* Referral Card */}
+          {referralCode && (
+            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5 mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                  <Users className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <div className="font-bold text-sm">
+                    {lang === "ar" ? "ادعُ أصدقاءك واكسب!" : lang === "fr" ? "Parrainez et gagnez!" : "Refer friends & earn!"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {lang === "ar"
+                      ? "15% خصم لك عند شراء صديقك، و 10% لصديقك على أول طلب"
+                      : lang === "fr"
+                      ? "15% pour vous, 10% pour votre ami sur sa première commande"
+                      : "You get 15% off, your friend gets 10% on their first order"}
+                  </div>
+                </div>
+                {totalReferrals > 0 && (
+                  <div className="mr-auto text-center">
+                    <div className="text-xl font-bold text-primary">{totalReferrals}</div>
+                    <div className="text-xs text-muted-foreground">{lang === "ar" ? "مدعوّ" : "invited"}</div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-3 py-2">
+                <Share2 className="w-4 h-4 text-primary shrink-0" />
+                <code className="text-xs flex-1 text-muted-foreground truncate" dir="ltr">
+                  {`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/customer/login?ref=${referralCode}`}
+                </code>
+                <button onClick={copyReferralLink} className="text-primary hover:text-primary/80 shrink-0">
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Coupons List */}
+          {coupons.length > 0 ? (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5 mb-3">
+                <BadgePercent className="w-4 h-4" />
+                {lang === "ar" ? "كوبوناتي" : lang === "fr" ? "Mes coupons" : "My Coupons"} ({coupons.length})
+              </h3>
+              {coupons.map(c => (
+                <div
+                  key={c.code}
+                  className={`flex items-center gap-3 border rounded-xl px-4 py-3 ${c.used ? "bg-muted/30 border-border opacity-60" : "bg-card border-border"}`}
+                >
+                  <BadgePercent className={`w-5 h-5 shrink-0 ${c.used ? "text-muted-foreground" : "text-primary"}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <code className={`text-sm font-mono font-bold tracking-wider ${c.used ? "text-muted-foreground line-through" : "text-primary"}`}>{c.code}</code>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${c.used ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+                        {c.discountPercent}%
+                      </span>
+                      {c.used && (
+                        <span className="text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full font-medium border border-red-100">
+                          {lang === "ar" ? "مستخدم" : "Used"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {SOURCE_LABELS[c.source] ?? c.source}
+                      {c.expiresAt && !c.used && (
+                        <> · {lang === "ar" ? "ينتهي" : "Expires"}: {format(new Date(c.expiresAt), "d MMM yyyy", { locale: dateLocale })}</>
+                      )}
+                    </div>
+                  </div>
+                  {!c.used && (
+                    <button
+                      onClick={() => navigator.clipboard.writeText(c.code).then(() => toast({ title: "تم نسخ الكود!" }))}
+                      className="text-muted-foreground hover:text-primary shrink-0"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground border border-dashed border-border rounded-2xl">
+              <BadgePercent className="w-10 h-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">
+                {lang === "ar" ? "لا توجد كوبونات بعد — اكتب مراجعة أو ادعُ صديقاً!" : "No coupons yet — write a review or invite a friend!"}
+              </p>
+            </div>
+          )}
+        </section>
 
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Package className="w-5 h-5 text-primary" />

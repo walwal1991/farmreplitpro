@@ -13,6 +13,7 @@ import enrollmentsRouter from "./enrollments";
 import wasteCollectionsRouter from "./waste-collections";
 import donorsRouter from "./donors";
 import sensorsRouter from "./sensors";
+import rewardsRouter from "./rewards";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(enrollmentsRouter);
 router.use(wasteCollectionsRouter);
 router.use(donorsRouter);
 router.use(sensorsRouter);
+router.use(rewardsRouter);
 
 export default router;
