@@ -5,11 +5,9 @@ import { db, productsTable, ordersTable, deliveryUsersTable } from "@workspace/d
 import { ChargilyClient } from "@chargily/chargily-pay";
 import {
   CreateOrderBody,
-  ListOrdersResponse,
   UpdateOrderStatusParams,
   UpdateOrderStatusBody,
   UpdateOrderStatusResponse,
-  GetProductResponse as OrderResponse,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/admin-auth";
 import { getCustomerSessionUser } from "../middlewares/customer-auth";
@@ -29,14 +27,6 @@ function generateTrackingNumber(): string {
   const year = new Date().getFullYear();
   const rand = randomBytes(3).toString("hex").toUpperCase();
   return `VF${year}${rand}`;
-}
-
-// Reuse a generic order parser via direct cast — orders.ts has no specific GetOrderResponse;
-// ListOrdersResponse parses arrays so we use ListOrdersResponseItem implicitly via array parse.
-// For single orders we pass through a permissive object using the orders shape; we can rely on
-// the OpenAPI Order schema by parsing as a 1-element array and unwrapping.
-function parseOrder(row: unknown) {
-  return ListOrdersResponse.parse([row])[0];
 }
 
 const router: IRouter = Router();
@@ -145,12 +135,12 @@ router.post("/orders", async (req, res): Promise<void> => {
       const msg = err instanceof Error ? err.message : String(err);
       // Fall back to COD if Chargily fails
       await db.execute(sql`UPDATE orders SET payment_method = 'cod' WHERE id = ${orderId}`);
-      res.status(201).json({ ...parseOrder(row), trackingNumber, discountAmount, discountCodeUsed, chargilyError: msg });
+      res.status(201).json({ id: orderId, trackingNumber, discountAmount, discountCodeUsed, chargilyError: msg });
       return;
     }
   }
 
-  res.status(201).json({ ...parseOrder(row), trackingNumber: row.tracking_number, discountAmount, discountCodeUsed });
+  res.status(201).json({ id: orderId, trackingNumber, discountAmount, discountCodeUsed });
 });
 
 router.get(
@@ -273,8 +263,5 @@ router.delete(
     res.json({ ok: true });
   },
 );
-
-// Suppress unused import warning
-void OrderResponse;
 
 export default router;
