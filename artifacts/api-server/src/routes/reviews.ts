@@ -93,14 +93,22 @@ router.post("/products/:id/reviews", async (req: Request, res): Promise<void> =>
   // Auto-issue a review reward coupon for logged-in customers with great reviews
   let rewardCode: string | null = null;
   if (customerId && parseInt(rating, 10) >= 4 && (comment ?? "").toString().trim().length >= 10) {
-    // Only one review reward per customer per product
-    const alreadyRewarded = await db.execute(sql`
-      SELECT 1 FROM discount_codes
-      WHERE customer_id = ${customerId} AND source = 'review_reward'
-      AND created_at > NOW() - INTERVAL '30 days'
-      LIMIT 1
-    `);
-    if (!alreadyRewarded.rows.length) {
+    // One reward coupon per product per customer — compare qualifying review count vs issued coupons
+    const [qualifyingReviews, issuedCoupons] = await Promise.all([
+      db.execute(sql`
+        SELECT COUNT(DISTINCT product_id) AS cnt FROM product_reviews
+        WHERE customer_id = ${customerId}
+          AND rating >= 4
+          AND LENGTH(TRIM(COALESCE(comment, ''))) >= 10
+      `),
+      db.execute(sql`
+        SELECT COUNT(*) AS cnt FROM discount_codes
+        WHERE customer_id = ${customerId} AND source = 'review_reward'
+      `),
+    ]);
+    const reviews = parseInt((qualifyingReviews.rows[0] as { cnt: string }).cnt, 10);
+    const coupons = parseInt((issuedCoupons.rows[0] as { cnt: string }).cnt, 10);
+    if (reviews > coupons) {
       rewardCode = await issueDiscount({ customerId, source: "review_reward", percent: 10, daysValid: 30 });
     }
   }

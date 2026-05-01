@@ -143,10 +143,10 @@ export default function CustomerDashboard() {
   }
 
   const SOURCE_LABELS: Record<string, string> = {
-    review: "مكافأة مراجعة",
-    referral_sender: "دعوة صديق (مُرسِل)",
-    referral_receiver: "دعوة صديق (مُستقبِل)",
-    donor: "نقاط المتبرع",
+    review_reward: "مكافأة مراجعة 🌟",
+    referral_referrer: "مكافأة دعوة صديق 🤝",
+    referral_joinee: "خصم ترحيب بالعضو الجديد 🎉",
+    donor_points: "نقاط المتبرع 💚",
   };
 
   return (
