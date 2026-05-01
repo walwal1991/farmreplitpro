@@ -11,7 +11,7 @@ import { z } from "zod";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
-import { ShoppingBag, CheckCircle2, Trash2, Plus, Minus, Copy, LayoutDashboard, PenLine } from "lucide-react";
+import { ShoppingBag, CheckCircle2, Trash2, Plus, Minus, Copy, LayoutDashboard, PenLine, CreditCard, Banknote, Clock, ExternalLink } from "lucide-react";
 import vermicompostBag from "@assets/generated_images/vermicompost-bag.png";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -35,6 +35,8 @@ export default function Cart() {
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<OrderResult[] | null>(null);
   const [requiresSignature, setRequiresSignature] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
+  const [onlineOrderPending, setOnlineOrderPending] = useState<{ orders: OrderResult[]; checkoutUrls: string[] } | null>(null);
 
   const customerToken = localStorage.getItem("customerToken") ?? "";
   const customerUser = (() => {
@@ -59,6 +61,8 @@ export default function Cart() {
       if (customerToken) headers["x-customer-token"] = customerToken;
 
       const ordered: OrderResult[] = [];
+      const checkoutUrls: string[] = [];
+
       for (const it of items) {
         const res = await fetch(`${API}/api/orders`, {
           method: "POST",
@@ -72,6 +76,7 @@ export default function Cart() {
             productId: it.id,
             quantity: it.quantity,
             requiresSignature,
+            paymentMethod,
           }),
         });
         const json = await res.json();
@@ -80,9 +85,18 @@ export default function Cart() {
           return;
         }
         ordered.push({ id: json.id, trackingNumber: json.trackingNumber });
+        if (json.checkoutUrl) checkoutUrls.push(json.checkoutUrl);
       }
-      setResults(ordered);
+
       clear();
+
+      if (paymentMethod === "online" && checkoutUrls.length > 0) {
+        setOnlineOrderPending({ orders: ordered, checkoutUrls });
+        checkoutUrls.forEach(url => window.open(url, "_blank"));
+        return;
+      }
+
+      setResults(ordered);
     } finally {
       setSubmitting(false);
     }
@@ -133,6 +147,57 @@ export default function Cart() {
                 </Button>
               )}
               <Button variant={customerUser ? "ghost" : "outline"} onClick={() => setLocation("/products")}>
+                {t("cart_continue")}
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (onlineOrderPending) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1 container mx-auto px-4 py-20">
+          <div className="max-w-lg mx-auto text-center bg-card border border-border/60 rounded-2xl p-10">
+            <div className="w-16 h-16 mx-auto rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center mb-6">
+              <Clock className="w-9 h-9" />
+            </div>
+            <h1 className="text-2xl font-bold mb-3">طلبك في انتظار الدفع</h1>
+            <p className="text-muted-foreground mb-6">
+              تم إنشاء طلبك بنجاح. أكمل الدفع في الصفحة التي فُتحت. إذا لم تفتح تلقائياً، اضغط الأزرار أدناه.
+            </p>
+            {onlineOrderPending.orders.some(r => r.trackingNumber) && (
+              <div className="space-y-2 mb-6">
+                <p className="text-sm font-medium text-muted-foreground">{t("checkout_tracking_label")}</p>
+                {onlineOrderPending.orders.filter(r => r.trackingNumber).map(r => (
+                  <div key={r.id} className="flex items-center justify-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+                    <code className="text-sm font-mono font-bold text-primary tracking-widest" dir="ltr">{r.trackingNumber}</code>
+                    <button onClick={() => copyTracking(r.trackingNumber!)} className="text-muted-foreground hover:text-primary transition-colors">
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              {onlineOrderPending.checkoutUrls.map((url, i) => (
+                <Button key={i} onClick={() => window.open(url, "_blank")} className="w-full gap-2">
+                  <ExternalLink className="w-4 h-4" />
+                  {onlineOrderPending.checkoutUrls.length > 1 ? `فتح صفحة الدفع ${i + 1}` : "فتح صفحة الدفع"}
+                </Button>
+              ))}
+              {customerUser && (
+                <Button asChild variant="outline">
+                  <Link href="/customer/dashboard">
+                    <LayoutDashboard className="w-4 h-4 me-2" />
+                    {t("checkout_my_orders")}
+                  </Link>
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setLocation("/products")}>
                 {t("cart_continue")}
               </Button>
             </div>
@@ -219,10 +284,51 @@ export default function Cart() {
               </div>
             </div>
 
+            {/* Payment Method */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-1.5 text-sm font-medium">
+                <CreditCard className="w-4 h-4 text-primary" /> طريقة الدفع
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("cod")}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:border-primary/40"}`}
+                >
+                  <Banknote className={`w-6 h-6 ${paymentMethod === "cod" ? "text-primary" : "text-muted-foreground"}`} />
+                  <div className="text-center">
+                    <div className={`text-sm font-semibold ${paymentMethod === "cod" ? "text-primary" : "text-foreground"}`}>الدفع عند الاستلام</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">ادفع نقداً عند التسليم</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("online")}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${paymentMethod === "online" ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:border-primary/40"}`}
+                >
+                  <CreditCard className={`w-6 h-6 ${paymentMethod === "online" ? "text-primary" : "text-muted-foreground"}`} />
+                  <div className="text-center">
+                    <div className={`text-sm font-semibold ${paymentMethod === "online" ? "text-primary" : "text-foreground"}`}>دفع إلكتروني</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">EDAHABIA · CIB</div>
+                  </div>
+                </button>
+              </div>
+              {paymentMethod === "online" && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+                  <span className="text-base">🔒</span>
+                  <span>ستُحوَّل إلى صفحة دفع آمنة عبر Chargily Pay (EDAHABIA / CIB)</span>
+                </div>
+              )}
+            </div>
+
             <Button type="submit" size="lg" className="w-full h-12" disabled={submitting}>
-              {submitting ? t("checkout_submitting") : `${t("checkout_confirm")} (${total} د.ج)`}
+              {submitting
+                ? (paymentMethod === "online" ? "جارٍ الإعداد..." : t("checkout_submitting"))
+                : (paymentMethod === "online" ? `الدفع إلكترونياً (${total} د.ج) →` : `${t("checkout_confirm")} (${total} د.ج)`)}
             </Button>
-            <p className="text-xs text-center text-muted-foreground">{t("checkout_cod_badge")}</p>
+            {paymentMethod === "cod" && (
+              <p className="text-xs text-center text-muted-foreground">{t("checkout_cod_badge")}</p>
+            )}
           </form>
 
           <aside className="bg-card border border-border/60 rounded-2xl p-5 space-y-4 lg:sticky lg:top-24">
