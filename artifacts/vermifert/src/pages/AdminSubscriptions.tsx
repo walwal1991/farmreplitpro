@@ -310,31 +310,23 @@ export default function AdminSubscriptions() {
 
                         {/* Section header */}
                         <div className="bg-muted/40 px-4 py-3 border-b border-border flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Truck className="w-4 h-4 text-primary" />
-                            <p className="text-xs text-muted-foreground">
+                          <div>
+                            <h4 className="font-semibold text-sm flex items-center gap-2">
+                              <Truck className="w-4 h-4 text-primary" />
+                              سجل التوصيلات الشهرية
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">
                               كل شهر: أضف توصيلاً ← أرسله ← سجّل وصوله للعميل
                             </p>
                           </div>
                           {sub.status === "active" && (
-                            <div className="flex items-center gap-2 shrink-0">
-                              <div className="flex flex-col items-end gap-0.5">
-                                <label className="text-[10px] text-muted-foreground">اسم الشهر</label>
-                                <input
-                                  value={newDeliveryLabel[sub.id] ?? ""}
-                                  onChange={e => setNewDeliveryLabel(p => ({ ...p, [sub.id]: e.target.value }))}
-                                  placeholder={getCurrentMonthLabel()}
-                                  className="border border-border rounded-lg px-2 py-1 text-xs bg-background w-32 text-right"
-                                />
-                              </div>
-                              <button
-                                onClick={() => createDelivery(sub.id)}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 mt-4"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                                إضافة توصيل
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => createDelivery(sub.id)}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 shrink-0"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              إضافة {getCurrentMonthLabel()}
+                            </button>
                           )}
                         </div>
 
