@@ -310,12 +310,9 @@ export default function AdminSubscriptions() {
 
                         {/* Section header */}
                         <div className="bg-muted/40 px-4 py-3 border-b border-border flex items-center justify-between gap-3">
-                          <div>
-                            <h4 className="font-semibold text-sm flex items-center gap-2">
-                              <Truck className="w-4 h-4 text-primary" />
-                              سجل التوصيلات الشهرية
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-0.5">
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-4 h-4 text-primary" />
+                            <p className="text-xs text-muted-foreground">
                               كل شهر: أضف توصيلاً ← أرسله ← سجّل وصوله للعميل
                             </p>
                           </div>

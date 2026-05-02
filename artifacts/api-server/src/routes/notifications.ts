@@ -7,14 +7,16 @@ const router: IRouter = Router();
 
 // ── GET /api/admin/notifications ─────────────────────────────────────────────
 router.get("/admin/notifications", requireAdmin, async (_req, res): Promise<void> => {
-  const rows = await db.execute(sql`
-    SELECT id, type, title, body, reference_id, is_read, created_at
-    FROM admin_notifications
-    ORDER BY created_at DESC
-    LIMIT 50
-  `);
-  const unreadCount = (rows.rows as Array<{ is_read: boolean }>)
-    .filter(r => !r.is_read).length;
+  const [rows, countResult] = await Promise.all([
+    db.execute(sql`
+      SELECT id, type, title, body, reference_id, is_read, created_at
+      FROM admin_notifications
+      ORDER BY created_at DESC
+      LIMIT 50
+    `),
+    db.execute(sql`SELECT COUNT(*)::int AS count FROM admin_notifications WHERE is_read = FALSE`),
+  ]);
+  const unreadCount = (countResult.rows[0] as { count: number }).count ?? 0;
   res.json({ notifications: rows.rows, unreadCount });
 });
 
