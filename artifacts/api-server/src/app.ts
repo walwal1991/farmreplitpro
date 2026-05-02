@@ -27,6 +27,10 @@ app.use(
   }),
 );
 app.use(cors());
+
+// Capture raw body for the Chargily webhook BEFORE express.json() parses it
+app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

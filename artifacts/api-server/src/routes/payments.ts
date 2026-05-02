@@ -78,9 +78,13 @@ router.post("/payments/initiate", async (req, res): Promise<void> => {
 router.post("/payments/webhook", async (req, res): Promise<void> => {
   try {
     const signature = (req.headers["signature"] as string) ?? "";
-    const rawBody = JSON.stringify(req.body);
 
-    // Verify HMAC-SHA256 signature using the secret key
+    // req.body is a raw Buffer (express.raw middleware is mounted before express.json in app.ts)
+    const rawBody: Buffer = Buffer.isBuffer(req.body)
+      ? req.body
+      : Buffer.from(JSON.stringify(req.body));
+
+    // Verify HMAC-SHA256 signature using the API key
     if (signature && CHARGILY_API_KEY) {
       const expected = createHmac("sha256", CHARGILY_API_KEY)
         .update(rawBody)
@@ -91,7 +95,7 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
       }
     }
 
-    const event = req.body as {
+    const event = JSON.parse(rawBody.toString("utf8")) as {
       type: string;
       data: { id: string; status: string; metadata?: Record<string, string> };
     };
