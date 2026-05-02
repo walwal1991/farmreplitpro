@@ -238,6 +238,15 @@ router.get("/admin/subscriptions", requireAdmin, async (_req, res): Promise<void
   res.json(rows.rows);
 });
 
+// ── Admin: delete subscription (+ deliveries) ────────────────────────────────
+router.delete("/admin/subscriptions/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  await db.execute(sql`DELETE FROM subscription_deliveries WHERE subscription_id = ${id}`);
+  const result = await db.execute(sql`DELETE FROM subscriptions WHERE id = ${id} RETURNING id`);
+  if (!result.rows.length) { res.status(404).json({ error: "الاشتراك غير موجود" }); return; }
+  res.json({ message: "تم حذف الاشتراك" });
+});
+
 // ── Admin: update subscription status ────────────────────────────────────────
 router.patch("/admin/subscriptions/:id", requireAdmin, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);

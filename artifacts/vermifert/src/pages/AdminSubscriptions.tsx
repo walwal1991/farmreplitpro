@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   RefreshCw, Package, MapPin, Phone, Leaf, ChevronDown, ChevronUp,
-  Truck, CheckCircle2, Clock, Plus, Save,
+  Truck, CheckCircle2, Clock, Plus, Save, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -81,6 +81,8 @@ export default function AdminSubscriptions() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [updatingSubId, setUpdatingSubId] = useState<number | null>(null);
   const [updatingDelId, setUpdatingDelId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deletingSubId, setDeletingSubId] = useState<number | null>(null);
 
   // Per-subscription new delivery form
   const [newDeliveryLabel, setNewDeliveryLabel] = useState<Record<number, string>>({});
@@ -96,6 +98,19 @@ export default function AdminSubscriptions() {
     } finally { setLoading(false); }
   }
   useEffect(() => { if (token) fetchSubs(); }, [token]);
+
+  async function deleteSub(id: number) {
+    setDeletingSubId(id);
+    try {
+      await fetch(`${API}/api/admin/subscriptions/${id}`, {
+        method: "DELETE",
+        headers: { "x-admin-token": token ?? "" },
+      });
+      toast({ title: "تم حذف الاشتراك بنجاح" });
+      setSubs(prev => prev.filter(s => s.id !== id));
+      setDeleteConfirmId(null);
+    } finally { setDeletingSubId(null); }
+  }
 
   async function updateSubStatus(id: number, status: string) {
     setUpdatingSubId(id);
@@ -251,7 +266,7 @@ export default function AdminSubscriptions() {
                       {sub.notes && <p className="text-sm bg-muted rounded-xl px-3 py-2 text-muted-foreground">{sub.notes}</p>}
 
                       {/* Subscription status actions */}
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {sub.status !== "active" && sub.status !== "cancelled" && (
                           <button disabled={updatingSubId === sub.id} onClick={() => updateSubStatus(sub.id, "active")} className="px-3 py-1.5 rounded-xl text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 disabled:opacity-50">تفعيل</button>
                         )}
@@ -260,6 +275,33 @@ export default function AdminSubscriptions() {
                         )}
                         {sub.status !== "cancelled" && (
                           <button disabled={updatingSubId === sub.id} onClick={() => updateSubStatus(sub.id, "cancelled")} className="px-3 py-1.5 rounded-xl text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 disabled:opacity-50">إلغاء</button>
+                        )}
+
+                        {/* Delete with inline confirmation */}
+                        {deleteConfirmId === sub.id ? (
+                          <div className="flex items-center gap-2 mr-auto border border-red-300 bg-red-50 dark:bg-red-950/30 rounded-xl px-3 py-1.5">
+                            <span className="text-xs text-red-700 dark:text-red-400 font-medium">هل أنت متأكد من الحذف؟</span>
+                            <button
+                              disabled={deletingSubId === sub.id}
+                              onClick={() => deleteSub(sub.id)}
+                              className="px-2 py-0.5 rounded-lg text-xs font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                            >
+                              {deletingSubId === sub.id ? "جاري الحذف..." : "حذف"}
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(null)}
+                              className="px-2 py-0.5 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80"
+                            >
+                              إلغاء
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setDeleteConfirmId(sub.id)}
+                            className="mr-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />حذف الاشتراك
+                          </button>
                         )}
                       </div>
 
