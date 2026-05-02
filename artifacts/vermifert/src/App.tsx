@@ -38,6 +38,8 @@ import DonorDashboard from "@/pages/DonorDashboard";
 import AdminDonors from "@/pages/AdminDonors";
 import AdminSensors from "@/pages/AdminSensors";
 import PaymentResult from "@/pages/PaymentResult";
+import Subscriptions from "@/pages/Subscriptions";
+import AdminSubscriptions from "@/pages/AdminSubscriptions";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +80,8 @@ function Router() {
       <Route path="/waste-collection" component={WasteCollection} />
       <Route path="/payment/success" component={() => <PaymentResult type="success" />} />
       <Route path="/payment/failed" component={() => <PaymentResult type="failed" />} />
+      <Route path="/subscriptions" component={Subscriptions} />
+      <Route path="/admin/subscriptions" component={AdminSubscriptions} />
       <Route path="/donor/login" component={DonorAuth} />
       <Route path="/donor/dashboard" component={DonorDashboard} />
 

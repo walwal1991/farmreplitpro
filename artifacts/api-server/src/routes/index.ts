@@ -15,6 +15,7 @@ import donorsRouter from "./donors";
 import sensorsRouter from "./sensors";
 import rewardsRouter from "./rewards";
 import paymentsRouter from "./payments";
+import subscriptionsRouter from "./subscriptions";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(donorsRouter);
 router.use(sensorsRouter);
 router.use(rewardsRouter);
 router.use(paymentsRouter);
+router.use(subscriptionsRouter);
 
 export default router;

@@ -5,7 +5,7 @@ import OrderTracker from "@/components/OrderTracker";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
-import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag, GraduationCap, ExternalLink, MessageSquare, Shield, Gift, BadgePercent, Share2, Users } from "lucide-react";
+import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag, GraduationCap, ExternalLink, MessageSquare, Shield, Gift, BadgePercent, Share2, Users, CalendarCheck, Leaf, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { ar, fr, enUS } from "date-fns/locale";
 
@@ -60,6 +60,11 @@ export default function CustomerDashboard() {
   const [coupons, setCoupons] = useState<{ code: string; discountPercent: number; source: string; used: boolean; expiresAt: string | null; createdAt: string }[]>([]);
   const [totalReferrals, setTotalReferrals] = useState(0);
   const [referralCode, setReferralCode] = useState<string>("");
+  const [subscriptions, setSubscriptions] = useState<{
+    id: number; plan_name: string; price_at_subscription: number; fertilizer_kg: number;
+    crop_type: string | null; delivery_city: string; status: string;
+    next_renewal_date: string; created_at: string;
+  }[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -89,7 +94,7 @@ export default function CustomerDashboard() {
     if (!token) return;
     setLoading(true);
     try {
-      const [ordersRes, enrollmentsRes, messagesRes, referralRes] = await Promise.all([
+      const [ordersRes, enrollmentsRes, messagesRes, referralRes, subsRes] = await Promise.all([
         fetch(`${API}/api/customer/orders`, { headers: { "x-customer-token": token } }),
         fetch(`${API}/api/customer/enrollments`, { headers: { "x-customer-token": token } }),
         fetch(`${API}/api/contact/session`, {
@@ -98,6 +103,7 @@ export default function CustomerDashboard() {
           body: JSON.stringify({ sessionId: null }),
         }),
         fetch(`${API}/api/customer/referral`, { headers: { "x-customer-token": token } }),
+        fetch(`${API}/api/customer/subscriptions`, { headers: { "x-customer-token": token } }),
       ]);
       if (ordersRes.status === 401) { setLocation("/customer/login"); return; }
       const ordersData = await ordersRes.json();
@@ -113,6 +119,9 @@ export default function CustomerDashboard() {
         setReferralCode(refData.referralCode ?? "");
         setCoupons(refData.coupons ?? []);
         setTotalReferrals(refData.totalReferrals ?? 0);
+      }
+      if (subsRes.ok) {
+        setSubscriptions(await subsRes.json());
       }
     } finally { setLoading(false); }
   }, [token, setLocation]);
@@ -389,6 +398,62 @@ export default function CustomerDashboard() {
             </div>
           )}
         </section>
+
+        {/* ── My Subscriptions ─────────────────────────────────────────────── */}
+        {subscriptions.length > 0 && (
+          <section className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <CalendarCheck className="w-5 h-5 text-primary" />
+                {lang === "ar" ? "اشتراكاتي الشهرية" : lang === "fr" ? "Mes abonnements" : "My Subscriptions"}
+                <span className="text-sm font-normal text-muted-foreground">({subscriptions.length})</span>
+              </h2>
+              <a href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/subscriptions`} className="text-xs text-primary hover:underline">
+                + {lang === "ar" ? "اشتراك جديد" : "New subscription"}
+              </a>
+            </div>
+            <div className="space-y-3">
+              {subscriptions.map(sub => {
+                const subStatusColors: Record<string, string> = {
+                  active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                  paused: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+                  cancelled: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                };
+                const subStatusLabels: Record<string, string> = {
+                  active: lang === "ar" ? "نشط" : "Active",
+                  paused: lang === "ar" ? "موقوف" : "Paused",
+                  cancelled: lang === "ar" ? "ملغى" : "Cancelled",
+                };
+                return (
+                  <div key={sub.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-green-100 dark:bg-green-900/20 flex items-center justify-center shrink-0">
+                      <CalendarCheck className="w-5 h-5 text-green-700 dark:text-green-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-sm">{sub.plan_name}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${subStatusColors[sub.status] ?? ""}`}>
+                          {subStatusLabels[sub.status] ?? sub.status}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                        <span className="flex items-center gap-1"><Leaf className="w-3 h-3" />{sub.fertilizer_kg} كغ/شهر</span>
+                        {sub.crop_type && <span>{sub.crop_type}</span>}
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{sub.delivery_city}</span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-bold text-primary">{sub.price_at_subscription.toLocaleString("ar-DZ")} د.ج</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {lang === "ar" ? "التجديد" : "Renews"}: {format(new Date(sub.next_renewal_date), "d MMM", { locale: dateLocale })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Package className="w-5 h-5 text-primary" />

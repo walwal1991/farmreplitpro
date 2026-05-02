@@ -78,6 +78,7 @@ export default function Navbar() {
 
   const NAV_LINKS = [
     { href: "/", label: t("nav_home") },
+    { href: "/subscriptions", label: lang === "ar" ? "الاشتراك الشهري 📦" : lang === "fr" ? "Abonnement mensuel" : "Monthly Box" },
     { href: "/learn", label: t("nav_learn") },
     { href: "/guide", label: t("nav_guide") },
     { href: "/consultation", label: t("nav_consultation") },
