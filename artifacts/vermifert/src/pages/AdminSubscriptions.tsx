@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   RefreshCw, Package, MapPin, Phone, Leaf, ChevronDown, ChevronUp,
-  Truck, CheckCircle2, Clock, Plus, Save, Trash2,
+  Truck, CheckCircle2, Clock, Save, Trash2, Zap,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -308,140 +308,99 @@ export default function AdminSubscriptions() {
                       {/* ── Deliveries section ─────────────────────────────── */}
                       <div className="border border-border rounded-2xl overflow-hidden">
 
-                        {/* Section header */}
-                        <div className="bg-muted/40 px-4 py-3 border-b border-border flex items-center justify-between gap-3">
-                          <div>
-                            <h4 className="font-semibold text-sm flex items-center gap-2">
-                              <Truck className="w-4 h-4 text-primary" />
-                              سجل التوصيلات الشهرية
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              كل شهر: أضف توصيلاً ← أرسله ← سجّل وصوله للعميل
-                            </p>
-                          </div>
-                          {sub.status === "active" && (
-                            <button
-                              onClick={() => createDelivery(sub.id)}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 shrink-0"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              إضافة {getCurrentMonthLabel()}
-                            </button>
-                          )}
+                        {/* Header */}
+                        <div className="bg-muted/40 px-4 py-3 border-b border-border flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-primary shrink-0" />
+                          <h4 className="font-semibold text-sm">سجل التوصيلات الشهرية</h4>
+                          <span className="mr-auto flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                            <Zap className="w-3 h-3 text-primary" />
+                            تلقائي كل شهر
+                          </span>
                         </div>
 
-                        {/* Delivery list */}
-                        <div className="divide-y divide-border/60">
-                          {(sub.deliveries ?? []).length === 0 ? (
-                            <div className="py-8 text-center">
-                              <Package className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-                              <p className="text-sm text-muted-foreground">لا توجد توصيلات بعد</p>
-                              {sub.status === "active" && (
-                                <p className="text-xs text-muted-foreground/70 mt-1">اضغط "إضافة توصيل" لبدء الشهر الأول</p>
-                              )}
-                            </div>
-                          ) : (
-                            (sub.deliveries ?? []).map((d, idx) => {
-                              const stepNum = (sub.deliveries ?? []).length - idx;
-                              return (
-                                <div key={d.id} className="px-4 py-4 bg-background">
+                        {/* Table */}
+                        {(sub.deliveries ?? []).length === 0 ? (
+                          <div className="py-10 text-center">
+                            <Package className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">يُنشأ التوصيل الأول تلقائياً في بداية الشهر</p>
+                          </div>
+                        ) : (
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-border/60 bg-muted/20">
+                                <th className="text-right px-4 py-2 text-xs font-semibold text-muted-foreground">الشهر</th>
+                                <th className="text-right px-4 py-2 text-xs font-semibold text-muted-foreground">الحالة</th>
+                                <th className="text-right px-4 py-2 text-xs font-semibold text-muted-foreground">رقم التتبع</th>
+                                <th className="px-4 py-2 text-xs font-semibold text-muted-foreground">الإجراء</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/40">
+                              {(sub.deliveries ?? []).map(d => (
+                                <tr key={d.id} className="hover:bg-muted/20 transition-colors">
+                                  {/* Month */}
+                                  <td className="px-4 py-3 font-medium whitespace-nowrap">{d.month_label}</td>
 
-                                  {/* Row top: month + step badge + status */}
-                                  <div className="flex items-center gap-3 mb-3">
-                                    <span className="w-7 h-7 rounded-full bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center shrink-0">
-                                      {stepNum}
+                                  {/* Status */}
+                                  <td className="px-4 py-3">
+                                    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${DEL_STATUS_COLORS[d.status] ?? ""}`}>
+                                      {d.status === "preparing" && <Clock className="w-3 h-3" />}
+                                      {d.status === "shipped" && <Truck className="w-3 h-3" />}
+                                      {d.status === "delivered" && <CheckCircle2 className="w-3 h-3" />}
+                                      {DEL_STATUS_LABELS[d.status] ?? d.status}
                                     </span>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-semibold text-sm">{d.month_label}</span>
-                                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${DEL_STATUS_COLORS[d.status] ?? ""}`}>
-                                          {d.status === "preparing" ? "🟡 قيد الإعداد" : d.status === "shipped" ? "🔵 في الطريق" : "🟢 وصل للعميل"}
-                                        </span>
-                                      </div>
-                                      {d.tracking_number && (
-                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                          رقم التتبع: <code className="font-mono bg-muted px-1.5 py-0.5 rounded" dir="ltr">{d.tracking_number}</code>
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Progress steps */}
-                                  <div className="flex items-center gap-2 mb-3 mr-10">
-                                    {["preparing", "shipped", "delivered"].map((s, i) => {
-                                      const steps = ["preparing", "shipped", "delivered"];
-                                      const current = steps.indexOf(d.status);
-                                      const done = i <= current;
-                                      return (
-                                        <div key={s} className="flex items-center gap-2 flex-1">
-                                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                                            {done ? "✓" : i + 1}
-                                          </div>
-                                          <span className={`text-[10px] ${done ? "text-primary font-medium" : "text-muted-foreground"}`}>
-                                            {s === "preparing" ? "إعداد" : s === "shipped" ? "إرسال" : "تسليم"}
-                                          </span>
-                                          {i < 2 && <div className={`flex-1 h-0.5 rounded ${done && i < current ? "bg-primary" : "bg-border"}`} />}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-
-                                  {/* Action area */}
-                                  {d.status === "preparing" && (
-                                    <div className="mr-10 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                                      <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-2">
-                                        📦 الصندوق جاهز للإرسال؟ أدخل رقم التتبع واضغط "أرسلت"
+                                    {d.status === "delivered" && d.delivered_at && (
+                                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                                        {format(new Date(d.delivered_at), "d MMM yyyy", { locale: ar })}
                                       </p>
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          value={trackingInputs[d.id] ?? ""}
-                                          onChange={e => setTrackingInputs(p => ({ ...p, [d.id]: e.target.value }))}
-                                          placeholder="رقم تتبع الشحنة (اختياري)"
-                                          className="border border-blue-200 dark:border-blue-700 rounded-lg px-3 py-1.5 text-xs bg-background flex-1 min-w-0"
-                                          dir="ltr"
-                                        />
-                                        <button
-                                          disabled={updatingDelId === d.id}
-                                          onClick={() => updateDelivery(d.id, { status: "shipped", trackingNumber: trackingInputs[d.id] || undefined })}
-                                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 shrink-0"
-                                        >
-                                          <Truck className="w-3.5 h-3.5" />
-                                          أرسلت
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
+                                    )}
+                                  </td>
 
-                                  {d.status === "shipped" && (
-                                    <div className="mr-10 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center justify-between gap-3">
-                                      <p className="text-xs font-medium text-green-800 dark:text-green-300">
-                                        ✅ هل استلم العميل الصندوق؟ اضغط لتأكيد التسليم
-                                      </p>
+                                  {/* Tracking */}
+                                  <td className="px-4 py-3">
+                                    {d.status === "preparing" ? (
+                                      <input
+                                        value={trackingInputs[d.id] ?? ""}
+                                        onChange={e => setTrackingInputs(p => ({ ...p, [d.id]: e.target.value }))}
+                                        placeholder="اختياري"
+                                        className="border border-border rounded-lg px-2 py-1 text-xs bg-background w-36"
+                                        dir="ltr"
+                                      />
+                                    ) : d.tracking_number ? (
+                                      <code className="text-xs font-mono bg-muted px-2 py-0.5 rounded" dir="ltr">{d.tracking_number}</code>
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">—</span>
+                                    )}
+                                  </td>
+
+                                  {/* Action */}
+                                  <td className="px-4 py-3">
+                                    {d.status === "preparing" && (
+                                      <button
+                                        disabled={updatingDelId === d.id}
+                                        onClick={() => updateDelivery(d.id, { status: "shipped", trackingNumber: trackingInputs[d.id] || undefined })}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+                                      >
+                                        <Truck className="w-3 h-3" />أُرسل
+                                      </button>
+                                    )}
+                                    {d.status === "shipped" && (
                                       <button
                                         disabled={updatingDelId === d.id}
                                         onClick={() => updateDelivery(d.id, { status: "delivered" })}
-                                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-50 shrink-0"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
                                       >
-                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                        تم التسليم
+                                        <CheckCircle2 className="w-3 h-3" />وصل
                                       </button>
-                                    </div>
-                                  )}
-
-                                  {d.status === "delivered" && (
-                                    <div className="mr-10 flex items-center gap-2 text-xs text-green-700 dark:text-green-400">
-                                      <CheckCircle2 className="w-4 h-4" />
-                                      <span>
-                                        سُلِّم بنجاح
-                                        {d.delivered_at && ` — ${format(new Date(d.delivered_at), "d MMM yyyy", { locale: ar })}`}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
+                                    )}
+                                    {d.status === "delivered" && (
+                                      <span className="text-xs text-green-600 font-medium">✓ مكتمل</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
                       </div>
                     </div>
                   )}

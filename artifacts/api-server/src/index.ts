@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedDefaultAdmin } from "./lib/seed-admin";
+import { startMonthlyScheduler } from "./lib/monthly-scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -23,5 +24,6 @@ app.listen(port, async (err) => {
   }
 
   await seedDefaultAdmin();
+  startMonthlyScheduler();
   logger.info({ port }, "Server listening");
 });
