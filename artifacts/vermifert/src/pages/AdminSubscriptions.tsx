@@ -306,88 +306,153 @@ export default function AdminSubscriptions() {
                       </div>
 
                       {/* ── Deliveries section ─────────────────────────────── */}
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-semibold text-sm flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" />التوصيلات الشهرية</h4>
+                      <div className="border border-border rounded-2xl overflow-hidden">
+
+                        {/* Section header */}
+                        <div className="bg-muted/40 px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+                          <div>
+                            <h4 className="font-semibold text-sm flex items-center gap-2">
+                              <Truck className="w-4 h-4 text-primary" />
+                              سجل التوصيلات الشهرية
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              كل شهر: أضف توصيلاً ← أرسله ← سجّل وصوله للعميل
+                            </p>
+                          </div>
                           {sub.status === "active" && (
-                            <div className="flex items-center gap-2">
-                              <input
-                                value={newDeliveryLabel[sub.id] ?? ""}
-                                onChange={e => setNewDeliveryLabel(p => ({ ...p, [sub.id]: e.target.value }))}
-                                placeholder={getCurrentMonthLabel()}
-                                className="border border-border rounded-lg px-2 py-1 text-xs bg-background w-32"
-                              />
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex flex-col items-end gap-0.5">
+                                <label className="text-[10px] text-muted-foreground">اسم الشهر</label>
+                                <input
+                                  value={newDeliveryLabel[sub.id] ?? ""}
+                                  onChange={e => setNewDeliveryLabel(p => ({ ...p, [sub.id]: e.target.value }))}
+                                  placeholder={getCurrentMonthLabel()}
+                                  className="border border-border rounded-lg px-2 py-1 text-xs bg-background w-32 text-right"
+                                />
+                              </div>
                               <button
                                 onClick={() => createDelivery(sub.id)}
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 mt-4"
                               >
-                                <Plus className="w-3 h-3" />إضافة
+                                <Plus className="w-3.5 h-3.5" />
+                                إضافة توصيل
                               </button>
                             </div>
                           )}
                         </div>
 
-                        {(sub.deliveries ?? []).length === 0 ? (
-                          <p className="text-xs text-muted-foreground py-3 text-center border border-dashed border-border rounded-xl">لا توجد توصيلات بعد</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {(sub.deliveries ?? []).map(d => {
-                              const Icon = DEL_STATUS_ICONS[d.status] ?? Clock;
+                        {/* Delivery list */}
+                        <div className="divide-y divide-border/60">
+                          {(sub.deliveries ?? []).length === 0 ? (
+                            <div className="py-8 text-center">
+                              <Package className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground">لا توجد توصيلات بعد</p>
+                              {sub.status === "active" && (
+                                <p className="text-xs text-muted-foreground/70 mt-1">اضغط "إضافة توصيل" لبدء الشهر الأول</p>
+                              )}
+                            </div>
+                          ) : (
+                            (sub.deliveries ?? []).map((d, idx) => {
+                              const stepNum = (sub.deliveries ?? []).length - idx;
                               return (
-                                <div key={d.id} className="bg-card border border-border rounded-xl p-3">
-                                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                                    <div className="flex items-center gap-2">
-                                      <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-                                      <span className="font-medium text-sm">{d.month_label}</span>
-                                      <span className={`text-xs px-2 py-0.5 rounded-full ${DEL_STATUS_COLORS[d.status] ?? ""}`}>
-                                        {DEL_STATUS_LABELS[d.status] ?? d.status}
-                                      </span>
+                                <div key={d.id} className="px-4 py-4 bg-background">
+
+                                  {/* Row top: month + step badge + status */}
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <span className="w-7 h-7 rounded-full bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center shrink-0">
+                                      {stepNum}
+                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-semibold text-sm">{d.month_label}</span>
+                                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${DEL_STATUS_COLORS[d.status] ?? ""}`}>
+                                          {d.status === "preparing" ? "🟡 قيد الإعداد" : d.status === "shipped" ? "🔵 في الطريق" : "🟢 وصل للعميل"}
+                                        </span>
+                                      </div>
+                                      {d.tracking_number && (
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                          رقم التتبع: <code className="font-mono bg-muted px-1.5 py-0.5 rounded" dir="ltr">{d.tracking_number}</code>
+                                        </p>
+                                      )}
                                     </div>
-                                    {d.tracking_number && (
-                                      <code className="text-xs font-mono bg-muted px-2 py-0.5 rounded" dir="ltr">{d.tracking_number}</code>
-                                    )}
                                   </div>
 
-                                  {/* Delivery actions */}
-                                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                    {d.status === "preparing" && (
-                                      <div className="flex items-center gap-1.5 flex-1">
+                                  {/* Progress steps */}
+                                  <div className="flex items-center gap-2 mb-3 mr-10">
+                                    {["preparing", "shipped", "delivered"].map((s, i) => {
+                                      const steps = ["preparing", "shipped", "delivered"];
+                                      const current = steps.indexOf(d.status);
+                                      const done = i <= current;
+                                      return (
+                                        <div key={s} className="flex items-center gap-2 flex-1">
+                                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                                            {done ? "✓" : i + 1}
+                                          </div>
+                                          <span className={`text-[10px] ${done ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                                            {s === "preparing" ? "إعداد" : s === "shipped" ? "إرسال" : "تسليم"}
+                                          </span>
+                                          {i < 2 && <div className={`flex-1 h-0.5 rounded ${done && i < current ? "bg-primary" : "bg-border"}`} />}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Action area */}
+                                  {d.status === "preparing" && (
+                                    <div className="mr-10 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                                      <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-2">
+                                        📦 الصندوق جاهز للإرسال؟ أدخل رقم التتبع واضغط "أرسلت"
+                                      </p>
+                                      <div className="flex items-center gap-2">
                                         <input
                                           value={trackingInputs[d.id] ?? ""}
                                           onChange={e => setTrackingInputs(p => ({ ...p, [d.id]: e.target.value }))}
-                                          placeholder="رقم التتبع (اختياري)"
-                                          className="border border-border rounded-lg px-2 py-1 text-xs bg-background flex-1 min-w-0"
+                                          placeholder="رقم تتبع الشحنة (اختياري)"
+                                          className="border border-blue-200 dark:border-blue-700 rounded-lg px-3 py-1.5 text-xs bg-background flex-1 min-w-0"
                                           dir="ltr"
                                         />
                                         <button
                                           disabled={updatingDelId === d.id}
                                           onClick={() => updateDelivery(d.id, { status: "shipped", trackingNumber: trackingInputs[d.id] || undefined })}
-                                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 disabled:opacity-50 shrink-0"
+                                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 shrink-0"
                                         >
-                                          <Truck className="w-3 h-3" />تم الإرسال
+                                          <Truck className="w-3.5 h-3.5" />
+                                          أرسلت
                                         </button>
                                       </div>
-                                    )}
-                                    {d.status === "shipped" && (
+                                    </div>
+                                  )}
+
+                                  {d.status === "shipped" && (
+                                    <div className="mr-10 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center justify-between gap-3">
+                                      <p className="text-xs font-medium text-green-800 dark:text-green-300">
+                                        ✅ هل استلم العميل الصندوق؟ اضغط لتأكيد التسليم
+                                      </p>
                                       <button
                                         disabled={updatingDelId === d.id}
                                         onClick={() => updateDelivery(d.id, { status: "delivered" })}
-                                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-50"
+                                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-50 shrink-0"
                                       >
-                                        <CheckCircle2 className="w-3 h-3" />تم التسليم
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        تم التسليم
                                       </button>
-                                    )}
-                                    {d.status === "delivered" && d.delivered_at && (
-                                      <span className="text-xs text-muted-foreground">
-                                        سُلِّم في {format(new Date(d.delivered_at), "d MMM yyyy", { locale: ar })}
+                                    </div>
+                                  )}
+
+                                  {d.status === "delivered" && (
+                                    <div className="mr-10 flex items-center gap-2 text-xs text-green-700 dark:text-green-400">
+                                      <CheckCircle2 className="w-4 h-4" />
+                                      <span>
+                                        سُلِّم بنجاح
+                                        {d.delivered_at && ` — ${format(new Date(d.delivered_at), "d MMM yyyy", { locale: ar })}`}
                                       </span>
-                                    )}
-                                  </div>
+                                    </div>
+                                  )}
                                 </div>
                               );
-                            })}
-                          </div>
-                        )}
+                            })
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
