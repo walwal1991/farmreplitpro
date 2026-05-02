@@ -22,6 +22,7 @@ interface Order {
   address: string;
   createdAt: string;
   assignedDriverName?: string | null;
+  subscriptionId?: number | null;
 }
 
 interface Enrollment {
@@ -534,6 +535,11 @@ export default function CustomerDashboard() {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[order.status] ?? ""}`}>
                           {STATUS_LABELS[order.status] ?? order.status}
                         </span>
+                        {order.subscriptionId && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                            📦 اشتراك شهري
+                          </span>
+                        )}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
                         <span>{t("dash_qty")} {order.quantity}</span>

@@ -4,7 +4,6 @@ import { db } from "@workspace/db";
 import { requireCustomer } from "../middlewares/customer-auth";
 import { requireAdmin } from "../middlewares/admin-auth";
 import { ChargilyClient } from "@chargily/chargily-pay";
-import { createHmac } from "node:crypto";
 
 const router: IRouter = Router();
 
@@ -15,6 +14,51 @@ const chargily = new ChargilyClient({ api_key: CHARGILY_API_KEY, mode: IS_LIVE ?
 function getSiteUrl(): string {
   const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").filter(Boolean);
   return `https://${domains[0] ?? "localhost"}`;
+}
+
+function genTracking(): string {
+  return "VF" + new Date().getFullYear() + Math.random().toString(16).slice(2, 10).toUpperCase();
+}
+
+// ─── Helper: create an order record for a subscription month ──────────────────
+async function createOrderForSubscription(sub: {
+  id: number;
+  customer_id: number;
+  customer_name: string;
+  customer_phone: string;
+  plan_name: string;
+  price_at_subscription: number;
+  fertilizer_kg: number;
+  delivery_address: string;
+  delivery_city: string;
+  crop_type: string | null;
+  notes: string | null;
+  payment_method: string;
+}, monthLabel: string): Promise<number> {
+  const productName = `${sub.plan_name} — ${monthLabel}`;
+  const trackingNumber = genTracking();
+  const orderNotes = [
+    `اشتراك شهري #${sub.id}`,
+    sub.crop_type ? `المحصول: ${sub.crop_type}` : null,
+    sub.notes ?? null,
+  ].filter(Boolean).join(" | ");
+
+  const orderStatus = sub.payment_method === "cod" ? "confirmed" : "confirmed";
+  const paymentStatus = sub.payment_method === "cod" ? "pending" : "paid";
+
+  const r = await db.execute(sql`
+    INSERT INTO orders
+      (customer_name, phone, address, city, product_name, unit_price, quantity, total_price,
+       status, payment_method, payment_status, tracking_number,
+       customer_id, subscription_id, notes)
+    VALUES
+      (${sub.customer_name}, ${sub.customer_phone}, ${sub.delivery_address}, ${sub.delivery_city},
+       ${productName}, ${sub.price_at_subscription}, 1, ${sub.price_at_subscription},
+       ${orderStatus}, ${sub.payment_method}, ${paymentStatus}, ${trackingNumber},
+       ${sub.customer_id}, ${sub.id}, ${orderNotes})
+    RETURNING id
+  `);
+  return (r.rows[0] as { id: number }).id;
 }
 
 // ── Public: list active plans ─────────────────────────────────────────────────
@@ -47,7 +91,9 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
     FROM subscription_plans WHERE id = ${planId} AND active = true LIMIT 1
   `);
   if (!planRows.rows.length) { res.status(404).json({ error: "الخطة غير موجودة" }); return; }
-  const plan = planRows.rows[0] as { id: number; name_ar: string; price_per_month: number; fertilizer_kg: number };
+  const plan = planRows.rows[0] as {
+    id: number; name_ar: string; price_per_month: number; fertilizer_kg: number;
+  };
 
   const existing = await db.execute(sql`
     SELECT 1 FROM subscriptions
@@ -58,7 +104,6 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
   const nextRenewal = new Date();
   nextRenewal.setMonth(nextRenewal.getMonth() + 1);
 
-  // COD subscriptions are immediately active; online starts as pending_payment
   const initialStatus = paymentMethod === "cod" ? "active" : "pending_payment";
   const initialPaymentStatus = paymentMethod === "cod" ? "cod" : "awaiting";
 
@@ -79,16 +124,27 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
   const id = (result.rows[0] as { id: number }).id;
 
   if (paymentMethod === "cod") {
-    // Create the first month's delivery record immediately
     const now = new Date();
     const monthLabel = now.toLocaleString("ar-DZ", { month: "long", year: "numeric" });
+
+    // Create first delivery record
     await db.execute(sql`
       INSERT INTO subscription_deliveries (subscription_id, month_label, status)
       VALUES (${id}, ${monthLabel}, 'preparing')
     `);
+
+    // Auto-create the first month's order
+    await createOrderForSubscription({
+      id, customer_id: customer.id, customer_name: customer.name,
+      customer_phone: customer.phone ?? "",
+      plan_name: plan.name_ar, price_at_subscription: plan.price_per_month,
+      fertilizer_kg: plan.fertilizer_kg,
+      delivery_address: deliveryAddress, delivery_city: deliveryCity,
+      crop_type: cropType ?? null, notes: notes ?? null, payment_method: paymentMethod,
+    }, monthLabel);
+
     res.status(201).json({ id, paymentMethod: "cod", message: "تم الاشتراك بنجاح! سيتم إعداد الصندوق الأول وإرساله قريباً." });
   } else {
-    // Initiate Chargily checkout for the first month
     const siteUrl = getSiteUrl();
     const basePath = process.env.BASE_PATH ?? "";
     try {
@@ -112,7 +168,6 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
         checkoutUrl: (checkout as unknown as { checkout_url: string }).checkout_url,
       });
     } catch (err: unknown) {
-      // Rollback subscription if Chargily fails
       await db.execute(sql`DELETE FROM subscriptions WHERE id = ${id}`);
       res.status(502).json({ error: `خطأ في بوابة الدفع: ${err instanceof Error ? err.message : String(err)}` });
     }
@@ -183,7 +238,7 @@ router.get("/admin/subscriptions", requireAdmin, async (_req, res): Promise<void
   res.json(rows.rows);
 });
 
-// ── Admin: update subscription status/notes ───────────────────────────────────
+// ── Admin: update subscription status ────────────────────────────────────────
 router.patch("/admin/subscriptions/:id", requireAdmin, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   const { status, notes } = req.body ?? {};
@@ -198,18 +253,39 @@ router.patch("/admin/subscriptions/:id", requireAdmin, async (req, res): Promise
   res.json({ message: "تم التحديث" });
 });
 
-// ── Admin: create a monthly delivery ─────────────────────────────────────────
+// ── Admin: create a monthly delivery + auto-order ─────────────────────────────
 router.post("/admin/subscriptions/:id/deliveries", requireAdmin, async (req, res): Promise<void> => {
   const subId = parseInt(req.params.id, 10);
   const { monthLabel, notes } = req.body ?? {};
-  if (!monthLabel) { res.status(400).json({ error: "month_label مطلوب" }); return; }
+  if (!monthLabel) { res.status(400).json({ error: "monthLabel مطلوب" }); return; }
 
-  const result = await db.execute(sql`
+  // Fetch subscription details for order creation
+  const subRows = await db.execute(sql`
+    SELECT id, customer_id, customer_name, customer_phone, plan_name,
+           price_at_subscription, fertilizer_kg, delivery_address, delivery_city,
+           crop_type, notes, payment_method
+    FROM subscriptions WHERE id = ${subId} LIMIT 1
+  `);
+  if (!subRows.rows.length) { res.status(404).json({ error: "الاشتراك غير موجود" }); return; }
+  const sub = subRows.rows[0] as {
+    id: number; customer_id: number; customer_name: string; customer_phone: string;
+    plan_name: string; price_at_subscription: number; fertilizer_kg: number;
+    delivery_address: string; delivery_city: string;
+    crop_type: string | null; notes: string | null; payment_method: string;
+  };
+
+  // Create the delivery record
+  const delResult = await db.execute(sql`
     INSERT INTO subscription_deliveries (subscription_id, month_label, status, notes)
     VALUES (${subId}, ${monthLabel}, 'preparing', ${notes ?? null})
     RETURNING id
   `);
-  res.status(201).json({ id: (result.rows[0] as { id: number }).id });
+  const deliveryId = (delResult.rows[0] as { id: number }).id;
+
+  // Auto-create the monthly order
+  const orderId = await createOrderForSubscription(sub, monthLabel);
+
+  res.status(201).json({ id: deliveryId, orderId });
 });
 
 // ── Admin: update delivery status ─────────────────────────────────────────────
@@ -228,7 +304,34 @@ router.patch("/admin/deliveries/:id", requireAdmin, async (req, res): Promise<vo
         delivered_at = CASE WHEN ${status ?? null} = 'delivered' AND delivered_at IS NULL THEN NOW() ELSE delivered_at END
     WHERE id = ${id}
   `);
+
+  // If we have a tracking number, also update the linked order's tracking number
+  if (trackingNumber) {
+    await db.execute(sql`
+      UPDATE orders SET tracking_number = ${trackingNumber}
+      WHERE subscription_id = (SELECT subscription_id FROM subscription_deliveries WHERE id = ${id})
+        AND tracking_number IS NULL OR tracking_number = ''
+    `);
+  }
+
+  // Sync delivery status → order status
+  if (status === "shipped") {
+    await db.execute(sql`
+      UPDATE orders SET status = 'shipped'
+      WHERE subscription_id = (SELECT subscription_id FROM subscription_deliveries WHERE id = ${id})
+        AND status NOT IN ('delivered', 'cancelled')
+    `);
+  } else if (status === "delivered") {
+    await db.execute(sql`
+      UPDATE orders SET status = 'delivered', delivered_at = NOW()
+      WHERE subscription_id = (SELECT subscription_id FROM subscription_deliveries WHERE id = ${id})
+        AND status NOT IN ('cancelled')
+    `);
+  }
+
   res.json({ message: "تم التحديث" });
 });
 
+// ── Export helper for use in payments webhook ─────────────────────────────────
+export { createOrderForSubscription };
 export default router;

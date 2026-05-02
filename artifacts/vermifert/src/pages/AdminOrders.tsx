@@ -35,6 +35,7 @@ interface Order {
   signatureImage?: string | null;
   deliveredAt?: string | null;
   createdAt: string;
+  subscriptionId?: number | null;
 }
 
 interface Driver {
@@ -283,6 +284,11 @@ export default function AdminOrders() {
                           <td className="px-4 py-4">
                             <div className="font-medium">{order.productName}</div>
                             <div className="text-xs text-muted-foreground mt-0.5">الكمية: {order.quantity}</div>
+                            {order.subscriptionId && (
+                              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                📦 اشتراك شهري
+                              </span>
+                            )}
                           </td>
 
                           {/* Price */}

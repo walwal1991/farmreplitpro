@@ -102,12 +102,10 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
       const subscriptionId = event.data?.metadata?.subscriptionId;
 
       if (subscriptionId) {
-        // Subscription payment confirmed → activate + create first delivery
+        // Subscription payment confirmed → activate + create first delivery + first order
         const subId = parseInt(subscriptionId, 10);
         await db.execute(sql`
-          UPDATE subscriptions
-          SET payment_status = 'paid', status = 'active'
-          WHERE id = ${subId}
+          UPDATE subscriptions SET payment_status = 'paid', status = 'active' WHERE id = ${subId}
         `);
         const existing = await db.execute(sql`SELECT 1 FROM subscription_deliveries WHERE subscription_id = ${subId} LIMIT 1`);
         if (!existing.rows.length) {
@@ -117,6 +115,35 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
             INSERT INTO subscription_deliveries (subscription_id, month_label, status)
             VALUES (${subId}, ${monthLabel}, 'preparing')
           `);
+          // Auto-create the first month's order
+          const subRow = await db.execute(sql`
+            SELECT id, customer_id, customer_name, customer_phone, plan_name,
+                   price_at_subscription, delivery_address, delivery_city,
+                   crop_type, notes
+            FROM subscriptions WHERE id = ${subId} LIMIT 1
+          `);
+          if (subRow.rows.length) {
+            const s = subRow.rows[0] as {
+              id: number; customer_id: number; customer_name: string; customer_phone: string;
+              plan_name: string; price_at_subscription: number;
+              delivery_address: string; delivery_city: string;
+              crop_type: string | null; notes: string | null;
+            };
+            const tracking = "VF" + new Date().getFullYear() + Math.random().toString(16).slice(2, 10).toUpperCase();
+            const productName = `${s.plan_name} — ${monthLabel}`;
+            const orderNotes = [`اشتراك شهري #${s.id}`, s.crop_type ? `المحصول: ${s.crop_type}` : null, s.notes].filter(Boolean).join(" | ");
+            await db.execute(sql`
+              INSERT INTO orders
+                (customer_name, phone, address, city, product_name, unit_price, quantity,
+                 total_price, status, payment_method, payment_status, tracking_number,
+                 customer_id, subscription_id, notes)
+              VALUES
+                (${s.customer_name}, ${s.customer_phone}, ${s.delivery_address}, ${s.delivery_city},
+                 ${productName}, ${s.price_at_subscription}, 1, ${s.price_at_subscription},
+                 'confirmed', 'online', 'paid', ${tracking},
+                 ${s.customer_id}, ${subId}, ${orderNotes})
+            `);
+          }
         }
       } else if (checkoutId || orderId) {
         const whereClause = orderId

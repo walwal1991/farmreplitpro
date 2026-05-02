@@ -123,7 +123,7 @@ router.get("/customer/orders", requireCustomer, async (req, res): Promise<void> 
 
   const result = await db.execute(sql`
     SELECT id, tracking_number, product_name, quantity, total_price, status,
-           city, address, created_at, assigned_driver_name, customer_id
+           city, address, created_at, assigned_driver_name, customer_id, subscription_id
     FROM orders
     WHERE customer_id = ${customer.id}
        OR (customer_id IS NULL AND phone = ${customer.phone || ""} AND ${customer.phone || ""} != '')
@@ -141,6 +141,7 @@ router.get("/customer/orders", requireCustomer, async (req, res): Promise<void> 
     address: o.address,
     createdAt: o.created_at,
     assignedDriverName: o.assigned_driver_name,
+    subscriptionId: o.subscription_id ?? null,
   })));
 });
 
