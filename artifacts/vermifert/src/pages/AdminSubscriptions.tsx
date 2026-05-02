@@ -60,13 +60,6 @@ const DEL_STATUS_COLORS: Record<string, string> = {
   shipped: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   delivered: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 };
-const DEL_STATUS_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  preparing: Clock, shipped: Truck, delivered: CheckCircle2,
-};
-
-function getCurrentMonthLabel() {
-  return new Date().toLocaleString("ar-DZ", { month: "long", year: "numeric" });
-}
 
 export default function AdminSubscriptions() {
   const [, setLocation] = useLocation();
@@ -84,8 +77,6 @@ export default function AdminSubscriptions() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [deletingSubId, setDeletingSubId] = useState<number | null>(null);
 
-  // Per-subscription new delivery form
-  const [newDeliveryLabel, setNewDeliveryLabel] = useState<Record<number, string>>({});
   const [trackingInputs, setTrackingInputs] = useState<Record<number, string>>({});
 
   async function fetchSubs() {
@@ -123,19 +114,6 @@ export default function AdminSubscriptions() {
       toast({ title: "تم تحديث الاشتراك" });
       setSubs(prev => prev.map(s => s.id === id ? { ...s, status } : s));
     } finally { setUpdatingSubId(null); }
-  }
-
-  async function createDelivery(subId: number) {
-    const label = newDeliveryLabel[subId] ?? getCurrentMonthLabel();
-    const res = await fetch(`${API}/api/admin/subscriptions/${subId}/deliveries`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-token": token ?? "" },
-      body: JSON.stringify({ monthLabel: label }),
-    });
-    if (res.ok) {
-      toast({ title: `تم إنشاء توصيل ${label}` });
-      fetchSubs();
-    }
   }
 
   async function updateDelivery(delId: number, patch: { status?: string; trackingNumber?: string }) {
