@@ -149,6 +149,25 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
   }
 });
 
+// ─── GET /api/payments/subscription/status/:id  ───────────────────────────────
+// Frontend polls this after returning from Chargily to check subscription payment.
+router.get("/payments/subscription/status/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  const result = await db.execute(sql`
+    SELECT s.id, s.status, s.payment_status, s.plan_name
+    FROM subscriptions s WHERE s.id = ${id} LIMIT 1
+  `);
+  const sub = result.rows[0] as {
+    id: number; status: string; payment_status: string; plan_name: string;
+  } | undefined;
+  if (!sub) { res.status(404).json({ error: "Subscription not found" }); return; }
+  res.json({
+    paymentStatus: sub.payment_status,
+    subscriptionStatus: sub.status,
+    planName: sub.plan_name,
+  });
+});
+
 // ─── GET /api/payments/status/:orderId  ───────────────────────────────────────
 // Frontend polls this after returning from Chargily to check payment status.
 router.get("/payments/status/:orderId", async (req, res): Promise<void> => {
