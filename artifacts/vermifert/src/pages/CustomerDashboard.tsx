@@ -424,30 +424,71 @@ export default function CustomerDashboard() {
                   paused: lang === "ar" ? "موقوف" : "Paused",
                   cancelled: lang === "ar" ? "ملغى" : "Cancelled",
                 };
+                const deliveries: Array<{
+                  id: number; month_label: string; status: string;
+                  tracking_number: string | null; shipped_at: string | null; delivered_at: string | null;
+                }> = (sub as any).deliveries ?? [];
+                const latestDelivery = deliveries[0] ?? null;
+                const delStatusLabel: Record<string, string> = {
+                  preparing: lang === "ar" ? "🟡 قيد الإعداد" : "🟡 Preparing",
+                  shipped: lang === "ar" ? "🔵 في الطريق" : "🔵 Shipped",
+                  delivered: lang === "ar" ? "✅ تم التسليم" : "✅ Delivered",
+                };
                 return (
-                  <div key={sub.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="w-11 h-11 rounded-xl bg-green-100 dark:bg-green-900/20 flex items-center justify-center shrink-0">
-                      <CalendarCheck className="w-5 h-5 text-green-700 dark:text-green-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm">{sub.plan_name}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${subStatusColors[sub.status] ?? ""}`}>
-                          {subStatusLabels[sub.status] ?? sub.status}
-                        </span>
+                  <div key={sub.id} className="bg-card border border-border rounded-2xl overflow-hidden">
+                    {/* Main row */}
+                    <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-green-100 dark:bg-green-900/20 flex items-center justify-center shrink-0">
+                        <CalendarCheck className="w-5 h-5 text-green-700 dark:text-green-400" />
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                        <span className="flex items-center gap-1"><Leaf className="w-3 h-3" />{sub.fertilizer_kg} كغ/شهر</span>
-                        {sub.crop_type && <span>{sub.crop_type}</span>}
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{sub.delivery_city}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm">{sub.plan_name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${subStatusColors[sub.status] ?? ""}`}>
+                            {subStatusLabels[sub.status] ?? sub.status}
+                          </span>
+                          {(sub as any).payment_method === "online" && (sub as any).payment_status !== "paid" && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                              ⏳ {lang === "ar" ? "في انتظار الدفع" : "Awaiting payment"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span className="flex items-center gap-1"><Leaf className="w-3 h-3" />{sub.fertilizer_kg} كغ/شهر</span>
+                          {sub.crop_type && <span>{sub.crop_type}</span>}
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{sub.delivery_city}</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-bold text-primary">{sub.price_at_subscription.toLocaleString("ar-DZ")} د.ج</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {lang === "ar" ? "التجديد" : "Renews"}: {format(new Date(sub.next_renewal_date), "d MMM", { locale: dateLocale })}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-bold text-primary">{sub.price_at_subscription.toLocaleString("ar-DZ")} د.ج</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {lang === "ar" ? "التجديد" : "Renews"}: {format(new Date(sub.next_renewal_date), "d MMM", { locale: dateLocale })}
+                    {/* Latest delivery status */}
+                    {latestDelivery && (
+                      <div className="border-t border-border bg-muted/30 px-5 py-3 flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Package className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground text-xs">{latestDelivery.month_label}:</span>
+                          <span className="text-xs font-medium">{delStatusLabel[latestDelivery.status] ?? latestDelivery.status}</span>
+                        </div>
+                        {latestDelivery.tracking_number && (
+                          <code className="text-xs font-mono bg-background border border-border px-2 py-0.5 rounded" dir="ltr">
+                            {latestDelivery.tracking_number}
+                          </code>
+                        )}
+                        {latestDelivery.shipped_at && latestDelivery.status === "shipped" && (
+                          <span className="text-xs text-muted-foreground">
+                            أُرسل: {format(new Date(latestDelivery.shipped_at), "d MMM", { locale: dateLocale })}
+                          </span>
+                        )}
+                        {deliveries.length > 1 && (
+                          <span className="text-xs text-muted-foreground">{deliveries.length} توصيلات</span>
+                        )}
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}

@@ -99,27 +99,48 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
     if (event.type === "checkout.paid" || event.data?.status === "paid") {
       const checkoutId = event.data?.id;
       const orderId = event.data?.metadata?.orderId;
+      const subscriptionId = event.data?.metadata?.subscriptionId;
 
-      if (checkoutId || orderId) {
+      if (subscriptionId) {
+        // Subscription payment confirmed → activate + create first delivery
+        const subId = parseInt(subscriptionId, 10);
+        await db.execute(sql`
+          UPDATE subscriptions
+          SET payment_status = 'paid', status = 'active'
+          WHERE id = ${subId}
+        `);
+        const existing = await db.execute(sql`SELECT 1 FROM subscription_deliveries WHERE subscription_id = ${subId} LIMIT 1`);
+        if (!existing.rows.length) {
+          const now = new Date();
+          const monthLabel = now.toLocaleString("ar-DZ", { month: "long", year: "numeric" });
+          await db.execute(sql`
+            INSERT INTO subscription_deliveries (subscription_id, month_label, status)
+            VALUES (${subId}, ${monthLabel}, 'preparing')
+          `);
+        }
+      } else if (checkoutId || orderId) {
         const whereClause = orderId
           ? sql`id = ${parseInt(orderId, 10)}`
           : sql`chargily_checkout_id = ${checkoutId}`;
-
         await db.execute(sql`
-          UPDATE orders
-          SET payment_status = 'paid', status = 'confirmed'
-          WHERE ${whereClause}
+          UPDATE orders SET payment_status = 'paid', status = 'confirmed' WHERE ${whereClause}
         `);
       }
     } else if (event.type === "checkout.failed" || event.data?.status === "failed") {
       const checkoutId = event.data?.id;
       const orderId = event.data?.metadata?.orderId;
-      const whereClause = orderId
-        ? sql`id = ${parseInt(orderId, 10)}`
-        : sql`chargily_checkout_id = ${checkoutId}`;
-      await db.execute(sql`
-        UPDATE orders SET payment_status = 'failed' WHERE ${whereClause}
-      `);
+      const subscriptionId = event.data?.metadata?.subscriptionId;
+
+      if (subscriptionId) {
+        await db.execute(sql`
+          UPDATE subscriptions SET payment_status = 'failed' WHERE id = ${parseInt(subscriptionId, 10)}
+        `);
+      } else {
+        const whereClause = orderId
+          ? sql`id = ${parseInt(orderId, 10)}`
+          : sql`chargily_checkout_id = ${checkoutId}`;
+        await db.execute(sql`UPDATE orders SET payment_status = 'failed' WHERE ${whereClause}`);
+      }
     }
 
     res.sendStatus(200);

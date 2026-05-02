@@ -97,6 +97,7 @@ export default function Subscriptions() {
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [form, setForm] = useState({ cropType: "", deliveryAddress: "", deliveryCity: "", notes: "" });
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -117,6 +118,7 @@ export default function Subscriptions() {
       return;
     }
     setSelectedPlan(plan);
+    setPaymentMethod("cod");
     setForm({ cropType: "", deliveryAddress: "", deliveryCity: "", notes: "" });
   }
 
@@ -134,16 +136,24 @@ export default function Subscriptions() {
       const res = await fetch(`${API}/api/subscriptions`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-customer-token": token },
-        body: JSON.stringify({ planId: selectedPlan.id, ...form }),
+        body: JSON.stringify({ planId: selectedPlan.id, ...form, paymentMethod }),
       });
       const data = await res.json();
       if (!res.ok) {
         toast({ title: data.error ?? "حدث خطأ", variant: "destructive" });
         return;
       }
-      toast({ title: "✅ تم الاشتراك بنجاح!", description: data.message });
-      setSelectedPlan(null);
-      setLocation("/customer/dashboard");
+      if (paymentMethod === "online" && data.checkoutUrl) {
+        // Redirect to Chargily payment
+        setSelectedPlan(null);
+        window.open(data.checkoutUrl, "_blank");
+        toast({ title: "🔗 جاري فتح صفحة الدفع...", description: "أكمل الدفع في النافذة الجديدة ثم ارجع للوحة التحكم" });
+        setTimeout(() => setLocation("/customer/dashboard"), 1500);
+      } else {
+        toast({ title: "✅ تم الاشتراك بنجاح!", description: data.message });
+        setSelectedPlan(null);
+        setLocation("/customer/dashboard");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -221,6 +231,34 @@ export default function Subscriptions() {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Payment method toggle */}
+              <div>
+                <label className="block text-sm font-medium mb-2">طريقة الدفع</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("cod")}
+                    className={`flex flex-col items-center gap-1.5 border-2 rounded-xl py-3 px-2 transition-colors text-sm ${
+                      paymentMethod === "cod" ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300" : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    <span className="text-xl">💵</span>
+                    <span className="font-medium">دفع عند الاستلام</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("online")}
+                    className={`flex flex-col items-center gap-1.5 border-2 rounded-xl py-3 px-2 transition-colors text-sm ${
+                      paymentMethod === "online" ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300" : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    <span className="text-xl">💳</span>
+                    <span className="font-medium">دفع إلكتروني</span>
+                    <span className="text-xs opacity-70">Edahabia / CIB</span>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1.5">نوع المحصول</label>
                 <select
