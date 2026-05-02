@@ -17,9 +17,11 @@ import {
   CalendarCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import NotificationBell from "./NotificationBell";
 
 export default function AdminSidebar() {
   const [location, setLocation] = useLocation();
+  const token = typeof localStorage !== "undefined" ? localStorage.getItem("adminToken") : null;
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
@@ -44,10 +46,11 @@ export default function AdminSidebar() {
 
   return (
     <div className="w-64 bg-card border-l border-border h-screen flex flex-col sticky top-0">
-      <div className="p-6">
+      <div className="p-6 flex items-center justify-between">
         <Link href="/admin" className="text-xl font-bold text-primary flex items-center gap-2">
           <span>إدارة المتجر</span>
         </Link>
+        <NotificationBell token={token} />
       </div>
 
       <div className="flex-1 px-4 flex flex-col gap-2">
@@ -60,8 +63,8 @@ export default function AdminSidebar() {
               href={link.href}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                isActive 
-                  ? "bg-primary/10 text-primary" 
+                isActive
+                  ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >

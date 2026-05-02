@@ -147,6 +147,12 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
                  'confirmed', 'online', 'paid', ${tracking},
                  ${s.customer_id}, ${subId}, ${orderNotes})
             `);
+            // Notify admin of new online subscription
+            await db.execute(sql`
+              INSERT INTO admin_notifications (type, title, body, reference_id)
+              VALUES ('new_subscription', ${'اشتراك جديد (مدفوع) #' + subId},
+                ${`${s.customer_name} — ${s.plan_name} — ${s.price_at_subscription} د.ج/شهر`}, ${subId})
+            `);
           }
         }
       } else if (checkoutId || orderId) {

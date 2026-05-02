@@ -104,6 +104,17 @@ router.post("/orders", async (req, res): Promise<void> => {
     await db.execute(sql`UPDATE discount_codes SET used = true, used_at = NOW() WHERE UPPER(code) = ${discountCodeUsed}`);
   }
 
+  // Fire admin notification for new order
+  await db.execute(sql`
+    INSERT INTO admin_notifications (type, title, body, reference_id)
+    VALUES (
+      'new_order',
+      ${'طلب جديد #' + orderId},
+      ${`${parsed.data.customerName} — ${parsed.data.city} — ${totalPrice} د.ج`},
+      ${orderId}
+    )
+  `);
+
   // If online payment, create Chargily checkout session
   if (paymentMethod === "online" && chargilyClient) {
     try {

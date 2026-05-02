@@ -16,6 +16,7 @@ import sensorsRouter from "./sensors";
 import rewardsRouter from "./rewards";
 import paymentsRouter from "./payments";
 import subscriptionsRouter from "./subscriptions";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(sensorsRouter);
 router.use(rewardsRouter);
 router.use(paymentsRouter);
 router.use(subscriptionsRouter);
+router.use(notificationsRouter);
 
 export default router;

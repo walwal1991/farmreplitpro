@@ -143,6 +143,13 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
       crop_type: cropType ?? null, notes: notes ?? null, payment_method: paymentMethod,
     }, monthLabel);
 
+    // Notify admin
+    await db.execute(sql`
+      INSERT INTO admin_notifications (type, title, body, reference_id)
+      VALUES ('new_subscription', ${'اشتراك جديد #' + id},
+        ${`${customer.name} — ${plan.name_ar} — ${plan.price_per_month} د.ج/شهر`}, ${id})
+    `);
+
     res.status(201).json({ id, paymentMethod: "cod", message: "تم الاشتراك بنجاح! سيتم إعداد الصندوق الأول وإرساله قريباً." });
   } else {
     const siteUrl = getSiteUrl();
