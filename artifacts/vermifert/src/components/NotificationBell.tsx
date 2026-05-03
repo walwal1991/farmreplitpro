@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, ShoppingBag, CalendarCheck, CheckCheck } from "lucide-react";
+import { Bell, ShoppingBag, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Link } from "wouter";
@@ -161,20 +161,13 @@ export default function NotificationBell({ token }: { token: string | null }) {
           </div>
 
           {/* ── Footer ── */}
-          <div className="border-t border-border px-5 py-3 flex gap-3 bg-muted/20">
+          <div className="border-t border-border px-5 py-3 bg-muted/20">
             <Link
               href="/admin/orders"
               onClick={() => setOpen(false)}
-              className="flex-1 text-center text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl py-2 transition-colors"
+              className="block text-center text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl py-2 transition-colors"
             >
-              الطلبات
-            </Link>
-            <Link
-              href="/admin/subscriptions"
-              onClick={() => setOpen(false)}
-              className="flex-1 text-center text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 rounded-xl py-2 transition-colors"
-            >
-              الاشتراكات
+              عرض جميع الطلبات
             </Link>
           </div>
         </div>
@@ -184,13 +177,9 @@ export default function NotificationBell({ token }: { token: string | null }) {
 }
 
 function NotifRow({ n, onClose }: { n: Notification; onClose: () => void }) {
-  const isSubscription = n.type === "new_subscription";
-  const href = isSubscription ? "/admin/subscriptions" : "/admin/orders";
-  const Icon = isSubscription ? CalendarCheck : ShoppingBag;
-
   return (
     <Link
-      href={href}
+      href="/admin/orders"
       onClick={onClose}
       className={cn(
         "flex gap-3 items-start px-5 py-3.5 hover:bg-muted/50 transition-colors cursor-pointer group",
@@ -198,13 +187,8 @@ function NotifRow({ n, onClose }: { n: Notification; onClose: () => void }) {
       )}
     >
       {/* Icon */}
-      <div className={cn(
-        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
-        isSubscription
-          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-          : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-      )}>
-        <Icon className="w-4 h-4" />
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+        <ShoppingBag className="w-4 h-4" />
       </div>
 
       {/* Content */}

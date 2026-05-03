@@ -67,13 +67,6 @@ export async function autoCreateMonthlyDeliveries(): Promise<void> {
          ${s.customer_id}, ${s.id}, ${orderNotes})
     `);
 
-    // Notify admin
-    await db.execute(sql`
-      INSERT INTO admin_notifications (type, title, body, reference_id)
-      VALUES ('new_order', ${'توصيل تلقائي — ' + monthLabel},
-        ${`${s.customer_name} — ${s.plan_name}`}, ${s.id})
-    `);
-
     logger.info({ subscriptionId: s.id, month: monthLabel }, "Auto delivery created");
   }
 }

@@ -11,10 +11,11 @@ router.get("/admin/notifications", requireAdmin, async (_req, res): Promise<void
     db.execute(sql`
       SELECT id, type, title, body, reference_id, is_read, created_at
       FROM admin_notifications
+      WHERE type = 'new_order'
       ORDER BY created_at DESC
       LIMIT 50
     `),
-    db.execute(sql`SELECT COUNT(*)::int AS count FROM admin_notifications WHERE is_read = FALSE`),
+    db.execute(sql`SELECT COUNT(*)::int AS count FROM admin_notifications WHERE is_read = FALSE AND type = 'new_order'`),
   ]);
   const unreadCount = (countResult.rows[0] as { count: number }).count ?? 0;
   res.json({ notifications: rows.rows, unreadCount });
@@ -23,7 +24,7 @@ router.get("/admin/notifications", requireAdmin, async (_req, res): Promise<void
 // ── GET /api/admin/notifications/count ───────────────────────────────────────
 router.get("/admin/notifications/count", requireAdmin, async (_req, res): Promise<void> => {
   const r = await db.execute(sql`
-    SELECT COUNT(*) AS count FROM admin_notifications WHERE is_read = FALSE
+    SELECT COUNT(*) AS count FROM admin_notifications WHERE is_read = FALSE AND type = 'new_order'
   `);
   const count = parseInt(String((r.rows[0] as { count: string }).count), 10);
   res.json({ unreadCount: count });
