@@ -231,6 +231,27 @@ router.patch(
       res.status(404).json({ error: "Order not found" });
       return;
     }
+
+    // Sync delivery record if this order belongs to a subscription
+    if (row.subscriptionId) {
+      const newStatus = parsed.data.status;
+      if (newStatus === "shipped") {
+        await db.execute(sql`
+          UPDATE subscription_deliveries
+          SET status = 'shipped', shipped_at = COALESCE(shipped_at, NOW())
+          WHERE subscription_id = ${row.subscriptionId}
+            AND status = 'preparing'
+        `);
+      } else if (newStatus === "delivered") {
+        await db.execute(sql`
+          UPDATE subscription_deliveries
+          SET status = 'delivered', delivered_at = COALESCE(delivered_at, NOW())
+          WHERE subscription_id = ${row.subscriptionId}
+            AND status IN ('preparing', 'shipped')
+        `);
+      }
+    }
+
     res.json(UpdateOrderStatusResponse.parse(row));
   },
 );
