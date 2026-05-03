@@ -39,14 +39,14 @@ export async function autoCreateMonthlyDeliveries(): Promise<void> {
       crop_type: string | null; notes: string | null; payment_method: string;
     };
 
-    // Create delivery record
-    await db.execute(sql`
-      INSERT INTO subscription_deliveries (subscription_id, month_label, status)
-      VALUES (${s.id}, ${monthLabel}, 'preparing')
-    `);
-
-    // Create corresponding order
+    // Generate tracking number first so it goes to both delivery + order
     const tracking = genTracking();
+
+    // Create delivery record (with tracking number)
+    await db.execute(sql`
+      INSERT INTO subscription_deliveries (subscription_id, month_label, status, tracking_number)
+      VALUES (${s.id}, ${monthLabel}, 'preparing', ${tracking})
+    `);
     const productName = `${s.plan_name} — ${monthLabel}`;
     const orderNotes = [
       `اشتراك شهري #${s.id}`,

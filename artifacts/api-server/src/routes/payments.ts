@@ -116,9 +116,10 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
         if (!existing.rows.length) {
           const now = new Date();
           const monthLabel = now.toLocaleString("ar-DZ", { month: "long", year: "numeric" });
+          const tracking = "VF" + now.getFullYear() + Math.random().toString(16).slice(2, 10).toUpperCase();
           await db.execute(sql`
-            INSERT INTO subscription_deliveries (subscription_id, month_label, status)
-            VALUES (${subId}, ${monthLabel}, 'preparing')
+            INSERT INTO subscription_deliveries (subscription_id, month_label, status, tracking_number)
+            VALUES (${subId}, ${monthLabel}, 'preparing', ${tracking})
           `);
           // Auto-create the first month's order
           const subRow = await db.execute(sql`
@@ -134,7 +135,6 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
               delivery_address: string; delivery_city: string;
               crop_type: string | null; notes: string | null;
             };
-            const tracking = "VF" + new Date().getFullYear() + Math.random().toString(16).slice(2, 10).toUpperCase();
             const productName = `${s.plan_name} — ${monthLabel}`;
             const orderNotes = [`اشتراك شهري #${s.id}`, s.crop_type ? `المحصول: ${s.crop_type}` : null, s.notes].filter(Boolean).join(" | ");
             await db.execute(sql`

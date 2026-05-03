@@ -352,10 +352,10 @@ export default function AdminSubscriptions() {
                                   <td className="px-4 py-3">
                                     {d.status === "preparing" ? (
                                       <input
-                                        value={trackingInputs[d.id] ?? ""}
+                                        value={trackingInputs[d.id] ?? d.tracking_number ?? ""}
                                         onChange={e => setTrackingInputs(p => ({ ...p, [d.id]: e.target.value }))}
                                         placeholder="اختياري"
-                                        className="border border-border rounded-lg px-2 py-1 text-xs bg-background w-36"
+                                        className="border border-border rounded-lg px-2 py-1 text-xs bg-background w-36 font-mono"
                                         dir="ltr"
                                       />
                                     ) : d.tracking_number ? (

@@ -34,9 +34,9 @@ async function createOrderForSubscription(sub: {
   crop_type: string | null;
   notes: string | null;
   payment_method: string;
-}, monthLabel: string): Promise<number> {
+}, monthLabel: string, presetTracking?: string): Promise<{ orderId: number; tracking: string }> {
   const productName = `${sub.plan_name} — ${monthLabel}`;
-  const trackingNumber = genTracking();
+  const trackingNumber = presetTracking ?? genTracking();
   const orderNotes = [
     `اشتراك شهري #${sub.id}`,
     sub.crop_type ? `المحصول: ${sub.crop_type}` : null,
@@ -58,7 +58,7 @@ async function createOrderForSubscription(sub: {
        ${sub.customer_id}, ${sub.id}, ${orderNotes})
     RETURNING id
   `);
-  return (r.rows[0] as { id: number }).id;
+  return { orderId: (r.rows[0] as { id: number }).id, tracking: trackingNumber };
 }
 
 // ── Public: list active plans ─────────────────────────────────────────────────
@@ -126,14 +126,15 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
   if (paymentMethod === "cod") {
     const now = new Date();
     const monthLabel = now.toLocaleString("ar-DZ", { month: "long", year: "numeric" });
+    const firstTracking = genTracking();
 
-    // Create first delivery record
+    // Create first delivery record (with tracking number)
     await db.execute(sql`
-      INSERT INTO subscription_deliveries (subscription_id, month_label, status)
-      VALUES (${id}, ${monthLabel}, 'preparing')
+      INSERT INTO subscription_deliveries (subscription_id, month_label, status, tracking_number)
+      VALUES (${id}, ${monthLabel}, 'preparing', ${firstTracking})
     `);
 
-    // Auto-create the first month's order
+    // Auto-create the first month's order (reuse same tracking number)
     await createOrderForSubscription({
       id, customer_id: customer.id, customer_name: customer.name,
       customer_phone: customer.phone ?? "",
@@ -141,7 +142,7 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
       fertilizer_kg: plan.fertilizer_kg,
       delivery_address: deliveryAddress, delivery_city: deliveryCity,
       crop_type: cropType ?? null, notes: notes ?? null, payment_method: paymentMethod,
-    }, monthLabel);
+    }, monthLabel, firstTracking);
 
     // Notify admin
     await db.execute(sql`
