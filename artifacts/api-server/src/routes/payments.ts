@@ -3,6 +3,7 @@ import { ChargilyClient } from "@chargily/chargily-pay";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { createHmac } from "node:crypto";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -181,8 +182,9 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
     }
 
     res.sendStatus(200);
-  } catch {
-    res.sendStatus(200); // Always 200 to prevent Chargily retries on our errors
+  } catch (err) {
+    logger.error({ err }, "Webhook handler error — returning 200 to prevent Chargily retry");
+    res.sendStatus(200);
   }
 });
 
