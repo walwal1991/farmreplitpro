@@ -28,6 +28,7 @@ interface Order {
   unitPrice: number;
   totalPrice: number;
   status: string;
+  trackingNumber?: string | null;
   assignedDriverId: number | null;
   assignedDriverName: string | null;
   requiresSignature: boolean;
@@ -245,6 +246,7 @@ export default function AdminOrders() {
                     <th className="px-4 py-4 font-medium">رقم الطلب</th>
                     <th className="px-4 py-4 font-medium">العميل</th>
                     <th className="px-4 py-4 font-medium">المنتج</th>
+                    <th className="px-4 py-4 font-medium">رقم التتبع</th>
                     <th className="px-4 py-4 font-medium">المبلغ</th>
                     <th className="px-4 py-4 font-medium">التاريخ</th>
                     <th className="px-4 py-4 font-medium">الحالة</th>
@@ -288,6 +290,15 @@ export default function AdminOrders() {
                               <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                                 📦 اشتراك شهري
                               </span>
+                            )}
+                          </td>
+
+                          {/* Tracking */}
+                          <td className="px-4 py-4">
+                            {order.trackingNumber ? (
+                              <code className="text-xs font-mono bg-muted px-2 py-1 rounded" dir="ltr">{order.trackingNumber}</code>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </td>
 
