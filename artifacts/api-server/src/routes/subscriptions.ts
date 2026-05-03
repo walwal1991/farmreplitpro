@@ -348,6 +348,14 @@ router.patch("/admin/deliveries/:id", requireAdmin, async (req, res): Promise<vo
   res.json({ message: "تم التحديث" });
 });
 
+// ── Admin: delete a single delivery ──────────────────────────────────────────
+router.delete("/admin/deliveries/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "معرّف غير صالح" }); return; }
+  await db.execute(sql`DELETE FROM subscription_deliveries WHERE id = ${id}`);
+  res.json({ message: "تم حذف التوصيل" });
+});
+
 // ── Export helper for use in payments webhook ─────────────────────────────────
 export { createOrderForSubscription };
 export default router;
