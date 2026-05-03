@@ -368,19 +368,10 @@ export default function AdminSubscriptions() {
                                   {/* Action */}
                                   <td className="px-4 py-3">
                                     <div className="flex items-center gap-2">
-                                      {d.status === "preparing" && (
+                                      {(d.status === "preparing" || d.status === "shipped") && (
                                         <button
                                           disabled={updatingDelId === d.id}
-                                          onClick={() => updateDelivery(d.id, { status: "shipped", trackingNumber: trackingInputs[d.id] || undefined })}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
-                                        >
-                                          <Truck className="w-3 h-3" />أُرسل
-                                        </button>
-                                      )}
-                                      {d.status === "shipped" && (
-                                        <button
-                                          disabled={updatingDelId === d.id}
-                                          onClick={() => updateDelivery(d.id, { status: "delivered" })}
+                                          onClick={() => updateDelivery(d.id, { status: "delivered", trackingNumber: trackingInputs[d.id] || undefined })}
                                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
                                         >
                                           <CheckCircle2 className="w-3 h-3" />وصل
