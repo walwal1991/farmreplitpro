@@ -5,6 +5,7 @@ Arabic/RTL e-commerce platform selling worm-castings fertilizer (vermicompost).
 ## Stack
 - **Monorepo**: pnpm workspace
 - **Web**: React + Vite (`artifacts/vermifert`) — Arabic RTL, Tajawal font, earthy palette
+- **Mobile**: Expo + React Native (`artifacts/vermifert-mobile`) — Arabic, Inter font, same brand palette
 - **API**: Express + Drizzle (`artifacts/api-server`)
 - **DB**: Postgres (Replit-managed) with `products`, `orders`, `consultations` tables
 - **API contract**: OpenAPI in `lib/api-spec`, codegen → `lib/api-client-react`, `lib/api-zod`
@@ -40,6 +41,16 @@ Arabic/RTL e-commerce platform selling worm-castings fertilizer (vermicompost).
 - Orders table extended with: `payment_method` (cod/online), `chargily_checkout_id`, `payment_status`
 - Frontend: payment method toggle (COD vs online) in Checkout.tsx; success/failure pages at `/payment/success` and `/payment/failed`
 - Webhook URL: `https://<domain>/api/payments/webhook` — must be configured in Chargily dashboard
+
+## Mobile App (`artifacts/vermifert-mobile`)
+- **Screens**: Home (hero + categories + featured products), Shop (search + category filter), Cart (qty controls + discount codes), Orders (tracking + order history), Account (profile + referral + coupons)
+- **Modal screens**: Product detail, Checkout (COD), Waste Collection (submit + track), Login, Register
+- **State**: `CartContext` (AsyncStorage), `AuthContext` (AsyncStorage, `x-customer-token`)
+- **API client**: `lib/api.ts` — direct fetch with `EXPO_PUBLIC_DOMAIN` base URL
+- **Components**: `ProductCard`, `OrderStatusBadge`, `EmptyState`
+- **Tabs**: NativeTabs (iOS 26+ liquid glass) with classic Tabs fallback; cart badge shows item count
+- **Auth**: email + password → `POST /api/customer/login|register`, token in AsyncStorage
+- **Cart badge**: `tabBarBadge` driven by `CartContext.totalItems`
 
 ## Env
 - `DATABASE_URL` (auto)

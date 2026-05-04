@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/vermifert-mobile/"
+title = "Vermifert Mobile"
+version = "1.0.0"
+id = "artifacts/vermifert-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/vermifert-mobile/" ]
+localPort = 24365
+
+[services.development]
+run = "pnpm --filter @workspace/vermifert-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/vermifert-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/vermifert-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "24365"
+BASE_PATH = "/vermifert-mobile/"
