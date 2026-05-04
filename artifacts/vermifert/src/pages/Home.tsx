@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Leaf, Sprout, ShieldCheck, HeartHandshake, ShoppingBag } from "lucide-react";
+import { Leaf, Sprout, ShieldCheck, HeartHandshake, ShoppingBag, LayoutDashboard, Truck, User, Search, ArrowLeft } from "lucide-react";
 import { useListProducts } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,7 @@ export default function Home() {
   const { data: products, isLoading } = useListProducts();
   const featuredProducts = products?.slice(0, 4) || [];
   const { add } = useCart();
-  const { t } = useLang();
+  const { t, lang } = useLang();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -145,6 +145,69 @@ export default function Home() {
             <Button asChild variant="outline" className="w-full">
               <Link href="/products">{t("home_view_all")}</Link>
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Portals Section */}
+      <section className="py-16 bg-muted/40 border-t border-border/50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold mb-2">
+              {lang === "fr" ? "Accès aux portails" : lang === "en" ? "Portal Access" : "بوابات الدخول"}
+            </h2>
+            <p className="text-muted-foreground">
+              {lang === "fr" ? "Choisissez votre espace" : lang === "en" ? "Choose your portal" : "اختر بوابتك للدخول"}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            {/* Customer */}
+            <Link href="/customer/login" className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-background border border-border hover:border-primary hover:shadow-md transition-all text-center">
+              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <User className="w-7 h-7" />
+              </div>
+              <div>
+                <div className="font-bold text-sm">حساب الزبون</div>
+                <div className="text-xs text-muted-foreground mt-0.5">طلباتي • كوبوناتي</div>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors mt-auto" />
+            </Link>
+
+            {/* Track Order */}
+            <Link href="/track" className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-background border border-border hover:border-primary hover:shadow-md transition-all text-center">
+              <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <Search className="w-7 h-7" />
+              </div>
+              <div>
+                <div className="font-bold text-sm">تتبع الطلب</div>
+                <div className="text-xs text-muted-foreground mt-0.5">أدخل رقم التتبع</div>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground group-hover:text-blue-600 transition-colors mt-auto" />
+            </Link>
+
+            {/* Admin */}
+            <Link href="/admin" className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-background border border-border hover:border-amber-500 hover:shadow-md transition-all text-center">
+              <div className="w-14 h-14 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                <LayoutDashboard className="w-7 h-7" />
+              </div>
+              <div>
+                <div className="font-bold text-sm">لوحة الإدارة</div>
+                <div className="text-xs text-muted-foreground mt-0.5">المنتجات • الطلبات</div>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground group-hover:text-amber-500 transition-colors mt-auto" />
+            </Link>
+
+            {/* Driver */}
+            <Link href="/delivery/login" className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-background border border-border hover:border-orange-500 hover:shadow-md transition-all text-center">
+              <div className="w-14 h-14 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                <Truck className="w-7 h-7" />
+              </div>
+              <div>
+                <div className="font-bold text-sm">بوابة السائق</div>
+                <div className="text-xs text-muted-foreground mt-0.5">الطلبات المعيّنة لي</div>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground group-hover:text-orange-500 transition-colors mt-auto" />
+            </Link>
           </div>
         </div>
       </section>
