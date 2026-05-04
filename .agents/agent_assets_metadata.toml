@@ -24,3 +24,93 @@ id = "4FDT7Zb2n5yPdeT1tEHyh"
 uri = "file://attached_assets/generated_images/hero-green-field.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "C1Sa6n9ECMdP2jHC8LaVx"
+uri = "file://attached_assets/generated_images/worms-250g.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "rg0AyhZiEvFKqQZM1DtKK"
+uri = "file://attached_assets/generated_images/worms-500g.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "QgIPBrxVA9g0OwLwlwfmd"
+uri = "file://attached_assets/generated_images/worms-1kg.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "WS0stMhBLyupLlyfpCYIv"
+uri = "file://attached_assets/generated_images/solid-1kg.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "pgOSPBbM0E_6pQkvpyZAT"
+uri = "file://attached_assets/generated_images/solid-5kg.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "FlmvkivIE5l3ChlERQlOZ"
+uri = "file://attached_assets/generated_images/solid-25kg.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "lFMO3-Ezl4_xuRTdaZcXE"
+uri = "file://attached_assets/generated_images/liquid-tea-5l.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "zzbVgzMv3el9r6x6sVTRI"
+uri = "file://attached_assets/generated_images/liquid-humic-1l.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Ng0bznYpjvES6i9P7Jwjk"
+uri = "file://attached_assets/generated_images/kit-starter.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "XEYrSARY6WV2fQu6skDTP"
+uri = "file://attached_assets/generated_images/kit-bin-40l.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "AB7GDZREKcHICbBdG5rNf"
+uri = "file://attached_assets/generated_images/coco-coir.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "LWmMx45EMSb8WnmIAbVXa"
+uri = "file://attached_assets/generated_images/perlite.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "WqCvni-hQE_iM1vW76BFG"
+uri = "file://attached_assets/generated_images/enriched-soil.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "GGPM9AQTa396DVS_IWKcW"
+uri = "file://attached_assets/generated_images/liquid-tea-1l.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "zWuxV-zNOevEI6i2xCrev"
+uri = "file://attached_assets/generated_images/solid-10kg.png"
+type = "image"
+title = "generated_image"
