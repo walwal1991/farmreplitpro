@@ -39,7 +39,8 @@ export default function Products() {
     { value: "solid", label: t("cat_solid") },
     { value: "liquid", label: t("cat_liquid") },
     { value: "worms", label: t("cat_worms") },
-    { value: "equipment", label: t("cat_equipment") },
+    { value: "kit", label: t("cat_kit") },
+    { value: "substrate", label: t("cat_substrate") },
   ];
 
   const [search, setSearch] = useState("");

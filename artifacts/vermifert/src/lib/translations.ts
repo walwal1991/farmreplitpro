@@ -66,7 +66,9 @@ export const translations = {
   cat_all: { ar: "الكل", en: "All", fr: "Tout" },
   cat_solid: { ar: "سماد صلب", en: "Solid Fertilizer", fr: "Engrais solide" },
   cat_liquid: { ar: "سماد سائل", en: "Liquid Fertilizer", fr: "Engrais liquide" },
-  cat_worms: { ar: "دود حي", en: "Live Worms", fr: "Vers vivants" },
+  cat_worms: { ar: "ديدان حية", en: "Live Worms", fr: "Vers vivants" },
+  cat_kit: { ar: "أطقم ومعدات", en: "Kits & Tools", fr: "Kits et outils" },
+  cat_substrate: { ar: "مواد الزراعة", en: "Substrates", fr: "Substrats" },
   cat_equipment: { ar: "معدات", en: "Equipment", fr: "Équipement" },
 
   // ── ProductDetail ──────────────────────────────────────────────────────────

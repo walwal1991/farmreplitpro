@@ -23,11 +23,11 @@ export const ListProductsResponseItem = zod.object({
   description: zod.string(),
   price: zod.number(),
   unit: zod.string().describe("e.g. kg, bag"),
-  weightKg: zod.number(),
+  weightKg: zod.number().nullable().optional(),
   imageUrl: zod.string(),
   stock: zod.number(),
   active: zod.boolean(),
-  category: zod.enum(["solid", "liquid", "worms", "equipment"]),
+  category: zod.enum(["solid", "liquid", "worms", "kit", "substrate", "equipment"]),
   createdAt: zod.coerce.date(),
 });
 export const ListProductsResponse = zod.array(ListProductsResponseItem);
@@ -44,11 +44,11 @@ export const CreateProductBody = zod.object({
   description: zod.string(),
   price: zod.number(),
   unit: zod.string(),
-  weightKg: zod.number(),
+  weightKg: zod.number().nullable().optional(),
   imageUrl: zod.string(),
   stock: zod.number(),
   active: zod.boolean().optional(),
-  category: zod.enum(["solid", "liquid", "worms", "equipment"]).optional(),
+  category: zod.enum(["solid", "liquid", "worms", "kit", "substrate", "equipment"]).optional(),
 });
 
 export const GetProductParams = zod.object({
@@ -61,11 +61,11 @@ export const GetProductResponse = zod.object({
   description: zod.string(),
   price: zod.number(),
   unit: zod.string().describe("e.g. kg, bag"),
-  weightKg: zod.number(),
+  weightKg: zod.number().nullable().optional(),
   imageUrl: zod.string(),
   stock: zod.number(),
   active: zod.boolean(),
-  category: zod.enum(["solid", "liquid", "worms", "equipment"]),
+  category: zod.enum(["solid", "liquid", "worms", "kit", "substrate", "equipment"]),
   createdAt: zod.coerce.date(),
 });
 
@@ -82,11 +82,11 @@ export const UpdateProductBody = zod.object({
   description: zod.string(),
   price: zod.number(),
   unit: zod.string(),
-  weightKg: zod.number(),
+  weightKg: zod.number().nullable().optional(),
   imageUrl: zod.string(),
   stock: zod.number(),
   active: zod.boolean().optional(),
-  category: zod.enum(["solid", "liquid", "worms", "equipment"]).optional(),
+  category: zod.enum(["solid", "liquid", "worms", "kit", "substrate", "equipment"]).optional(),
 });
 
 export const UpdateProductResponse = zod.object({
@@ -95,11 +95,11 @@ export const UpdateProductResponse = zod.object({
   description: zod.string(),
   price: zod.number(),
   unit: zod.string().describe("e.g. kg, bag"),
-  weightKg: zod.number(),
+  weightKg: zod.number().nullable().optional(),
   imageUrl: zod.string(),
   stock: zod.number(),
   active: zod.boolean(),
-  category: zod.enum(["solid", "liquid", "worms", "equipment"]),
+  category: zod.enum(["solid", "liquid", "worms", "kit", "substrate", "equipment"]),
   createdAt: zod.coerce.date(),
 });
 

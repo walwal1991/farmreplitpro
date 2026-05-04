@@ -13,5 +13,7 @@ export const ProductInputCategory = {
   solid: "solid",
   liquid: "liquid",
   worms: "worms",
+  kit: "kit",
+  substrate: "substrate",
   equipment: "equipment",
 } as const;

@@ -32,14 +32,16 @@ const productSchema = z.object({
     ),
   stock: z.coerce.number().min(0, "المخزون غير صالح"),
   active: z.boolean().default(true),
-  category: z.enum(["solid", "liquid", "worms", "equipment"]).default("solid"),
+  category: z.enum(["solid", "liquid", "worms", "kit", "substrate", "equipment"]).default("solid"),
 });
 
 const CATEGORY_OPTIONS = [
   { value: "solid", label: "سماد صلب" },
   { value: "liquid", label: "سماد سائل" },
-  { value: "worms", label: "دود حي" },
-  { value: "equipment", label: "معدات" },
+  { value: "worms", label: "ديدان حية" },
+  { value: "kit", label: "أطقم ومعدات" },
+  { value: "substrate", label: "مواد الزراعة" },
+  { value: "equipment", label: "معدات أخرى" },
 ] as const;
 
 type ProductForm = z.infer<typeof productSchema>;
