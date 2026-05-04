@@ -128,6 +128,24 @@ function TrackingResult({ item, onReset }: { item: WC; onReset: () => void }) {
         </div>
       </div>
 
+      {/* ── Scheduled date banner ── */}
+      {item.scheduledDate && item.status !== "completed" && (
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl p-4 flex items-start gap-3">
+          <div className="bg-blue-500 rounded-xl p-2 shrink-0">
+            <CalendarCheck size={20} className="text-white" />
+          </div>
+          <div>
+            <p className="font-bold text-blue-800 text-sm">موعد الجمع المؤكد</p>
+            <p className="text-blue-900 text-xl font-bold mt-0.5">
+              {formatDate(item.scheduledDate)}
+            </p>
+            <p className="text-blue-600 text-xs mt-1">
+              سيصل فريقنا إليك في هذا التاريخ لاستلام النفايات العضوية
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Pipeline timeline */}
       <div className="bg-white rounded-2xl border border-green-100 shadow-sm p-5">
         <h3 className="font-bold text-green-900 mb-5 flex items-center gap-2">
