@@ -114,64 +114,108 @@ export default function AccountScreen() {
 
       {!user ? (
         <View style={styles.authWrap}>
-          <View
-            style={[
-              styles.authCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                borderRadius: colors.radius + 4,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.authIconBg,
-                {
-                  backgroundColor: colors.primary + "18",
-                  borderRadius: 44,
-                },
-              ]}
-            >
-              <Feather name="user" size={40} color={colors.primary} />
+          {/* Welcome header */}
+          <View style={styles.welcomeHeader}>
+            <View style={[styles.authIconBg, { backgroundColor: colors.primary + "18", borderRadius: 44 }]}>
+              <Feather name="user" size={38} color={colors.primary} />
             </View>
-            <Text style={[styles.authTitle, { color: colors.foreground }]}>
-              مرحباً بك
-            </Text>
+            <Text style={[styles.authTitle, { color: colors.foreground }]}>مرحباً بك</Text>
             <Text style={[styles.authSub, { color: colors.mutedForeground }]}>
-              سجّل دخولك للوصول إلى طلباتك ومكافآتك
+              اختر بوابة الدخول المناسبة
             </Text>
+          </View>
+
+          {/* Portal cards */}
+          <View style={styles.portalsGrid}>
+            {/* Customer */}
             <Pressable
-              style={[
-                styles.authBtn,
-                { backgroundColor: colors.primary, borderRadius: colors.radius },
+              style={({ pressed }) => [
+                styles.portalCard,
+                { backgroundColor: colors.primary + "12", borderColor: colors.primary + "50", opacity: pressed ? 0.88 : 1 },
               ]}
               onPress={() => router.push("/login")}
             >
-              <Text style={[styles.authBtnText, { color: colors.primaryForeground }]}>
-                تسجيل الدخول
-              </Text>
+              <View style={[styles.portalIconCircle, { backgroundColor: colors.primary + "20" }]}>
+                <Feather name="user" size={26} color={colors.primary} />
+              </View>
+              <Text style={[styles.portalLabel, { color: colors.foreground }]}>زبون</Text>
+              <Text style={[styles.portalSub, { color: colors.mutedForeground }]}>تسجيل الدخول</Text>
+              <View style={[styles.portalArrow, { backgroundColor: colors.primary + "15" }]}>
+                <Feather name="arrow-left" size={13} color={colors.primary} />
+              </View>
             </Pressable>
+
+            {/* Admin */}
             <Pressable
-              style={[
-                styles.authBtnOutline,
-                { borderColor: colors.border, borderRadius: colors.radius },
+              style={({ pressed }) => [
+                styles.portalCard,
+                { backgroundColor: "#3b82f612", borderColor: "#3b82f650", opacity: pressed ? 0.88 : 1 },
               ]}
-              onPress={() => router.push("/register")}
+              onPress={() => router.push("/admin-login")}
             >
-              <Text style={[styles.authBtnOutlineText, { color: colors.foreground }]}>
-                إنشاء حساب جديد
-              </Text>
+              <View style={[styles.portalIconCircle, { backgroundColor: "#3b82f620" }]}>
+                <Feather name="shield" size={26} color="#3b82f6" />
+              </View>
+              <Text style={[styles.portalLabel, { color: colors.foreground }]}>مدير</Text>
+              <Text style={[styles.portalSub, { color: colors.mutedForeground }]}>لوحة التحكم</Text>
+              <View style={[styles.portalArrow, { backgroundColor: "#3b82f615" }]}>
+                <Feather name="arrow-left" size={13} color="#3b82f6" />
+              </View>
+            </Pressable>
+
+            {/* Driver */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.portalCard,
+                { backgroundColor: "#22c55e12", borderColor: "#22c55e50", opacity: pressed ? 0.88 : 1 },
+              ]}
+              onPress={() => router.push("/driver-login")}
+            >
+              <View style={[styles.portalIconCircle, { backgroundColor: "#22c55e20" }]}>
+                <Feather name="truck" size={26} color="#22c55e" />
+              </View>
+              <Text style={[styles.portalLabel, { color: colors.foreground }]}>سائق</Text>
+              <Text style={[styles.portalSub, { color: colors.mutedForeground }]}>بوابة التوصيل</Text>
+              <View style={[styles.portalArrow, { backgroundColor: "#22c55e15" }]}>
+                <Feather name="arrow-left" size={13} color="#22c55e" />
+              </View>
+            </Pressable>
+
+            {/* Track order */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.portalCard,
+                { backgroundColor: "#0ea5e912", borderColor: "#0ea5e950", opacity: pressed ? 0.88 : 1 },
+              ]}
+              onPress={() => router.push("/track-order")}
+            >
+              <View style={[styles.portalIconCircle, { backgroundColor: "#0ea5e920" }]}>
+                <Feather name="search" size={26} color="#0ea5e9" />
+              </View>
+              <Text style={[styles.portalLabel, { color: colors.foreground }]}>تتبع</Text>
+              <Text style={[styles.portalSub, { color: colors.mutedForeground }]}>متابعة الطلب</Text>
+              <View style={[styles.portalArrow, { backgroundColor: "#0ea5e915" }]}>
+                <Feather name="arrow-left" size={13} color="#0ea5e9" />
+              </View>
             </Pressable>
           </View>
 
-          <View style={{ gap: 10 }}>
-            <MenuRow
-              icon="refresh-cw"
-              label="تبرع بمخلفاتك / تتبع طلب"
-              onPress={() => router.push("/waste-collection")}
-            />
-          </View>
+          {/* Create account link */}
+          <Pressable
+            style={[styles.createAccountRow, { borderColor: colors.border, backgroundColor: colors.card }]}
+            onPress={() => router.push("/register")}
+          >
+            <Feather name="chevron-left" size={18} color={colors.mutedForeground} />
+            <Text style={[styles.createAccountText, { color: colors.foreground }]}>إنشاء حساب جديد</Text>
+            <Feather name="user-plus" size={18} color={colors.primary} />
+          </Pressable>
+
+          {/* Waste collection */}
+          <MenuRow
+            icon="refresh-cw"
+            label="تبرع بمخلفاتك / تتبع طلب"
+            onPress={() => router.push("/waste-collection")}
+          />
         </View>
       ) : (
         <View style={{ padding: 16, gap: 14 }}>
@@ -319,12 +363,7 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   authWrap: { padding: 16, gap: 14, marginTop: 20 },
-  authCard: {
-    padding: 28,
-    alignItems: "center",
-    gap: 14,
-    borderWidth: 1,
-  },
+  welcomeHeader: { alignItems: "center", gap: 10, paddingVertical: 8 },
   authIconBg: {
     width: 88,
     height: 88,
@@ -332,8 +371,45 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 4,
   },
-  authTitle: { fontSize: 22, fontWeight: "800" },
+  authTitle: { fontSize: 24, fontWeight: "800" },
   authSub: { fontSize: 14, textAlign: "center", lineHeight: 20 },
+  portalsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  portalCard: {
+    width: "47%",
+    borderWidth: 1.5,
+    borderRadius: 18,
+    padding: 16,
+    alignItems: "flex-end",
+    gap: 6,
+  },
+  portalIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  portalLabel: { fontSize: 16, fontWeight: "800" },
+  portalSub: { fontSize: 12 },
+  portalArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "flex-end",
+    marginTop: 4,
+  },
+  createAccountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  createAccountText: { flex: 1, fontSize: 15, fontWeight: "600", textAlign: "right" },
   authBtn: { width: "100%", padding: 15, alignItems: "center" },
   authBtnText: { fontSize: 16, fontWeight: "700" },
   authBtnOutline: { width: "100%", padding: 13, alignItems: "center", borderWidth: 1 },
