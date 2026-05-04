@@ -28,6 +28,7 @@ export const ordersTable = pgTable("orders", {
   chargilyCheckoutId: text("chargily_checkout_id"),
   paymentStatus: text("payment_status").notNull().default("pending"),
   subscriptionId: integer("subscription_id"),
+  itemsJson: text("items_json"),
 });
 
 export type Order = typeof ordersTable.$inferSelect;

@@ -25,7 +25,7 @@ const formSchema = z.object({
 });
 type FormVals = z.infer<typeof formSchema>;
 
-interface OrderResult { id: number; trackingNumber?: string | null; }
+interface OrderResult { id: number; trackingNumber?: string | null; checkoutUrl?: string | null; }
 
 export default function Cart() {
   const { items, total, setQty, remove, clear } = useCart();
@@ -33,10 +33,10 @@ export default function Cart() {
   const { toast } = useToast();
   const { t } = useLang();
   const [submitting, setSubmitting] = useState(false);
-  const [results, setResults] = useState<OrderResult[] | null>(null);
+  const [results, setResults] = useState<OrderResult | null>(null);
   const [requiresSignature, setRequiresSignature] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
-  const [onlineOrderPending, setOnlineOrderPending] = useState<{ orders: OrderResult[]; checkoutUrls: string[] } | null>(null);
+  const [onlineOrderPending, setOnlineOrderPending] = useState<{ order: OrderResult; checkoutUrl: string } | null>(null);
   const [discountInput, setDiscountInput] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percent: number } | null>(null);
   const [discountLoading, setDiscountLoading] = useState(false);
@@ -63,44 +63,37 @@ export default function Cart() {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (customerToken) headers["x-customer-token"] = customerToken;
 
-      const ordered: OrderResult[] = [];
-      const checkoutUrls: string[] = [];
-
-      for (const it of items) {
-        const res = await fetch(`${API}/api/orders`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            customerName: vals.customerName,
-            phone: vals.phone,
-            address: vals.address,
-            city: vals.city,
-            notes: vals.notes ?? "",
-            productId: it.id,
-            quantity: it.quantity,
-            requiresSignature,
-            paymentMethod,
-            discountCode: appliedDiscount?.code ?? null,
-          }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
-          toast({ title: t("checkout_error"), description: json.error ?? "", variant: "destructive" });
-          return;
-        }
-        ordered.push({ id: json.id, trackingNumber: json.trackingNumber });
-        if (json.checkoutUrl) checkoutUrls.push(json.checkoutUrl);
-      }
-
-      clear();
-
-      if (paymentMethod === "online" && checkoutUrls.length > 0) {
-        setOnlineOrderPending({ orders: ordered, checkoutUrls });
-        checkoutUrls.forEach(url => window.open(url, "_blank"));
+      const res = await fetch(`${API}/api/orders/cart`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          customerName: vals.customerName,
+          phone: vals.phone,
+          address: vals.address,
+          city: vals.city,
+          notes: vals.notes ?? "",
+          items: items.map(it => ({ productId: it.id, quantity: it.quantity })),
+          requiresSignature,
+          paymentMethod,
+          discountCode: appliedDiscount?.code ?? null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast({ title: t("checkout_error"), description: json.error ?? "", variant: "destructive" });
         return;
       }
 
-      setResults(ordered);
+      const order: OrderResult = { id: json.id, trackingNumber: json.trackingNumber, checkoutUrl: json.checkoutUrl };
+      clear();
+
+      if (paymentMethod === "online" && json.checkoutUrl) {
+        setOnlineOrderPending({ order, checkoutUrl: json.checkoutUrl });
+        window.open(json.checkoutUrl, "_blank");
+        return;
+      }
+
+      setResults(order);
     } finally {
       setSubmitting(false);
     }
@@ -138,17 +131,15 @@ export default function Cart() {
             <h1 className="text-2xl font-bold mb-3">{t("checkout_success_title")}</h1>
             <p className="text-muted-foreground mb-6">{t("checkout_success_cod")}</p>
 
-            {results.some(r => r.trackingNumber) && (
-              <div className="space-y-2 mb-6">
-                <p className="text-sm font-medium text-muted-foreground">{t("checkout_tracking_label")}</p>
-                {results.filter(r => r.trackingNumber).map(r => (
-                  <div key={r.id} className="flex items-center justify-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
-                    <code className="text-sm font-mono font-bold text-primary tracking-widest" dir="ltr">{r.trackingNumber}</code>
-                    <button onClick={() => copyTracking(r.trackingNumber!)} className="text-muted-foreground hover:text-primary transition-colors">
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+            {results.trackingNumber && (
+              <div className="mb-6">
+                <p className="text-sm font-medium text-muted-foreground mb-2">{t("checkout_tracking_label")}</p>
+                <div className="flex items-center justify-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+                  <code className="text-sm font-mono font-bold text-primary tracking-widest" dir="ltr">{results.trackingNumber}</code>
+                  <button onClick={() => copyTracking(results.trackingNumber!)} className="text-muted-foreground hover:text-primary transition-colors">
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
 
@@ -161,9 +152,9 @@ export default function Cart() {
                   </Link>
                 </Button>
               )}
-              {results.length === 1 && results[0].trackingNumber && (
+              {results.trackingNumber && (
                 <Button asChild variant={customerUser ? "outline" : "default"}>
-                  <Link href={`/track/${results[0].trackingNumber}`}>{t("checkout_track_order")}</Link>
+                  <Link href={`/track/${results.trackingNumber}`}>{t("checkout_track_order")}</Link>
                 </Button>
               )}
               <Button variant={customerUser ? "ghost" : "outline"} onClick={() => setLocation("/products")}>
@@ -187,28 +178,24 @@ export default function Cart() {
             </div>
             <h1 className="text-2xl font-bold mb-3">طلبك في انتظار الدفع</h1>
             <p className="text-muted-foreground mb-6">
-              تم إنشاء طلبك بنجاح. أكمل الدفع في الصفحة التي فُتحت. إذا لم تفتح تلقائياً، اضغط الأزرار أدناه.
+              تم إنشاء طلبك بنجاح. أكمل الدفع في الصفحة التي فُتحت. إذا لم تفتح تلقائياً، اضغط الزر أدناه.
             </p>
-            {onlineOrderPending.orders.some(r => r.trackingNumber) && (
-              <div className="space-y-2 mb-6">
-                <p className="text-sm font-medium text-muted-foreground">{t("checkout_tracking_label")}</p>
-                {onlineOrderPending.orders.filter(r => r.trackingNumber).map(r => (
-                  <div key={r.id} className="flex items-center justify-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
-                    <code className="text-sm font-mono font-bold text-primary tracking-widest" dir="ltr">{r.trackingNumber}</code>
-                    <button onClick={() => copyTracking(r.trackingNumber!)} className="text-muted-foreground hover:text-primary transition-colors">
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+            {onlineOrderPending.order.trackingNumber && (
+              <div className="mb-6">
+                <p className="text-sm font-medium text-muted-foreground mb-2">{t("checkout_tracking_label")}</p>
+                <div className="flex items-center justify-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+                  <code className="text-sm font-mono font-bold text-primary tracking-widest" dir="ltr">{onlineOrderPending.order.trackingNumber}</code>
+                  <button onClick={() => copyTracking(onlineOrderPending.order.trackingNumber!)} className="text-muted-foreground hover:text-primary transition-colors">
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
             <div className="flex flex-col gap-2">
-              {onlineOrderPending.checkoutUrls.map((url, i) => (
-                <Button key={i} onClick={() => window.open(url, "_blank")} className="w-full gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  {onlineOrderPending.checkoutUrls.length > 1 ? `فتح صفحة الدفع ${i + 1}` : "فتح صفحة الدفع"}
-                </Button>
-              ))}
+              <Button onClick={() => window.open(onlineOrderPending.checkoutUrl, "_blank")} className="w-full gap-2">
+                <ExternalLink className="w-4 h-4" />
+                فتح صفحة الدفع
+              </Button>
               {customerUser && (
                 <Button asChild variant="outline">
                   <Link href="/customer/dashboard">

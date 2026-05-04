@@ -31,6 +31,120 @@ function generateTrackingNumber(): string {
 
 const router: IRouter = Router();
 
+// ─── Cart checkout: multiple items → ONE order, ONE tracking, ONE payment ─────
+router.post("/orders/cart", async (req, res): Promise<void> => {
+  const { customerName, phone, address, city, notes, requiresSignature, paymentMethod, discountCode, items } = req.body ?? {};
+
+  if (!customerName || !phone || !address || !city) {
+    res.status(400).json({ error: "بيانات ناقصة" });
+    return;
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: "السلة فارغة" });
+    return;
+  }
+
+  // Validate and price all products
+  interface CartItem { productId: number; productName: string; unitPrice: number; quantity: number; lineTotal: number; }
+  const cartItems: CartItem[] = [];
+  for (const it of items) {
+    const [product] = await db.select().from(productsTable).where(eq(productsTable.id, it.productId));
+    if (!product || !product.active) {
+      res.status(400).json({ error: `المنتج غير متوفر: ${it.productId}` });
+      return;
+    }
+    cartItems.push({ productId: product.id, productName: product.name, unitPrice: product.price, quantity: it.quantity, lineTotal: product.price * it.quantity });
+  }
+
+  let totalPrice = cartItems.reduce((s, i) => s + i.lineTotal, 0);
+
+  // Link customer account
+  const customerToken = (req.header("x-customer-token") ?? "").trim();
+  let customerId: number | null = null;
+  if (customerToken) {
+    const customer = await getCustomerSessionUser(customerToken);
+    if (customer) customerId = customer.id;
+  }
+
+  // Validate discount code
+  const discountCodeRaw = ((discountCode ?? "") as string).trim().toUpperCase();
+  let discountCodeUsed: string | null = null;
+  let discountAmount = 0;
+  if (discountCodeRaw) {
+    const dcResult = await db.execute(sql`
+      SELECT id, code, discount_percent, used, expires_at
+      FROM discount_codes WHERE UPPER(code) = ${discountCodeRaw} LIMIT 1
+    `);
+    const dc = dcResult.rows[0] as { id: number; code: string; discount_percent: number; used: boolean; expires_at: string | null; } | undefined;
+    if (dc && !dc.used && (!dc.expires_at || new Date(dc.expires_at) >= new Date())) {
+      discountAmount = Math.round(totalPrice * dc.discount_percent / 100);
+      totalPrice = Math.max(0, totalPrice - discountAmount);
+      discountCodeUsed = dc.code;
+    }
+  }
+
+  const trackingNumber = generateTrackingNumber();
+  const sig = typeof requiresSignature === "boolean" ? requiresSignature : false;
+  const pm = paymentMethod === "online" ? "online" : "cod";
+  const productLabel = cartItems.length === 1
+    ? `${cartItems[0].productName} ×${cartItems[0].quantity}`
+    : `${cartItems.length} منتجات`;
+  const itemsJson = JSON.stringify(cartItems);
+
+  const [row] = await db.execute(sql`
+    INSERT INTO orders (tracking_number, customer_id, customer_name, phone, address, city, notes,
+      product_id, product_name, unit_price, quantity, total_price, status, requires_signature,
+      discount_code_used, discount_amount, payment_method, payment_status, items_json)
+    VALUES (
+      ${trackingNumber}, ${customerId}, ${customerName}, ${phone},
+      ${address}, ${city}, ${notes ?? null},
+      NULL, ${productLabel}, ${totalPrice}, 1, ${totalPrice},
+      'pending', ${sig}, ${discountCodeUsed}, ${discountAmount},
+      ${pm}, 'pending', ${itemsJson}
+    ) RETURNING *
+  `).then(r => r.rows as Array<Record<string, unknown>>);
+
+  const orderId = row.id as number;
+
+  if (discountCodeUsed) {
+    await db.execute(sql`UPDATE discount_codes SET used = true, used_at = NOW() WHERE UPPER(code) = ${discountCodeUsed}`);
+  }
+
+  await db.execute(sql`
+    INSERT INTO admin_notifications (type, title, body, reference_id)
+    VALUES ('new_order', ${'طلب جديد #' + orderId}, ${`${customerName} — ${city} — ${totalPrice} د.ج`}, ${orderId})
+  `);
+
+  if (pm === "online" && chargilyClient) {
+    try {
+      const siteUrl = getSiteUrl();
+      const basePath = process.env.BASE_PATH ?? "";
+      const checkout = await chargilyClient.createCheckout({
+        amount: Math.round(totalPrice * 100),
+        currency: "dzd",
+        payment_method: "edahabia",
+        success_url: `${siteUrl}${basePath}/payment/success?order=${orderId}`,
+        failure_url: `${siteUrl}${basePath}/payment/failed?order=${orderId}`,
+        webhook_endpoint: `${siteUrl}/api/payments/webhook`,
+        locale: "ar",
+        description: `${productLabel} — ${trackingNumber}`,
+        metadata: { orderId: String(orderId), trackingNumber },
+      });
+      const checkoutUrl = (checkout as unknown as { checkout_url: string }).checkout_url;
+      await db.execute(sql`UPDATE orders SET chargily_checkout_id = ${checkout.id}, payment_status = 'awaiting' WHERE id = ${orderId}`);
+      res.status(201).json({ id: orderId, trackingNumber, checkoutUrl, discountAmount, discountCodeUsed });
+      return;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await db.execute(sql`UPDATE orders SET payment_method = 'cod' WHERE id = ${orderId}`);
+      res.status(201).json({ id: orderId, trackingNumber, discountAmount, discountCodeUsed, chargilyError: msg });
+      return;
+    }
+  }
+
+  res.status(201).json({ id: orderId, trackingNumber, discountAmount, discountCodeUsed });
+});
+
 router.post("/orders", async (req, res): Promise<void> => {
   const parsed = CreateOrderBody.safeParse(req.body);
   if (!parsed.success) {

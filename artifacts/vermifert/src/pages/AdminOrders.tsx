@@ -16,6 +16,8 @@ import StickerPrint from "@/components/StickerPrint";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+interface CartItem { productId: number; productName: string; unitPrice: number; quantity: number; lineTotal: number; }
+
 interface Order {
   id: number;
   customerName: string;
@@ -37,6 +39,7 @@ interface Order {
   deliveredAt?: string | null;
   createdAt: string;
   subscriptionId?: number | null;
+  itemsJson?: string | null;
 }
 
 interface Driver {
@@ -284,8 +287,26 @@ export default function AdminOrders() {
 
                           {/* Product */}
                           <td className="px-4 py-4">
-                            <div className="font-medium">{order.productName}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">الكمية: {order.quantity}</div>
+                            {order.itemsJson ? (() => {
+                              try {
+                                const cartItems: CartItem[] = JSON.parse(order.itemsJson);
+                                return (
+                                  <div className="space-y-0.5">
+                                    {cartItems.map((ci, idx) => (
+                                      <div key={idx} className="text-xs">
+                                        <span className="font-medium">{ci.productName}</span>
+                                        <span className="text-muted-foreground"> ×{ci.quantity} — {ci.lineTotal} د.ج</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              } catch { return <div className="font-medium">{order.productName}</div>; }
+                            })() : (
+                              <>
+                                <div className="font-medium">{order.productName}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5">الكمية: {order.quantity}</div>
+                              </>
+                            )}
                             {order.subscriptionId && (
                               <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                                 📦 اشتراك شهري
