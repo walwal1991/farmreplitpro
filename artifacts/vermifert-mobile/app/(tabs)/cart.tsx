@@ -56,6 +56,15 @@ export default function CartScreen() {
           borderColor: colors.border,
           borderRadius: colors.radius,
         },
+        Platform.OS !== "web"
+          ? {
+              shadowColor: "#1c1815",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.07,
+              shadowRadius: 6,
+              elevation: 2,
+            }
+          : ({ boxShadow: "0 2px 8px rgba(28,24,21,0.09)" } as object),
       ]}
     >
       <Image

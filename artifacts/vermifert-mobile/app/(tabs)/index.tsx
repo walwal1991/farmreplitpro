@@ -21,7 +21,7 @@ import * as Haptics from "expo-haptics";
 const CATEGORIES = [
   { key: "solid", label: "سماد صلب", icon: "layers" },
   { key: "liquid", label: "سائل عضوي", icon: "droplet" },
-  { key: "worms", label: "ديدان", icon: "activity" },
+  { key: "worms", label: "ديدان", icon: "zap" },
   { key: "equipment", label: "معدات", icon: "tool" },
   { key: "kit", label: "أطقم", icon: "package" },
   { key: "substrate", label: "ركيزة", icon: "grid" },
@@ -71,14 +71,22 @@ export default function HomeScreen() {
           { backgroundColor: colors.primary, borderRadius: colors.radius + 4, margin: 16 },
         ]}
       >
-        <View style={styles.heroDecor}>
-          <Feather name="activity" size={100} color={"rgba(255,255,255,0.12)"} />
-        </View>
+        {/* Decorative circles */}
+        <View style={styles.heroCircle1} />
+        <View style={styles.heroCircle2} />
+        <View style={styles.heroCircle3} />
+
         <View style={styles.heroContent}>
+          <View style={styles.heroLeafBadge}>
+            <Text style={styles.heroLeafEmoji}>🌱</Text>
+            <Text style={[styles.heroBadgeText, { color: colors.primary }]}>
+              100% عضوي
+            </Text>
+          </View>
           <Text style={[styles.heroTitle, { color: colors.primaryForeground }]}>
             سماد الديدان الطبيعي
           </Text>
-          <Text style={[styles.heroSub, { color: colors.primaryForeground + "bb" }]}>
+          <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.80)" }]}>
             أفضل سماد عضوي لمحاصيلك
           </Text>
           <Pressable
@@ -111,13 +119,23 @@ export default function HomeScreen() {
           {CATEGORIES.map((cat) => (
             <Pressable
               key={cat.key}
-              style={[
+              style={({ pressed }) => [
                 styles.catCard,
                 {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
                   borderRadius: colors.radius,
+                  opacity: pressed ? 0.85 : 1,
                 },
+                Platform.OS !== "web"
+                  ? {
+                      shadowColor: "#1c1815",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }
+                  : ({ boxShadow: "0 1px 6px rgba(28,24,21,0.08)" } as object),
               ]}
               onPress={() =>
                 router.push({
@@ -126,11 +144,18 @@ export default function HomeScreen() {
                 })
               }
             >
-              <Feather
-                name={cat.icon as keyof typeof Feather.glyphMap}
-                size={22}
-                color={colors.primary}
-              />
+              <View
+                style={[
+                  styles.catIconCircle,
+                  { backgroundColor: colors.accent },
+                ]}
+              >
+                <Feather
+                  name={cat.icon as keyof typeof Feather.glyphMap}
+                  size={18}
+                  color={colors.accentForeground}
+                />
+              </View>
               <Text style={[styles.catLabel, { color: colors.foreground }]}>
                 {cat.label}
               </Text>
@@ -186,20 +211,20 @@ export default function HomeScreen() {
           <Feather
             name="chevron-left"
             size={20}
-            color={colors.secondaryForeground + "60"}
+            color={"rgba(255,255,255,0.40)"}
           />
           <View style={{ flex: 1 }}>
             <Text style={[styles.wasteTitle, { color: colors.secondaryForeground }]}>
               تبرع بمخلفاتك العضوية
             </Text>
-            <Text style={[styles.wasteSub, { color: colors.secondaryForeground + "bb" }]}>
+            <Text style={[styles.wasteSub, { color: "rgba(255,255,255,0.70)" }]}>
               نأتي إليك لجمعها — مجانًا
             </Text>
           </View>
           <View
             style={[
               styles.wasteIconWrap,
-              { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 24 },
+              { backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 24 },
             ]}
           >
             <Feather name="refresh-cw" size={24} color={colors.secondaryForeground} />
@@ -212,17 +237,54 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   hero: {
-    padding: 24,
-    minHeight: 170,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    minHeight: 190,
     overflow: "hidden",
     justifyContent: "flex-end",
   },
-  heroDecor: {
+  heroCircle1: {
     position: "absolute",
-    top: -10,
-    left: -10,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.12)",
+    top: -60,
+    left: -60,
+  },
+  heroCircle2: {
+    position: "absolute",
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.08)",
+    top: -20,
+    left: -20,
+  },
+  heroCircle3: {
+    position: "absolute",
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    bottom: -30,
+    right: -20,
   },
   heroContent: { gap: 8, alignItems: "flex-end" },
+  heroLeafBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: 2,
+  },
+  heroLeafEmoji: { fontSize: 13 },
+  heroBadgeText: { fontSize: 12, fontWeight: "700" },
   heroTitle: { fontSize: 22, fontWeight: "800", textAlign: "right" },
   heroSub: { fontSize: 14, textAlign: "right" },
   heroBtn: {
@@ -246,7 +308,14 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
     borderWidth: 1,
-    width: 88,
+    width: 90,
+  },
+  catIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   catLabel: { fontSize: 11, fontWeight: "600", textAlign: "center" },
   productsGrid: {

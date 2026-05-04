@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useColors } from "@/hooks/useColors";
@@ -29,6 +29,15 @@ export function ProductCard({ product, onPress, onAddToCart }: Props) {
           borderRadius: colors.radius,
           opacity: pressed ? 0.92 : 1,
         },
+        Platform.OS !== "web"
+          ? {
+              shadowColor: "#1c1815",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              elevation: 3,
+            }
+          : ({ boxShadow: "0 2px 10px rgba(28,24,21,0.10)" } as object),
       ]}
       onPress={onPress}
     >
@@ -100,7 +109,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    height: 140,
+    height: 148,
     backgroundColor: "#e8dfd0",
   },
   outOfStockBadge: {
@@ -135,8 +144,8 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   addBtn: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
   },
