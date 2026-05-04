@@ -22,13 +22,13 @@ function NativeTabLayout() {
         <Icon sf={{ default: "bag", selected: "bag.fill" }} />
         <Label>المتجر</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="services">
+        <Icon sf={{ default: "square.grid.2x2", selected: "square.grid.2x2.fill" }} />
+        <Label>خدمات</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="cart">
         <Icon sf={{ default: "cart", selected: "cart.fill" }} />
         <Label>السلة</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="orders">
-        <Icon sf={{ default: "shippingbox", selected: "shippingbox.fill" }} />
-        <Label>الطلبات</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="account">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
@@ -104,6 +104,18 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
+        name="services"
+        options={{
+          title: "خدمات",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="square.grid.2x2" tintColor={color} size={24} />
+            ) : (
+              <Feather name="grid" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
         name="cart"
         options={{
           title: "السلة",
@@ -124,13 +136,8 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="orders"
         options={{
-          title: "الطلبات",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="shippingbox" tintColor={color} size={24} />
-            ) : (
-              <Feather name="package" size={22} color={color} />
-            ),
+          href: null,
+          tabBarIcon: ({ color }) => <Feather name="package" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
