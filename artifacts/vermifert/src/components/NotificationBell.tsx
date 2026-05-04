@@ -81,7 +81,14 @@ export default function NotificationBell({ token }: { token: string | null }) {
     <div className="relative" ref={panelRef}>
       {/* Bell button */}
       <button
-        onClick={() => { setOpen(o => !o); if (!open) fetchNotifications(); }}
+        onClick={() => {
+        const opening = !open;
+        setOpen(opening);
+        if (opening) {
+          fetchNotifications();
+          if (unreadCount > 0) markAllRead();
+        }
+      }}
         className={cn(
           "relative flex items-center justify-center w-9 h-9 rounded-xl transition-colors",
           open ? "bg-primary/10 text-primary" : "hover:bg-muted text-muted-foreground"
