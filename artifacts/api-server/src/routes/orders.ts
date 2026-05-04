@@ -110,6 +110,13 @@ router.post("/orders/cart", async (req, res): Promise<void> => {
     await db.execute(sql`UPDATE discount_codes SET used = true, used_at = NOW() WHERE UPPER(code) = ${discountCodeUsed}`);
   }
 
+  // Decrement stock for each cart item
+  for (const item of cartItems) {
+    await db.execute(sql`
+      UPDATE products SET stock = GREATEST(0, stock - ${item.quantity}) WHERE id = ${item.productId}
+    `);
+  }
+
   await db.execute(sql`
     INSERT INTO admin_notifications (type, title, body, reference_id)
     VALUES ('new_order', ${'طلب جديد #' + orderId}, ${`${customerName} — ${city} — ${totalPrice} د.ج`}, ${orderId})
@@ -217,6 +224,11 @@ router.post("/orders", async (req, res): Promise<void> => {
   if (discountCodeUsed) {
     await db.execute(sql`UPDATE discount_codes SET used = true, used_at = NOW() WHERE UPPER(code) = ${discountCodeUsed}`);
   }
+
+  // Decrement stock
+  await db.execute(sql`
+    UPDATE products SET stock = GREATEST(0, stock - ${parsed.data.quantity}) WHERE id = ${product.id}
+  `);
 
   // Fire admin notification for new order
   await db.execute(sql`
