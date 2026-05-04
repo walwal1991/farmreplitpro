@@ -53,7 +53,7 @@ export default function AdminSidebar() {
         <NotificationBell token={token} />
       </div>
 
-      <div className="flex-1 px-4 flex flex-col gap-2">
+      <div className="flex-1 px-4 flex flex-col gap-2 overflow-y-auto min-h-0">
         {links.map((link) => {
           const Icon = link.icon;
           const isActive = location === link.href;
