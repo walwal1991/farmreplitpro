@@ -76,7 +76,10 @@ function statusIndex(status: string) {
 
 function formatDate(d: string | null) {
   if (!d) return null;
-  return new Date(d).toLocaleDateString("ar-MA", { day: "numeric", month: "long", year: "numeric" });
+  // Parse as local midnight to avoid UTC-offset shifting the date by one day
+  const parts = d.split("T")[0].split("-").map(Number);
+  const date = new Date(parts[0], parts[1] - 1, parts[2]);
+  return date.toLocaleDateString("ar-MA", { day: "numeric", month: "long", year: "numeric" });
 }
 
 function TrackingResult({ item, onReset }: { item: WC; onReset: () => void }) {
