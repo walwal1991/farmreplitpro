@@ -194,6 +194,43 @@ export default function HomeScreen() {
         )}
       </View>
 
+      {/* Services Section */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>خدماتنا</Text>
+        <View style={styles.servicesGrid}>
+          {[
+            { icon: "book-open" as const,    label: "دليل الاستعمال",    sub: "كيف تستخدم السماد",    color: "#22c55e", bg: "#f0fdf4", route: "/guide" },
+            { icon: "message-circle" as const, label: "استشارة مجانية",  sub: "تحدث مع خبرائنا",      color: "#3b82f6", bg: "#eff6ff", route: "/consultation" },
+            { icon: "cpu" as const,           label: "تشخيص التربة",      sub: "توصية ذكية لمزرعتك",  color: "#8b5cf6", bg: "#f5f3ff", route: "/diagnosis" },
+            { icon: "package" as const,       label: "اشتراك شهري",       sub: "صندوقك الزراعي",      color: "#f59e0b", bg: "#fffbeb", route: "/subscription" },
+            { icon: "award" as const,          label: "التعليم والتكوين", sub: "دورات ومزارع الديدان", color: "#ec4899", bg: "#fdf2f8", route: "/learn" },
+            { icon: "search" as const,        label: "تتبع الطلب",        sub: "أين طلبي الآن؟",      color: "#0ea5e9", bg: "#f0f9ff", route: "/track-order" },
+          ].map((s) => (
+            <Pressable
+              key={s.route}
+              style={({ pressed }) => [
+                styles.serviceCard,
+                {
+                  backgroundColor: s.bg,
+                  borderColor: s.color + "40",
+                  opacity: pressed ? 0.88 : 1,
+                },
+                Platform.OS !== "web"
+                  ? { shadowColor: s.color, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 }
+                  : ({ boxShadow: `0 2px 10px ${s.color}20` } as object),
+              ]}
+              onPress={() => router.push(s.route as never)}
+            >
+              <View style={[styles.serviceIconCircle, { backgroundColor: s.color + "20" }]}>
+                <Feather name={s.icon} size={22} color={s.color} />
+              </View>
+              <Text style={[styles.serviceLabel, { color: "#1e293b" }]}>{s.label}</Text>
+              <Text style={[styles.serviceSub, { color: "#64748b" }]}>{s.sub}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       {/* Waste Collection CTA */}
       <Pressable
         style={[
@@ -338,4 +375,23 @@ const styles = StyleSheet.create({
   },
   wasteTitle: { fontSize: 16, fontWeight: "700", textAlign: "right" },
   wasteSub: { fontSize: 13, textAlign: "right", marginTop: 2 },
+  servicesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  serviceCard: {
+    width: "47.5%",
+    borderWidth: 1.5,
+    borderRadius: 16,
+    padding: 14,
+    gap: 6,
+    alignItems: "flex-end",
+  },
+  serviceIconCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  serviceLabel: { fontSize: 14, fontWeight: "700", textAlign: "right" },
+  serviceSub: { fontSize: 11, textAlign: "right" },
 });
