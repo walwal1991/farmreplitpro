@@ -46,6 +46,16 @@ export default function NotificationBell({ token }: { token: string | null }) {
     } catch { /* ignore */ }
   }
 
+  async function markOneRead(id: number) {
+    if (!token) return;
+    await fetch(`${API}/api/admin/notifications/${id}/read`, {
+      method: "PATCH",
+      headers: { "x-admin-token": token },
+    });
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  }
+
   async function markAllRead() {
     if (!token || marking) return;
     setMarking(true);
@@ -82,13 +92,10 @@ export default function NotificationBell({ token }: { token: string | null }) {
       {/* Bell button */}
       <button
         onClick={() => {
-        const opening = !open;
-        setOpen(opening);
-        if (opening) {
-          fetchNotifications();
-          if (unreadCount > 0) markAllRead();
-        }
-      }}
+          const opening = !open;
+          setOpen(opening);
+          if (opening) fetchNotifications();
+        }}
         className={cn(
           "relative flex items-center justify-center w-9 h-9 rounded-xl transition-colors",
           open ? "bg-primary/10 text-primary" : "hover:bg-muted text-muted-foreground"
@@ -103,7 +110,7 @@ export default function NotificationBell({ token }: { token: string | null }) {
         )}
       </button>
 
-      {/* Panel — fixed so it never clips inside the sidebar */}
+      {/* Panel */}
       {open && (
         <div
           dir="rtl"
@@ -144,23 +151,35 @@ export default function NotificationBell({ token }: { token: string | null }) {
               </div>
             ) : (
               <>
-                {/* Unread section */}
                 {unread.length > 0 && (
                   <>
                     <p className="px-5 pt-3 pb-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                       غير مقروءة ({unread.length})
                     </p>
-                    {unread.map(n => <NotifRow key={n.id} n={n} onClose={() => setOpen(false)} />)}
+                    {unread.map(n => (
+                      <NotifRow
+                        key={n.id}
+                        n={n}
+                        onClose={() => setOpen(false)}
+                        onMarkRead={() => markOneRead(n.id)}
+                      />
+                    ))}
                   </>
                 )}
 
-                {/* Read section */}
                 {read.length > 0 && (
                   <>
                     <p className="px-5 pt-4 pb-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider border-t border-border/60 mt-2">
                       مقروءة
                     </p>
-                    {read.map(n => <NotifRow key={n.id} n={n} onClose={() => setOpen(false)} />)}
+                    {read.map(n => (
+                      <NotifRow
+                        key={n.id}
+                        n={n}
+                        onClose={() => setOpen(false)}
+                        onMarkRead={() => markOneRead(n.id)}
+                      />
+                    ))}
                   </>
                 )}
               </>
@@ -183,22 +202,31 @@ export default function NotificationBell({ token }: { token: string | null }) {
   );
 }
 
-function NotifRow({ n, onClose }: { n: Notification; onClose: () => void }) {
+function NotifRow({
+  n,
+  onClose,
+  onMarkRead,
+}: {
+  n: Notification;
+  onClose: () => void;
+  onMarkRead: () => void;
+}) {
   return (
     <Link
       href="/admin/orders"
-      onClick={onClose}
+      onClick={() => {
+        if (!n.is_read) onMarkRead();
+        onClose();
+      }}
       className={cn(
         "flex gap-3 items-start px-5 py-3.5 hover:bg-muted/50 transition-colors cursor-pointer group",
         !n.is_read && "bg-primary/[0.04]"
       )}
     >
-      {/* Icon */}
       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
         <ShoppingBag className="w-4 h-4" />
       </div>
 
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className={cn(
