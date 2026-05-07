@@ -16,6 +16,7 @@ export const subscriptionsTable = pgTable("subscriptions", {
   startDate: timestamp("start_date", { withTimezone: true }).notNull().defaultNow(),
   nextRenewalDate: timestamp("next_renewal_date", { withTimezone: true }).notNull(),
   notes: text("notes"),
+  paymentMethod: text("payment_method").notNull().default("cod"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
