@@ -49,6 +49,63 @@ interface Rec {
   note: string;
 }
 
+interface IrrigationPlan {
+  waterPerSqm: number;
+  freqDays: number;
+  bestTime: string;
+  method: string;
+  methodIcon: string;
+  monthlyTotal: number;
+  totalPerSession: number;
+  tips: string[];
+}
+
+function calcIrrigation(soilType: string, crop: string, area: number): IrrigationPlan {
+  let waterPerSqm = 4;
+  if (soilType === "sandy" || soilType === "rocky") waterPerSqm = 6;
+  else if (soilType === "clay") waterPerSqm = 3;
+  else if (soilType === "silt") waterPerSqm = 4.5;
+
+  if (["tomato", "cucumber", "pepper"].includes(crop)) waterPerSqm *= 1.4;
+  else if (crop === "potato") waterPerSqm *= 1.2;
+  else if (crop === "fruit_tree") waterPerSqm *= 0.85;
+
+  let freqDays = 3;
+  if (soilType === "sandy" || soilType === "rocky") freqDays = 2;
+  else if (soilType === "clay") freqDays = 6;
+  else if (soilType === "silt") freqDays = 4;
+  if (["tomato", "cucumber", "pepper"].includes(crop)) freqDays = Math.max(1, freqDays - 1);
+  if (crop === "fruit_tree") freqDays += 2;
+
+  const bestTime = "الصباح (7–10 ص)";
+
+  let method = "بالغمر (فيضاني)";
+  let methodIcon = "🌊";
+  if (["tomato", "cucumber", "pepper", "flowers"].includes(crop) || soilType === "sandy") {
+    method = "بالتنقيط (Drip)"; methodIcon = "💧";
+  } else if (["wheat", "corn", "lawn"].includes(crop)) {
+    method = "بالرش (Sprinkler)"; methodIcon = "🚿";
+  } else if (crop === "fruit_tree") {
+    method = "بالتنقيط أو الحوض"; methodIcon = "🌳";
+  }
+
+  const tips: string[] = ["✅ ظروف الريّ مثالية — التزم بالجدول المقترح للحصول على أفضل نتيجة."];
+  const sessionsPerMonth = Math.round(30 / freqDays);
+  const monthlyTotal = Math.round(waterPerSqm * area * sessionsPerMonth);
+  const totalPerSession = Math.round(waterPerSqm * area);
+
+  return {
+    waterPerSqm: Math.round(waterPerSqm * 10) / 10,
+    freqDays,
+    bestTime,
+    method,
+    methodIcon,
+    monthlyTotal,
+    totalPerSession,
+    tips,
+  };
+}
+
 function buildRecs(soilType: string, ph: number, area: number, crop: string, products: Product[]): Rec[] {
   const recs: Rec[] = [];
   const units = area / 100;
@@ -96,6 +153,11 @@ export default function DiagnosisScreen() {
     if (!submitted) return [];
     return buildRecs(soilType, parseFloat(ph) || 7, parseFloat(area) || 100, crop, products);
   }, [submitted, soilType, ph, area, crop, products]);
+
+  const irrigation = useMemo(
+    () => calcIrrigation(soilType, crop, parseFloat(area) || 100),
+    [soilType, crop, area]
+  );
 
   const totalCost = recs.reduce((s, r) => s + r.price * r.quantityNeeded, 0);
 
@@ -253,6 +315,54 @@ export default function DiagnosisScreen() {
           <Text style={[styles.noProductsText, { color: colors.mutedForeground }]}>لا توجد منتجات متاحة حالياً</Text>
         </View>
       )}
+
+      {/* ── Irrigation System ───────────────────────────────── */}
+      {submitted && (
+        <View style={styles.irrigationContainer}>
+          <View style={styles.irrigationHeader}>
+            <Text style={styles.irrigationHeaderIcon}>💧</Text>
+            <Text style={[styles.irrigationTitle, { color: "#1e40af" }]}>نظام الريّ الذكي</Text>
+          </View>
+
+          <View style={styles.irrigationGrid}>
+            {[
+              { icon: "💧", label: "كمية الريّ (لكل م²)", value: `${irrigation.waterPerSqm} لتر` },
+              { icon: "📅", label: "تكرار الريّ", value: `كل ${irrigation.freqDays} يوم` },
+              { icon: "⏰", label: "أفضل وقت", value: irrigation.bestTime },
+              { icon: irrigation.methodIcon, label: "طريقة الريّ", value: irrigation.method },
+            ].map(({ icon, label, value }) => (
+              <View key={label} style={styles.irrigationCard}>
+                <Text style={styles.irrigationCardIcon}>{icon}</Text>
+                <Text style={styles.irrigationCardLabel}>{label}</Text>
+                <Text style={[styles.irrigationCardValue, { color: "#1e40af" }]}>{value}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.irrigationSummary}>
+            <View style={styles.irrigationSummaryHalf}>
+              <Text style={styles.irrigationSummaryLabel}>إجمالي المياه / شهر</Text>
+              <Text style={styles.irrigationSummaryVal}>
+                {irrigation.monthlyTotal.toLocaleString()}
+                <Text style={styles.irrigationSummaryUnit}> لتر</Text>
+              </Text>
+            </View>
+            <View style={[styles.irrigationSummaryHalf, styles.irrigationSummaryRight]}>
+              <Text style={styles.irrigationSummaryLabel}>كل جلسة ريّ</Text>
+              <Text style={styles.irrigationSummaryVal}>
+                {irrigation.totalPerSession.toLocaleString()}
+                <Text style={styles.irrigationSummaryUnit}> لتر</Text>
+              </Text>
+            </View>
+          </View>
+
+          {irrigation.tips.map((tip, i) => (
+            <View key={i} style={styles.irrigationTip}>
+              <Text style={styles.irrigationTipText}>{tip}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -294,4 +404,21 @@ const styles = StyleSheet.create({
   addAllBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   noProductsBox: { alignItems: "center", padding: 32, gap: 12 },
   noProductsText: { fontSize: 14 },
+  irrigationContainer: { margin: 16, marginTop: 4, backgroundColor: "#eff6ff", borderRadius: 20, borderWidth: 1.5, borderColor: "#bfdbfe", padding: 16, gap: 12 },
+  irrigationHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  irrigationHeaderIcon: { fontSize: 20 },
+  irrigationTitle: { fontSize: 16, fontWeight: "800" },
+  irrigationGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  irrigationCard: { width: "47%", backgroundColor: "#fff", borderRadius: 14, borderWidth: 1, borderColor: "#bfdbfe", padding: 12, gap: 4 },
+  irrigationCardIcon: { fontSize: 18 },
+  irrigationCardLabel: { fontSize: 10, color: "#64748b" },
+  irrigationCardValue: { fontSize: 12, fontWeight: "700" },
+  irrigationSummary: { backgroundColor: "#2563eb", borderRadius: 14, padding: 14, flexDirection: "row" },
+  irrigationSummaryHalf: { flex: 1 },
+  irrigationSummaryRight: { borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.25)", paddingRight: 14, marginRight: 14 },
+  irrigationSummaryLabel: { color: "rgba(255,255,255,0.7)", fontSize: 11 },
+  irrigationSummaryVal: { color: "#fff", fontSize: 22, fontWeight: "800" },
+  irrigationSummaryUnit: { fontSize: 13, fontWeight: "400" },
+  irrigationTip: { backgroundColor: "rgba(255,255,255,0.7)", borderRadius: 12, borderWidth: 1, borderColor: "#bfdbfe", padding: 10 },
+  irrigationTipText: { fontSize: 12, color: "#1e40af", lineHeight: 18, textAlign: "right" },
 });

@@ -333,6 +333,105 @@ function WeatherCard({ weather, loading, error }: { weather: WeatherData | null;
   );
 }
 
+// ── Irrigation System ─────────────────────────────────────────────────────────
+function calcIrrigation(soilType: string, crop: string, area: number, weather: WeatherData | null) {
+  let waterPerSqm = 4;
+  if (soilType === "sandy" || soilType === "rocky") waterPerSqm = 6;
+  else if (soilType === "clay") waterPerSqm = 3;
+  else if (soilType === "silt") waterPerSqm = 4.5;
+
+  if (["tomato", "cucumber", "pepper"].includes(crop)) waterPerSqm *= 1.4;
+  else if (crop === "potato") waterPerSqm *= 1.2;
+  else if (crop === "fruit_tree") waterPerSqm *= 0.85;
+
+  let freqDays = 3;
+  if (soilType === "sandy" || soilType === "rocky") freqDays = 2;
+  else if (soilType === "clay") freqDays = 6;
+  else if (soilType === "silt") freqDays = 4;
+  if (["tomato", "cucumber", "pepper"].includes(crop)) freqDays = Math.max(1, freqDays - 1);
+  if (crop === "fruit_tree") freqDays += 2;
+
+  const tips: string[] = [];
+  if (weather) {
+    if (weather.temp > 35) { freqDays = Math.max(1, freqDays - 1); tips.push("🌡️ الحرارة مرتفعة — زِد تكرار الريّ وتجنّب الريّ في منتصف النهار."); }
+    if (weather.precipitation > 5) { waterPerSqm *= 0.6; tips.push("🌧️ يُتوقع هطول مطر — قلّل كمية الريّ هذا الأسبوع."); }
+    if (weather.humidity > 75) { waterPerSqm *= 0.85; tips.push("💧 رطوبة جوية عالية — يمكن تخفيف كمية الريّ."); }
+    if (weather.temp < 15) { freqDays += 2; tips.push("❄️ الجو بارد — قلّل تكرار الريّ وريّ في الصباح الباكر فقط."); }
+  }
+  if (tips.length === 0) tips.push("✅ ظروف الريّ مثالية — التزم بالجدول المقترح للحصول على أفضل نتيجة.");
+
+  const bestTime = weather && weather.temp > 28 ? "الصباح الباكر (6–8 ص) أو المساء (5–7 م)" : "الصباح (7–10 ص)";
+
+  let method = "بالغمر (فيضاني)";
+  let methodIcon = "🌊";
+  if (["tomato", "cucumber", "pepper", "flowers"].includes(crop) || soilType === "sandy") { method = "بالتنقيط (Drip)"; methodIcon = "💧"; }
+  else if (["wheat", "corn", "lawn"].includes(crop)) { method = "بالرش (Sprinkler)"; methodIcon = "🚿"; }
+  else if (crop === "fruit_tree") { method = "بالتنقيط أو الحوض"; methodIcon = "🌳"; }
+
+  const sessionsPerMonth = Math.round(30 / freqDays);
+  const monthlyTotal = Math.round(waterPerSqm * area * sessionsPerMonth);
+  const totalPerSession = Math.round(waterPerSqm * area);
+
+  return { waterPerSqm: Math.round(waterPerSqm * 10) / 10, freqDays, bestTime, method, methodIcon, monthlyTotal, totalPerSession, tips };
+}
+
+function IrrigationWidget({ soilType, crop, area, weather }: { soilType: string; crop: string; area: number; weather: WeatherData | null }) {
+  const plan = calcIrrigation(soilType, crop, area, weather);
+  return (
+    <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/20 p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
+          <Droplets className="w-4 h-4 text-blue-600" />
+        </div>
+        <p className="font-bold text-sm text-blue-900 dark:text-blue-300">نظام الريّ الذكي</p>
+        {weather && (
+          <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full mr-auto">
+            محسوب بالطقس الحالي
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { icon: "💧", label: "كمية الريّ (لكل م²)", value: `${plan.waterPerSqm} لتر` },
+          { icon: "📅", label: "تكرار الريّ", value: `كل ${plan.freqDays} يوم` },
+          { icon: "⏰", label: "أفضل وقت للريّ", value: plan.bestTime },
+          { icon: plan.methodIcon, label: "طريقة الريّ الموصى بها", value: plan.method },
+        ].map(({ icon, label, value }) => (
+          <div key={label} className="bg-white/80 dark:bg-white/5 rounded-xl p-3 border border-blue-100 dark:border-blue-800/50">
+            <div className="text-lg mb-1">{icon}</div>
+            <p className="text-[10px] text-muted-foreground">{label}</p>
+            <p className="text-xs font-bold text-blue-900 dark:text-blue-200 mt-0.5 leading-snug">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-blue-600 text-white rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs opacity-75">إجمالي المياه / شهر</p>
+          <p className="text-2xl font-black">
+            {plan.monthlyTotal.toLocaleString()} <span className="text-sm font-normal">لتر</span>
+          </p>
+        </div>
+        <div className="text-left border-r border-white/20 pr-4 mr-2">
+          <p className="text-xs opacity-75">كل جلسة ريّ</p>
+          <p className="text-xl font-black">
+            {plan.totalPerSession.toLocaleString()} <span className="text-sm font-normal">لتر</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        {plan.tips.map((tip, i) => (
+          <p key={i} className="text-xs rounded-xl px-3 py-2 bg-white/70 dark:bg-white/5 border border-blue-100 dark:border-blue-800/30 text-blue-800 dark:text-blue-300 leading-relaxed">
+            {tip}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface Recommendation {
@@ -573,63 +672,75 @@ export default function SmartDiagnosis() {
           <IoTWidget apiBase={API} />
           </div>{/* end left column */}
 
-          {/* Results */}
-          {submitted && recommendations.length > 0 ? (
-            <div className="rounded-2xl bg-primary text-primary-foreground p-6 space-y-5">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-6 h-6" />
-                {t("diag_result_title")}
-              </h2>
+          {/* Results + Irrigation */}
+          <div className="space-y-4">
+            {submitted && recommendations.length > 0 ? (
+              <div className="rounded-2xl bg-primary text-primary-foreground p-6 space-y-5">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-6 h-6" />
+                  {t("diag_result_title")}
+                </h2>
 
-              <div className="space-y-3">
-                {recommendations.map((r) => (
-                  <div key={r.productId} className="bg-white/10 rounded-xl p-4 space-y-2">
-                    <div className="flex items-center gap-3">
-                      <img src={r.imageUrl || vermicompostBag} alt={r.name} className="w-10 h-10 rounded-lg object-cover bg-white/20" />
-                      <span className="font-bold text-amber-300">{r.name}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <div className="text-white/60 text-xs">{t("diag_qty_needed")}</div>
-                        <div className="font-bold">{r.quantityNeeded} {r.unit}</div>
+                <div className="space-y-3">
+                  {recommendations.map((r) => (
+                    <div key={r.productId} className="bg-white/10 rounded-xl p-4 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <img src={r.imageUrl || vermicompostBag} alt={r.name} className="w-10 h-10 rounded-lg object-cover bg-white/20" />
+                        <span className="font-bold text-amber-300">{r.name}</span>
                       </div>
-                      <div>
-                        <div className="text-white/60 text-xs">{t("diag_frequency")}</div>
-                        <div className="font-bold">{r.frequency}</div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <div className="text-white/60 text-xs">{t("diag_qty_needed")}</div>
+                          <div className="font-bold">{r.quantityNeeded} {r.unit}</div>
+                        </div>
+                        <div>
+                          <div className="text-white/60 text-xs">{t("diag_frequency")}</div>
+                          <div className="font-bold">{r.frequency}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-white/20 pt-4 space-y-1">
-                <div className="text-white/70 text-sm">{t("diag_est_cost")}</div>
-                <div className="text-4xl font-extrabold tabular-nums">
-                  {totalCost.toLocaleString()}
-                  <span className="text-2xl ms-1">د.ج</span>
+                  ))}
                 </div>
-              </div>
 
-              <div className="bg-white/10 rounded-lg p-3 text-sm text-white/80 leading-relaxed border-s-4 border-amber-300">
-                {summaryNote}
-              </div>
+                <div className="border-t border-white/20 pt-4 space-y-1">
+                  <div className="text-white/70 text-sm">{t("diag_est_cost")}</div>
+                  <div className="text-4xl font-extrabold tabular-nums">
+                    {totalCost.toLocaleString()}
+                    <span className="text-2xl ms-1">د.ج</span>
+                  </div>
+                </div>
 
-              <Button className="w-full h-11 font-bold bg-amber-500 hover:bg-amber-600 text-white border-0 gap-2" onClick={addAllToCart}>
-                <ShoppingCart className="w-4 h-4" />
-                {t("diag_add_cart")}
-              </Button>
-            </div>
-          ) : submitted && recommendations.length === 0 ? (
-            <div className="rounded-2xl border border-border/60 bg-card p-8 text-center text-muted-foreground">
-              <p className="text-lg">{t("diag_no_products")}</p>
-              <p className="text-sm mt-2">{t("diag_no_products_hint")}</p>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-10 text-center text-muted-foreground flex flex-col items-center gap-3">
-              <FlaskConical className="w-10 h-10 text-primary/40" />
-              <p className="text-base">{t("diag_enter_first")}</p>
-            </div>
-          )}
+                <div className="bg-white/10 rounded-lg p-3 text-sm text-white/80 leading-relaxed border-s-4 border-amber-300">
+                  {summaryNote}
+                </div>
+
+                <Button className="w-full h-11 font-bold bg-amber-500 hover:bg-amber-600 text-white border-0 gap-2" onClick={addAllToCart}>
+                  <ShoppingCart className="w-4 h-4" />
+                  {t("diag_add_cart")}
+                </Button>
+              </div>
+            ) : submitted && recommendations.length === 0 ? (
+              <div className="rounded-2xl border border-border/60 bg-card p-8 text-center text-muted-foreground">
+                <p className="text-lg">{t("diag_no_products")}</p>
+                <p className="text-sm mt-2">{t("diag_no_products_hint")}</p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-10 text-center text-muted-foreground flex flex-col items-center gap-3">
+                <FlaskConical className="w-10 h-10 text-primary/40" />
+                <p className="text-base">{t("diag_enter_first")}</p>
+              </div>
+            )}
+
+            {/* Irrigation System */}
+            {parseFloat(area) > 0 && (
+              <IrrigationWidget
+                soilType={soilType}
+                crop={crop}
+                area={parseFloat(area) || 100}
+                weather={weather}
+              />
+            )}
+          </div>
         </div>
       </main>
     </div>
