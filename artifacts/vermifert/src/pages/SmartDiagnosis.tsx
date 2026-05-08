@@ -334,7 +334,7 @@ function WeatherCard({ weather, loading, error }: { weather: WeatherData | null;
 }
 
 // ── Irrigation System ─────────────────────────────────────────────────────────
-function calcIrrigation(soilType: string, crop: string, area: number, weather: WeatherData | null) {
+function calcIrrigation(soilType: string, crop: string, area: number, weather: WeatherData | null, irrigationSystem = "auto") {
   let waterPerSqm = 4;
   if (soilType === "sandy" || soilType === "rocky") waterPerSqm = 6;
   else if (soilType === "clay") waterPerSqm = 3;
@@ -344,12 +344,20 @@ function calcIrrigation(soilType: string, crop: string, area: number, weather: W
   else if (crop === "potato") waterPerSqm *= 1.2;
   else if (crop === "fruit_tree") waterPerSqm *= 0.85;
 
+  // Drip irrigation uses ~30% less water; sprinkler ~15% less
+  if (irrigationSystem === "drip") waterPerSqm *= 0.70;
+  else if (irrigationSystem === "sprinkler") waterPerSqm *= 0.85;
+  else if (irrigationSystem === "manual") waterPerSqm *= 1.10;
+
   let freqDays = 3;
   if (soilType === "sandy" || soilType === "rocky") freqDays = 2;
   else if (soilType === "clay") freqDays = 6;
   else if (soilType === "silt") freqDays = 4;
   if (["tomato", "cucumber", "pepper"].includes(crop)) freqDays = Math.max(1, freqDays - 1);
   if (crop === "fruit_tree") freqDays += 2;
+
+  // Drip can water more frequently with less stress
+  if (irrigationSystem === "drip") freqDays = Math.max(1, freqDays - 1);
 
   const tips: string[] = [];
   if (weather) {
@@ -358,15 +366,32 @@ function calcIrrigation(soilType: string, crop: string, area: number, weather: W
     if (weather.humidity > 75) { waterPerSqm *= 0.85; tips.push("💧 رطوبة جوية عالية — يمكن تخفيف كمية الريّ."); }
     if (weather.temp < 15) { freqDays += 2; tips.push("❄️ الجو بارد — قلّل تكرار الريّ وريّ في الصباح الباكر فقط."); }
   }
+
+  // System-specific tips
+  if (irrigationSystem === "drip") tips.push("💧 ريّ بالتنقيط: وفّر حتى 30% من المياه مع توصيل مباشر لجذور النبات.");
+  else if (irrigationSystem === "sprinkler") tips.push("🚿 ريّ بالرش: مناسب للمساحات الكبيرة — تجنّب الرش وقت الحرارة الشديدة.");
+  else if (irrigationSystem === "flood") tips.push("🌊 ريّ بالغمر: تأكد من انتظام مستوى الأرض لضمان توزيع متساوٍ للمياه.");
+  else if (irrigationSystem === "manual") tips.push("🪣 ريّ يدوي: ريّ ببطء وبالقرب من الجذور لتجنّب هدر المياه.");
+  else if (tips.length === 0) tips.push("✅ ظروف الريّ مثالية — التزم بالجدول المقترح للحصول على أفضل نتيجة.");
+
   if (tips.length === 0) tips.push("✅ ظروف الريّ مثالية — التزم بالجدول المقترح للحصول على أفضل نتيجة.");
 
   const bestTime = weather && weather.temp > 28 ? "الصباح الباكر (6–8 ص) أو المساء (5–7 م)" : "الصباح (7–10 ص)";
 
-  let method = "بالغمر (فيضاني)";
-  let methodIcon = "🌊";
-  if (["tomato", "cucumber", "pepper", "flowers"].includes(crop) || soilType === "sandy") { method = "بالتنقيط (Drip)"; methodIcon = "💧"; }
-  else if (["wheat", "corn", "lawn"].includes(crop)) { method = "بالرش (Sprinkler)"; methodIcon = "🚿"; }
-  else if (crop === "fruit_tree") { method = "بالتنقيط أو الحوض"; methodIcon = "🌳"; }
+  // Respect user-chosen system; auto = infer from crop/soil
+  let method: string;
+  let methodIcon: string;
+  if (irrigationSystem === "drip")      { method = "بالتنقيط (Drip)";      methodIcon = "💧"; }
+  else if (irrigationSystem === "sprinkler") { method = "بالرش (Sprinkler)"; methodIcon = "🚿"; }
+  else if (irrigationSystem === "flood")     { method = "بالغمر (فيضاني)";  methodIcon = "🌊"; }
+  else if (irrigationSystem === "manual")    { method = "يدوي";              methodIcon = "🪣"; }
+  else {
+    // auto-detect
+    method = "بالغمر (فيضاني)"; methodIcon = "🌊";
+    if (["tomato", "cucumber", "pepper", "flowers"].includes(crop) || soilType === "sandy") { method = "بالتنقيط (Drip)"; methodIcon = "💧"; }
+    else if (["wheat", "corn", "lawn"].includes(crop)) { method = "بالرش (Sprinkler)"; methodIcon = "🚿"; }
+    else if (crop === "fruit_tree") { method = "بالتنقيط أو الحوض"; methodIcon = "🌳"; }
+  }
 
   const sessionsPerMonth = Math.round(30 / freqDays);
   const monthlyTotal = Math.round(waterPerSqm * area * sessionsPerMonth);
@@ -375,8 +400,8 @@ function calcIrrigation(soilType: string, crop: string, area: number, weather: W
   return { waterPerSqm: Math.round(waterPerSqm * 10) / 10, freqDays, bestTime, method, methodIcon, monthlyTotal, totalPerSession, tips };
 }
 
-function IrrigationWidget({ soilType, crop, area, weather }: { soilType: string; crop: string; area: number; weather: WeatherData | null }) {
-  const plan = calcIrrigation(soilType, crop, area, weather);
+function IrrigationWidget({ soilType, crop, area, weather, irrigationSystem }: { soilType: string; crop: string; area: number; weather: WeatherData | null; irrigationSystem: string }) {
+  const plan = calcIrrigation(soilType, crop, area, weather, irrigationSystem);
   return (
     <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/20 p-5 space-y-4">
       <div className="flex items-center gap-2">
@@ -526,10 +551,19 @@ export default function SmartDiagnosis() {
     { value: "other",      label: t("crop_other") },
   ];
 
+  const IRRIGATION_SYSTEMS = [
+    { value: "auto",      label: "تلقائي",        icon: "🔄" },
+    { value: "drip",      label: "تنقيط",         icon: "💧" },
+    { value: "sprinkler", label: "رش",             icon: "🚿" },
+    { value: "flood",     label: "غمر (فيضاني)",  icon: "🌊" },
+    { value: "manual",    label: "يدوي",           icon: "🪣" },
+  ];
+
   const [soilType, setSoilType] = useState("sandy");
   const [ph, setPh] = useState("7");
   const [area, setArea] = useState("1000");
   const [crop, setCrop] = useState("tomato");
+  const [irrigationSystem, setIrrigationSystem] = useState("auto");
   const [submitted, setSubmitted] = useState(false);
 
   // Weather state
@@ -655,6 +689,30 @@ export default function SmartDiagnosis() {
                     dir="rtl"
                   />
                 </div>
+
+                <div className="space-y-2 col-span-2">
+                  <Label className="flex items-center gap-1.5 text-sm font-medium">
+                    <Droplets className="w-4 h-4 text-blue-500" />
+                    نظام الريّ المستخدم
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {IRRIGATION_SYSTEMS.map((s) => (
+                      <button
+                        key={s.value}
+                        type="button"
+                        onClick={() => setIrrigationSystem(s.value)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                          irrigationSystem === s.value
+                            ? "bg-blue-500 border-blue-500 text-white shadow-sm"
+                            : "bg-background border-input text-muted-foreground hover:border-blue-300 hover:text-blue-600"
+                        }`}
+                      >
+                        <span>{s.icon}</span>
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <Button className="w-full h-12 text-base font-bold" onClick={() => setSubmitted(true)} disabled={!ph || !area || parseFloat(area) <= 0}>
@@ -738,6 +796,7 @@ export default function SmartDiagnosis() {
                 crop={crop}
                 area={parseFloat(area) || 100}
                 weather={weather}
+                irrigationSystem={irrigationSystem}
               />
             )}
           </div>
