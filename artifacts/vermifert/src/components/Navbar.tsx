@@ -83,6 +83,7 @@ export default function Navbar() {
     { href: "/guide", label: t("nav_guide") },
     { href: "/consultation", label: t("nav_consultation") },
     { href: "/waste-collection", label: "من النفايات إلى السماد" },
+    { href: "/faq", label: lang === "ar" ? "الاستشارة الذكية" : lang === "fr" ? "Assistant IA" : "AI Assistant" },
   ];
 
   const PRODUCTS_DROPDOWN = [

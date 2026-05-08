@@ -40,6 +40,7 @@ import AdminSensors from "@/pages/AdminSensors";
 import PaymentResult from "@/pages/PaymentResult";
 import Subscriptions from "@/pages/Subscriptions";
 import AdminSubscriptions from "@/pages/AdminSubscriptions";
+import FAQ from "@/pages/FAQ";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ function Router() {
       <Route path="/admin/subscriptions" component={AdminSubscriptions} />
       <Route path="/donor/login" component={DonorAuth} />
       <Route path="/donor/dashboard" component={DonorDashboard} />
+      <Route path="/faq" component={FAQ} />
 
       <Route component={NotFound} />
     </Switch>

@@ -17,6 +17,7 @@ import rewardsRouter from "./rewards";
 import paymentsRouter from "./payments";
 import subscriptionsRouter from "./subscriptions";
 import notificationsRouter from "./notifications";
+import openaiRouter from "./openai";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(rewardsRouter);
 router.use(paymentsRouter);
 router.use(subscriptionsRouter);
 router.use(notificationsRouter);
+router.use(openaiRouter);
 
 export default router;

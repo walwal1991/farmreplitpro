@@ -14,7 +14,7 @@ export interface Product {
   price: number;
   /** e.g. kg, bag */
   unit: string;
-  weightKg?: number | null;
+  weightKg: number;
   imageUrl: string;
   stock: number;
   active: boolean;
