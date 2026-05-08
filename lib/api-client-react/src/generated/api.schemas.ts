@@ -21,6 +21,8 @@ export const ProductCategory = {
   liquid: "liquid",
   worms: "worms",
   equipment: "equipment",
+  substrate: "substrate",
+  kit: "kit",
 } as const;
 
 export interface Product {
@@ -30,7 +32,7 @@ export interface Product {
   price: number;
   /** e.g. kg, bag */
   unit: string;
-  weightKg: number;
+  weightKg?: number | null;
   imageUrl: string;
   stock: number;
   active: boolean;
@@ -46,6 +48,8 @@ export const ProductInputCategory = {
   liquid: "liquid",
   worms: "worms",
   equipment: "equipment",
+  substrate: "substrate",
+  kit: "kit",
 } as const;
 
 export interface ProductInput {
@@ -53,7 +57,7 @@ export interface ProductInput {
   description: string;
   price: number;
   unit: string;
-  weightKg: number;
+  weightKg?: number | null;
   imageUrl: string;
   stock: number;
   active?: boolean;

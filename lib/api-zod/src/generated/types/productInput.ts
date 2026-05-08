@@ -12,7 +12,7 @@ export interface ProductInput {
   description: string;
   price: number;
   unit: string;
-  weightKg: number;
+  weightKg?: number | null;
   imageUrl: string;
   stock: number;
   active?: boolean;

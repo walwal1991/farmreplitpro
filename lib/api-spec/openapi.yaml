@@ -424,15 +424,17 @@ components:
         description: { type: string }
         price: { type: number }
         unit: { type: string, description: "e.g. kg, bag" }
-        weightKg: { type: number }
+        weightKg:
+          type: number
+          nullable: true
         imageUrl: { type: string }
         stock: { type: integer }
         active: { type: boolean }
         category:
           type: string
-          enum: [solid, liquid, worms, equipment]
+          enum: [solid, liquid, worms, equipment, substrate, kit]
         createdAt: { type: string, format: date-time }
-      required: [id, name, description, price, unit, weightKg, imageUrl, stock, active, category, createdAt]
+      required: [id, name, description, price, unit, imageUrl, stock, active, category, createdAt]
     ProductInput:
       type: object
       properties:
@@ -440,14 +442,16 @@ components:
         description: { type: string }
         price: { type: number }
         unit: { type: string }
-        weightKg: { type: number }
+        weightKg:
+          type: number
+          nullable: true
         imageUrl: { type: string }
         stock: { type: integer }
         active: { type: boolean }
         category:
           type: string
-          enum: [solid, liquid, worms, equipment]
-      required: [name, description, price, unit, weightKg, imageUrl, stock]
+          enum: [solid, liquid, worms, equipment, substrate, kit]
+      required: [name, description, price, unit, imageUrl, stock]
 
     Order:
       type: object
