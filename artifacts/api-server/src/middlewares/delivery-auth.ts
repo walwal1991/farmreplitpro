@@ -16,7 +16,7 @@ export async function createDeliverySession(userId: number, token: string): Prom
 
 export async function getDeliverySessionUser(
   token: string | undefined,
-): Promise<{ id: number; username: string; name: string; role: string } | null> {
+): Promise<{ id: number; username: string; name: string; role: string; available: boolean } | null> {
   if (!token) return null;
   const rows = await db
     .select({ session: deliverySessionsTable, user: deliveryUsersTable })
@@ -31,7 +31,7 @@ export async function getDeliverySessionUser(
     return null;
   }
   if (!row.user.active) return null;
-  return { id: row.user.id, username: row.user.username, name: row.user.name, role: row.user.role };
+  return { id: row.user.id, username: row.user.username, name: row.user.name, role: row.user.role, available: row.user.available };
 }
 
 function extractToken(req: Request): string {

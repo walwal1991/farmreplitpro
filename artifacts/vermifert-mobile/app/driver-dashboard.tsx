@@ -65,11 +65,13 @@ export default function DriverDashboardScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [data, u] = await Promise.all([
+      const [data, me, u] = await Promise.all([
         deliveryReq<DeliveryOrder[]>("/api/delivery/orders"),
+        deliveryReq<{ available: boolean }>("/api/delivery/me"),
         AsyncStorage.getItem("driver_username"),
       ]);
       setOrders(data);
+      setAvailable(me.available);
       setUsername(u ?? "سائق");
     } catch (e: unknown) {
       const msg = (e as Error).message;
