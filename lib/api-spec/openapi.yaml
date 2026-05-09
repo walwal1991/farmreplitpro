@@ -517,6 +517,9 @@ components:
           enum: [sandy, clay, silt, loam, rocky, other]
         crop: { type: string }
         problem: { type: string }
+        imageUrl:
+          type: string
+          nullable: true
       required: [customerName, phone, soilType, crop, problem]
     ConsultationStatusUpdate:
       type: object

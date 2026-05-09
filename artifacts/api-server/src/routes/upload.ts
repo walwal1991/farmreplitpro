@@ -40,4 +40,18 @@ router.post(
   },
 );
 
+// Public upload for consultation images (no auth required)
+router.post(
+  "/upload/consultation-image",
+  upload.single("image"),
+  (req, res): void => {
+    if (!req.file) {
+      res.status(400).json({ error: "لم يتم اختيار صورة صالحة" });
+      return;
+    }
+    const url = `/api/uploads/${req.file.filename}`;
+    res.json({ url });
+  },
+);
+
 export default router;

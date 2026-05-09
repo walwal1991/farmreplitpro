@@ -30,6 +30,7 @@ router.post("/consultations", async (req, res): Promise<void> => {
       soilType: parsed.data.soilType,
       crop: parsed.data.crop,
       problem: parsed.data.problem,
+      imageUrl: (parsed.data as { imageUrl?: string | null }).imageUrl ?? null,
       status: "new",
     })
     .returning();

@@ -168,6 +168,7 @@ export interface ConsultationInput {
   soilType: ConsultationInputSoilType;
   crop: string;
   problem: string;
+  imageUrl?: string | null;
 }
 
 export type ConsultationStatusUpdateStatus =

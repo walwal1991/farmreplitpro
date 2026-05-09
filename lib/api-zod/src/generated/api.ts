@@ -229,6 +229,7 @@ export const CreateConsultationBody = zod.object({
   soilType: zod.enum(["sandy", "clay", "silt", "loam", "rocky", "other"]),
   crop: zod.string(),
   problem: zod.string(),
+  imageUrl: zod.string().nullish(),
 });
 
 export const ListConsultationsHeader = zod.object({

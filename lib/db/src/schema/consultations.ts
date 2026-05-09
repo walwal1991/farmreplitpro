@@ -7,6 +7,7 @@ export const consultationsTable = pgTable("consultations", {
   soilType: text("soil_type").notNull(),
   crop: text("crop").notNull(),
   problem: text("problem").notNull(),
+  imageUrl: text("image_url"),
   status: text("status").notNull().default("new"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateConsultation } from "@workspace/api-client-react";
 import {
-  CheckCircle2, Sprout, MessageCircle, Send, RefreshCw, User, Recycle, ArrowLeft,
+  CheckCircle2, Sprout, MessageCircle, Send, RefreshCw, User, ImagePlus, X,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -336,6 +336,34 @@ export default function Consultation() {
   const { t, dir } = useLang();
   const [consultSuccess, setConsultSuccess] = useState(false);
   const createConsultation = useCreateConsultation();
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImagePreview(URL.createObjectURL(file));
+    setImageUploading(true);
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      const res = await fetch(`${API}/api/upload/consultation-image`, { method: "POST", body: form });
+      if (res.ok) {
+        const { url } = await res.json();
+        setImageUrl(url);
+      }
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setImageUrl(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const consultationSchema = z.object({
     customerName: z.string().min(2, t("consult_err_name")),
@@ -351,7 +379,10 @@ export default function Consultation() {
   });
 
   const onSubmitConsult = (data: ConsultationForm) => {
-    createConsultation.mutate({ data }, { onSuccess: () => setConsultSuccess(true) });
+    createConsultation.mutate(
+      { data: { ...data, imageUrl: imageUrl ?? undefined } },
+      { onSuccess: () => setConsultSuccess(true) }
+    );
   };
 
   return (
@@ -473,7 +504,55 @@ export default function Consultation() {
                     )}
                   </div>
 
-                  <Button type="submit" size="lg" className="px-12 h-14 text-lg" disabled={createConsultation.isPending}>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <ImagePlus className="w-4 h-4 text-primary" />
+                      صورة النبات أو التربة
+                      <span className="text-xs text-muted-foreground font-normal">(اختياري)</span>
+                    </Label>
+
+                    {imagePreview ? (
+                      <div className="relative inline-block">
+                        <img
+                          src={imagePreview}
+                          alt="معاينة الصورة"
+                          className="h-40 w-auto max-w-full rounded-xl border border-border object-cover shadow-sm"
+                        />
+                        {imageUploading && (
+                          <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
+                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={removeImage}
+                          className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-white flex items-center justify-center shadow-md hover:bg-destructive/90 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full border-2 border-dashed border-border rounded-xl py-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors"
+                      >
+                        <ImagePlus className="w-7 h-7" />
+                        <span className="text-sm font-medium">انقر لإرفاق صورة</span>
+                        <span className="text-xs">JPG، PNG، WebP — حتى 5 ميغابايت</span>
+                      </button>
+                    )}
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+                  </div>
+
+                  <Button type="submit" size="lg" className="px-12 h-14 text-lg" disabled={createConsultation.isPending || imageUploading}>
                     {createConsultation.isPending ? t("consult_sending") : t("consult_send_btn")}
                   </Button>
                 </form>
