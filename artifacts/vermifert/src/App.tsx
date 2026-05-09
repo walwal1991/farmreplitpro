@@ -41,6 +41,7 @@ import PaymentResult from "@/pages/PaymentResult";
 import Subscriptions from "@/pages/Subscriptions";
 import AdminSubscriptions from "@/pages/AdminSubscriptions";
 import FAQ from "@/pages/FAQ";
+import ChatWidget from "@/components/ChatWidget";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ function App() {
             </WouterRouter>
             <CartDrawer />
             <Toaster />
+            <ChatWidget />
           </CartProvider>
         </TooltipProvider>
       </QueryClientProvider>
