@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
-import { CheckCircle2, Package, Leaf, BookOpen, HeadphonesIcon, ArrowLeft, Loader2, X } from "lucide-react";
+import { CheckCircle2, Package, Leaf, BookOpen, HeadphonesIcon, Loader2, X, Gift } from "lucide-react";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -22,6 +22,7 @@ interface Plan {
   includes_plan: boolean;
   includes_consultation: boolean;
   color: string;
+  billing_cycle: string;
 }
 
 const CROP_OPTIONS_AR = [
@@ -41,38 +42,66 @@ const WILAYA_OPTIONS = [
 ];
 
 function PlanCard({
-  plan, lang, onSubscribe,
+  plan, lang, onSubscribe, isAnnual,
 }: {
   plan: Plan;
   lang: string;
   onSubscribe: (plan: Plan) => void;
+  isAnnual: boolean;
 }) {
   const name = lang === "ar" ? plan.name_ar : lang === "fr" ? plan.name_fr : plan.name;
   const desc = lang === "ar" ? plan.description_ar : lang === "fr" ? plan.description_fr : plan.description;
 
-  const colorMap: Record<string, { border: string; badge: string; btn: string }> = {
-    green:  { border: "border-green-500",  badge: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",  btn: "bg-green-600 hover:bg-green-700" },
-    amber:  { border: "border-amber-500",  badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",  btn: "bg-amber-600 hover:bg-amber-700" },
-    emerald:{ border: "border-emerald-600",badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300", btn: "bg-emerald-700 hover:bg-emerald-800" },
+  const colorMap: Record<string, { border: string; badge: string; btn: string; savings: string }> = {
+    green:  { border: "border-green-500",  badge: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",  btn: "bg-green-600 hover:bg-green-700", savings: "bg-green-500" },
+    amber:  { border: "border-amber-500",  badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",  btn: "bg-amber-600 hover:bg-amber-700", savings: "bg-amber-500" },
+    emerald:{ border: "border-emerald-600",badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300", btn: "bg-emerald-700 hover:bg-emerald-800", savings: "bg-emerald-600" },
   };
   const c = colorMap[plan.color] ?? colorMap.green;
+
+  const monthlyEquiv = isAnnual ? Math.round(plan.price_per_month / 10) : plan.price_per_month;
 
   const features = [
     { label: `${plan.fertilizer_kg} كغ سماد ديدان عضوي/شهر`, always: true },
     { label: "نصائح زراعية شهرية", show: plan.includes_tips },
     { label: "خطة زراعية مخصصة لمحصولك", show: plan.includes_plan },
     { label: "استشارة زراعية أولوية", show: plan.includes_consultation },
+    { label: "شهران مجانًا (12 شهر بسعر 10)", show: isAnnual, always: false },
   ];
+
+  const displayName = isAnnual
+    ? name.replace(/ — سنوي$/, "").replace(/ Annual$/, "").replace(/ Annuelle$/, "")
+    : name;
 
   return (
     <div className={`bg-card border-2 ${c.border} rounded-3xl p-7 flex flex-col gap-5 shadow-sm hover:shadow-md transition-shadow relative`}>
+      {isAnnual && (
+        <div className={`absolute -top-3 left-1/2 -translate-x-1/2 ${c.savings} text-white text-xs font-bold px-4 py-1 rounded-full flex items-center gap-1.5 whitespace-nowrap`}>
+          <Gift className="w-3.5 h-3.5" />
+          وفّر شهرين مجانًا
+        </div>
+      )}
       <div>
-        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${c.badge}`}>{name}</span>
+        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${c.badge}`}>{displayName}</span>
         <p className="text-muted-foreground text-sm mt-3 leading-relaxed">{desc}</p>
       </div>
       <div className="flex items-end gap-1">
-        <span className="text-4xl font-bold text-foreground">{plan.price_per_month.toLocaleString("ar-DZ")}</span>
-        <span className="text-muted-foreground mb-1">د.ج / شهر</span>
+        {isAnnual ? (
+          <div className="flex flex-col">
+            <div className="flex items-end gap-1">
+              <span className="text-4xl font-bold text-foreground">{plan.price_per_month.toLocaleString("ar-DZ")}</span>
+              <span className="text-muted-foreground mb-1">د.ج / سنة</span>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              ({monthlyEquiv.toLocaleString("ar-DZ")} د.ج/شهر)
+            </span>
+          </div>
+        ) : (
+          <>
+            <span className="text-4xl font-bold text-foreground">{plan.price_per_month.toLocaleString("ar-DZ")}</span>
+            <span className="text-muted-foreground mb-1">د.ج / شهر</span>
+          </>
+        )}
       </div>
       <ul className="space-y-2.5 flex-1">
         {features.filter(f => f.always || f.show).map((f, i) => (
@@ -93,8 +122,9 @@ function PlanCard({
 }
 
 export default function Subscriptions() {
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [allPlans, setAllPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
@@ -106,9 +136,11 @@ export default function Subscriptions() {
   useEffect(() => {
     fetch(`${API}/api/subscription-plans`)
       .then(r => r.json())
-      .then(setPlans)
+      .then(setAllPlans)
       .finally(() => setLoading(false));
   }, []);
+
+  const plans = allPlans.filter(p => (p.billing_cycle ?? "monthly") === billingCycle);
 
   function handleSubscribe(plan: Plan) {
     const token = localStorage.getItem("customerToken");
@@ -144,7 +176,6 @@ export default function Subscriptions() {
         return;
       }
       if (paymentMethod === "online" && data.checkoutUrl) {
-        // Redirect to Chargily payment
         setSelectedPlan(null);
         window.open(data.checkoutUrl, "_blank");
         toast({ title: "🔗 جاري فتح صفحة الدفع...", description: "أكمل الدفع في النافذة الجديدة ثم ارجع للوحة التحكم" });
@@ -159,6 +190,9 @@ export default function Subscriptions() {
     }
   }
 
+  const isAnnual = billingCycle === "annual";
+  const selectedIsAnnual = selectedPlan?.billing_cycle === "annual";
+
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
       <Navbar />
@@ -167,7 +201,7 @@ export default function Subscriptions() {
       <section className="bg-gradient-to-b from-green-50 to-background dark:from-green-950/20 py-16 px-4 text-center">
         <div className="inline-flex items-center gap-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm font-medium px-4 py-1.5 rounded-full mb-4">
           <Leaf className="w-4 h-4" />
-          اشتراك شهري للفلاحين
+          اشتراك للفلاحين
         </div>
         <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
           صندوقك الزراعي كل شهر 📦
@@ -175,6 +209,33 @@ export default function Subscriptions() {
         <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
           استلم سمادك العضوي مع نصائح زراعية مخصصة لمحصولك — مباشرةً إلى بابك كل شهر
         </p>
+
+        {/* Billing cycle toggle */}
+        <div className="mt-8 inline-flex items-center bg-muted rounded-2xl p-1 gap-1">
+          <button
+            onClick={() => setBillingCycle("monthly")}
+            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              billingCycle === "monthly"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            شهري
+          </button>
+          <button
+            onClick={() => setBillingCycle("annual")}
+            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+              billingCycle === "annual"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            سنوي
+            <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+              وفّر شهرين
+            </span>
+          </button>
+        </div>
       </section>
 
       {/* Plans */}
@@ -186,9 +247,9 @@ export default function Subscriptions() {
         ) : plans.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">لا توجد خطط متاحة حالياً</div>
         ) : (
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6 mt-4">
             {plans.map(p => (
-              <PlanCard key={p.id} plan={p} lang={lang} onSubscribe={handleSubscribe} />
+              <PlanCard key={p.id} plan={p} lang={lang} onSubscribe={handleSubscribe} isAnnual={isAnnual} />
             ))}
           </div>
         )}
@@ -302,12 +363,31 @@ export default function Subscriptions() {
                   className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background resize-none"
                 />
               </div>
-              <div className="bg-muted/50 rounded-xl p-4 text-sm">
+              <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-1.5">
+                {selectedIsAnnual ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">المبلغ السنوي</span>
+                      <span className="font-bold">{selectedPlan.price_per_month.toLocaleString("ar-DZ")} د.ج</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">يعادل شهرياً</span>
+                      <span className="font-semibold">{Math.round(selectedPlan.price_per_month / 10).toLocaleString("ar-DZ")} د.ج/شهر</span>
+                    </div>
+                    <div className="flex justify-between text-green-600 font-semibold">
+                      <span>توفير</span>
+                      <span>{(Math.round(selectedPlan.price_per_month / 10) * 2).toLocaleString("ar-DZ")} د.ج (شهران مجانًا)</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">السعر الشهري</span>
+                      <span className="font-bold">{selectedPlan.price_per_month.toLocaleString("ar-DZ")} د.ج</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">السعر الشهري</span>
-                  <span className="font-bold">{selectedPlan.price_per_month.toLocaleString("ar-DZ")} د.ج</span>
-                </div>
-                <div className="flex justify-between mt-1">
                   <span className="text-muted-foreground">كمية السماد</span>
                   <span className="font-semibold">{selectedPlan.fertilizer_kg} كغ / شهر</span>
                 </div>

@@ -66,7 +66,8 @@ router.get("/subscription-plans", async (_req, res): Promise<void> => {
   const rows = await db.execute(sql`
     SELECT id, name, name_ar, name_fr, description, description_ar, description_fr,
            price_per_month, fertilizer_kg, includes_tips, includes_plan,
-           includes_consultation, color
+           includes_consultation, color,
+           COALESCE(billing_cycle, 'monthly') AS billing_cycle
     FROM subscription_plans WHERE active = true ORDER BY price_per_month ASC
   `);
   res.json(rows.rows);
@@ -87,12 +88,13 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
   }
 
   const planRows = await db.execute(sql`
-    SELECT id, name_ar, price_per_month, fertilizer_kg, active
+    SELECT id, name_ar, price_per_month, fertilizer_kg, active,
+           COALESCE(billing_cycle, 'monthly') AS billing_cycle
     FROM subscription_plans WHERE id = ${planId} AND active = true LIMIT 1
   `);
   if (!planRows.rows.length) { res.status(404).json({ error: "الخطة غير موجودة" }); return; }
   const plan = planRows.rows[0] as {
-    id: number; name_ar: string; price_per_month: number; fertilizer_kg: number;
+    id: number; name_ar: string; price_per_month: number; fertilizer_kg: number; billing_cycle: string;
   };
 
   const existing = await db.execute(sql`
@@ -101,8 +103,13 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
   `);
   if (existing.rows.length) { res.status(409).json({ error: "أنت مشترك بالفعل في هذه الخطة" }); return; }
 
+  const isAnnual = plan.billing_cycle === 'annual';
   const nextRenewal = new Date();
-  nextRenewal.setMonth(nextRenewal.getMonth() + 1);
+  if (isAnnual) {
+    nextRenewal.setFullYear(nextRenewal.getFullYear() + 1);
+  } else {
+    nextRenewal.setMonth(nextRenewal.getMonth() + 1);
+  }
 
   const initialStatus = paymentMethod === "cod" ? "active" : "pending_payment";
   const initialPaymentStatus = paymentMethod === "cod" ? "cod" : "awaiting";
@@ -134,30 +141,40 @@ router.post("/subscriptions", requireCustomer, async (req, res): Promise<void> =
       VALUES (${id}, ${monthLabel}, 'preparing', ${firstTracking})
     `);
 
+    // For annual plans, the stored price_per_month is the annual total — use monthly equivalent for each order
+    const monthlyPrice = isAnnual ? Math.round(plan.price_per_month / 10) : plan.price_per_month;
+
     // Auto-create the first month's order (reuse same tracking number)
     await createOrderForSubscription({
       id, customer_id: customer.id, customer_name: customer.name,
       customer_phone: customer.phone ?? "",
-      plan_name: plan.name_ar, price_at_subscription: plan.price_per_month,
+      plan_name: plan.name_ar, price_at_subscription: monthlyPrice,
       fertilizer_kg: plan.fertilizer_kg,
       delivery_address: deliveryAddress, delivery_city: deliveryCity,
       crop_type: cropType ?? null, notes: notes ?? null, payment_method: paymentMethod,
     }, monthLabel, firstTracking);
 
-    res.status(201).json({ id, paymentMethod: "cod", message: "تم الاشتراك بنجاح! سيتم إعداد الصندوق الأول وإرساله قريباً." });
+    const msg = isAnnual
+      ? "تم الاشتراك السنوي بنجاح! ستستلم صندوقك كل شهر لمدة 12 شهراً."
+      : "تم الاشتراك بنجاح! سيتم إعداد الصندوق الأول وإرساله قريباً.";
+    res.status(201).json({ id, paymentMethod: "cod", message: msg });
   } else {
     const siteUrl = getSiteUrl();
     const basePath = process.env.BASE_PATH ?? "";
     try {
+      const checkoutAmount = Math.round(plan.price_per_month * 100);
+      const checkoutDescription = isAnnual
+        ? `اشتراك ${plan.name_ar} — 12 شهراً (شهران مجانًا)`
+        : `اشتراك ${plan.name_ar} — الشهر الأول`;
       const checkout = await chargily.createCheckout({
-        amount: Math.round(plan.price_per_month * 100),
+        amount: checkoutAmount,
         currency: "dzd",
         payment_method: "edahabia",
         success_url: `${siteUrl}${basePath}/payment/success?subscription=${id}`,
         failure_url: `${siteUrl}${basePath}/payment/failed?subscription=${id}`,
         webhook_endpoint: `${siteUrl}/api/payments/webhook`,
         locale: "ar",
-        description: `اشتراك ${plan.name_ar} — الشهر الأول`,
+        description: checkoutDescription,
         metadata: { subscriptionId: String(id) },
       });
       await db.execute(sql`
