@@ -219,7 +219,7 @@ export default function Home() {
             <div>
               <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary mb-4">
                 <Sprout className="w-6 h-6" />
-                <span>Vermifert</span>
+                <span>VermiGold</span>
               </Link>
               <p className="text-muted-foreground">{t("home_footer_desc")}</p>
             </div>
@@ -234,14 +234,14 @@ export default function Home() {
             <div>
               <h4 className="font-bold mb-4">{t("home_footer_contact")}</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li>info@vermifert.com</li>
+                <li>info@vermigold.com</li>
                 <li>+213 12 34 56 78</li>
                 <li>{t("home_footer_country")}</li>
               </ul>
             </div>
           </div>
           <div className="border-t border-border mt-12 pt-8 text-center text-muted-foreground text-sm">
-            © {new Date().getFullYear()} Vermifert. {t("home_footer_rights")}.
+            © {new Date().getFullYear()} VermiGold. {t("home_footer_rights")}.
           </div>
         </div>
       </footer>

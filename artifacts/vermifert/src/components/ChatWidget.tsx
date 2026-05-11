@@ -130,7 +130,7 @@ export default function ChatWidget() {
                 <Bot className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-sm font-bold leading-none">مساعد Vermifert</p>
+                <p className="text-sm font-bold leading-none">مساعد VermiGold</p>
                 <p className="text-[11px] opacity-75 mt-0.5">متاح دائماً للمساعدة</p>
               </div>
             </div>

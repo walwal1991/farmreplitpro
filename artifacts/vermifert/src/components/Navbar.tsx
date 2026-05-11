@@ -277,7 +277,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-3">
           <div className={`leading-tight ${dir === "rtl" ? "text-right" : "text-left"}`}>
             <div className={`flex items-baseline gap-1 ${dir === "rtl" ? "justify-end" : "justify-start"}`}>
-              <span className="text-xl font-extrabold text-primary">Vermifert</span>
+              <span className="text-xl font-extrabold text-primary">VermiGold</span>
             </div>
             <div className="text-[11px] text-muted-foreground whitespace-nowrap">
               {lang === "ar" ? "نحو تربة أفضل... وبيئة أنظف" : lang === "fr" ? "Vers une meilleure terre" : "Towards Better Soil"}
