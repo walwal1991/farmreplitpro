@@ -136,7 +136,8 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
               crop_type: string | null; notes: string | null;
             };
             const productName = `${s.plan_name} — ${monthLabel}`;
-            const orderNotes = [`اشتراك شهري #${s.id}`, s.crop_type ? `المحصول: ${s.crop_type}` : null, s.notes].filter(Boolean).join(" | ");
+            const subType = s.plan_name.includes("سنوي") ? "اشتراك سنوي" : "اشتراك شهري";
+            const orderNotes = [`${subType} #${s.id}`, s.crop_type ? `المحصول: ${s.crop_type}` : null, s.notes].filter(Boolean).join(" | ");
             await db.execute(sql`
               INSERT INTO orders
                 (customer_name, phone, address, city, product_name, unit_price, quantity,

@@ -37,8 +37,9 @@ async function createOrderForSubscription(sub: {
 }, monthLabel: string, presetTracking?: string): Promise<{ orderId: number; tracking: string }> {
   const productName = `${sub.plan_name} — ${monthLabel}`;
   const trackingNumber = presetTracking ?? genTracking();
+  const subType = sub.plan_name.includes("سنوي") ? "اشتراك سنوي" : "اشتراك شهري";
   const orderNotes = [
-    `اشتراك شهري #${sub.id}`,
+    `${subType} #${sub.id}`,
     sub.crop_type ? `المحصول: ${sub.crop_type}` : null,
     sub.notes ?? null,
   ].filter(Boolean).join(" | ");

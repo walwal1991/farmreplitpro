@@ -537,7 +537,7 @@ export default function CustomerDashboard() {
                         </span>
                         {order.subscriptionId && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                            📦 اشتراك شهري
+                            📦 {order.productName?.includes("سنوي") ? "اشتراك سنوي" : "اشتراك شهري"}
                           </span>
                         )}
                       </div>

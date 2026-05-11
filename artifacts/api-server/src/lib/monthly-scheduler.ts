@@ -48,8 +48,9 @@ export async function autoCreateMonthlyDeliveries(): Promise<void> {
       VALUES (${s.id}, ${monthLabel}, 'preparing', ${tracking})
     `);
     const productName = `${s.plan_name} — ${monthLabel}`;
+    const subType = s.plan_name.includes("سنوي") ? "اشتراك سنوي" : "اشتراك شهري";
     const orderNotes = [
-      `اشتراك شهري #${s.id}`,
+      `${subType} #${s.id}`,
       s.crop_type ? `المحصول: ${s.crop_type}` : null,
       s.notes ?? null,
     ].filter(Boolean).join(" | ");
