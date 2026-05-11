@@ -143,8 +143,8 @@ router.post("/orders/cart", async (req, res): Promise<void> => {
       return;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      await db.execute(sql`UPDATE orders SET payment_method = 'cod' WHERE id = ${orderId}`);
-      res.status(201).json({ id: orderId, trackingNumber, discountAmount, discountCodeUsed, chargilyError: msg });
+      await db.execute(sql`DELETE FROM orders WHERE id = ${orderId}`);
+      res.status(502).json({ error: `فشل الاتصال ببوابة الدفع: ${msg}` });
       return;
     }
   }
@@ -270,9 +270,8 @@ router.post("/orders", async (req, res): Promise<void> => {
       return;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      // Fall back to COD if Chargily fails
-      await db.execute(sql`UPDATE orders SET payment_method = 'cod' WHERE id = ${orderId}`);
-      res.status(201).json({ id: orderId, trackingNumber, discountAmount, discountCodeUsed, chargilyError: msg });
+      await db.execute(sql`DELETE FROM orders WHERE id = ${orderId}`);
+      res.status(502).json({ error: `فشل الاتصال ببوابة الدفع: ${msg}` });
       return;
     }
   }
