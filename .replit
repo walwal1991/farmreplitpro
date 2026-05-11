@@ -51,6 +51,7 @@ externalPort = 3002
 
 [userenv.shared]
 ADMIN_PASSWORD = "admin123"
+CHARGILY_KEY = "test_sk_NmtNeNBXiYhGiTEoXHILKCe3Z8FqXTaDZBikDrUz"
 
 [nix]
 channel = "stable-25_05"

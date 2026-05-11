@@ -7,7 +7,7 @@ import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
-const CHARGILY_API_KEY = process.env.CHARGILY_API_KEY ?? "";
+const CHARGILY_API_KEY = process.env.CHARGILY_KEY ?? process.env.CHARGILY_API_KEY ?? "";
 const IS_LIVE = !CHARGILY_API_KEY.startsWith("test_");
 
 const chargily = new ChargilyClient({

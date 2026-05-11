@@ -12,7 +12,7 @@ import {
 import { requireAdmin } from "../middlewares/admin-auth";
 import { getCustomerSessionUser } from "../middlewares/customer-auth";
 
-const CHARGILY_API_KEY = process.env.CHARGILY_API_KEY ?? "";
+const CHARGILY_API_KEY = process.env.CHARGILY_KEY ?? process.env.CHARGILY_API_KEY ?? "";
 const IS_LIVE = !CHARGILY_API_KEY.startsWith("test_");
 const chargilyClient = CHARGILY_API_KEY
   ? new ChargilyClient({ api_key: CHARGILY_API_KEY, mode: IS_LIVE ? "live" : "test" })

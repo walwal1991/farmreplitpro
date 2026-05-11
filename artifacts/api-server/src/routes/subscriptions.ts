@@ -7,7 +7,7 @@ import { ChargilyClient } from "@chargily/chargily-pay";
 
 const router: IRouter = Router();
 
-const CHARGILY_API_KEY = process.env.CHARGILY_API_KEY ?? "";
+const CHARGILY_API_KEY = process.env.CHARGILY_KEY ?? process.env.CHARGILY_API_KEY ?? "";
 const IS_LIVE = !CHARGILY_API_KEY.startsWith("test_");
 const chargily = new ChargilyClient({ api_key: CHARGILY_API_KEY, mode: IS_LIVE ? "live" : "test" });
 
