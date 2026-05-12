@@ -5,7 +5,7 @@ import OrderTracker from "@/components/OrderTracker";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
-import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag, GraduationCap, ExternalLink, MessageSquare, Shield, Gift, BadgePercent, Share2, Users, CalendarCheck, Leaf, MapPin } from "lucide-react";
+import { Package, LogOut, Search, Copy, ChevronDown, ChevronUp, ShoppingBag, GraduationCap, ExternalLink, MessageSquare, Shield, Gift, BadgePercent, Share2, Users, CalendarCheck, Leaf, MapPin, Recycle, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { ar, fr, enUS } from "date-fns/locale";
 
@@ -68,6 +68,10 @@ export default function CustomerDashboard() {
   }[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [bioWasteRequests, setBioWasteRequests] = useState<{
+    id: number; request_code: string; waste_type: string; estimated_weight_kg: string;
+    total_payout: string; actual_payout: string | null; status: string; pickup_date: string | null; created_at: string;
+  }[]>([]);
 
   const token = localStorage.getItem("customerToken");
   const userStr = localStorage.getItem("customerUser");
@@ -95,7 +99,7 @@ export default function CustomerDashboard() {
     if (!token) return;
     setLoading(true);
     try {
-      const [ordersRes, enrollmentsRes, messagesRes, referralRes, subsRes] = await Promise.all([
+      const [ordersRes, enrollmentsRes, messagesRes, referralRes, subsRes, bioWasteRes] = await Promise.all([
         fetch(`${API}/api/customer/orders`, { headers: { "x-customer-token": token } }),
         fetch(`${API}/api/customer/enrollments`, { headers: { "x-customer-token": token } }),
         fetch(`${API}/api/contact/session`, {
@@ -105,25 +109,21 @@ export default function CustomerDashboard() {
         }),
         fetch(`${API}/api/customer/referral`, { headers: { "x-customer-token": token } }),
         fetch(`${API}/api/customer/subscriptions`, { headers: { "x-customer-token": token } }),
+        fetch(`${API}/api/customer/bio-waste`, { headers: { "x-customer-token": token } }),
       ]);
       if (ordersRes.status === 401) { setLocation("/customer/login"); return; }
       const ordersData = await ordersRes.json();
       setOrders(ordersData);
-      if (enrollmentsRes.ok) {
-        setEnrollments(await enrollmentsRes.json());
-      }
-      if (messagesRes.ok) {
-        setMessages(await messagesRes.json());
-      }
+      if (enrollmentsRes.ok) setEnrollments(await enrollmentsRes.json());
+      if (messagesRes.ok) setMessages(await messagesRes.json());
       if (referralRes.ok) {
         const refData = await referralRes.json();
         setReferralCode(refData.referralCode ?? "");
         setCoupons(refData.coupons ?? []);
         setTotalReferrals(refData.totalReferrals ?? 0);
       }
-      if (subsRes.ok) {
-        setSubscriptions(await subsRes.json());
-      }
+      if (subsRes.ok) setSubscriptions(await subsRes.json());
+      if (bioWasteRes.ok) setBioWasteRequests(await bioWasteRes.json());
     } finally { setLoading(false); }
   }, [token, setLocation]);
 
@@ -490,6 +490,56 @@ export default function CustomerDashboard() {
                         )}
                       </div>
                     )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ── Bio Waste Requests ────────────────────────────────────────── */}
+        {bioWasteRequests.length > 0 && (
+          <section className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Recycle className="w-5 h-5 text-amber-600" />
+                {lang === "ar" ? "طلبات بيع المخلفات" : lang === "fr" ? "Ventes de déchets" : "Bio Waste Sales"}
+                <span className="text-sm font-normal text-muted-foreground">({bioWasteRequests.length})</span>
+              </h2>
+              <a href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/bio-waste`} className="text-xs text-primary hover:underline">
+                + {lang === "ar" ? "طلب جديد" : "New request"}
+              </a>
+            </div>
+            <div className="space-y-3">
+              {bioWasteRequests.map(req => {
+                const BW_STATUS: Record<string, { label: string; color: string }> = {
+                  pending:   { label: lang === "ar" ? "في الانتظار"    : "Pending",   color: "bg-yellow-100 text-yellow-700" },
+                  approved:  { label: lang === "ar" ? "موافق عليه"    : "Approved",  color: "bg-blue-100 text-blue-700" },
+                  scheduled: { label: lang === "ar" ? "مجدول"         : "Scheduled", color: "bg-indigo-100 text-indigo-700" },
+                  collected: { label: lang === "ar" ? "تم الاستلام"   : "Collected", color: "bg-green-100 text-green-700" },
+                  paid:      { label: lang === "ar" ? "تم الدفع ✓"   : "Paid ✓",    color: "bg-emerald-100 text-emerald-700" },
+                  rejected:  { label: lang === "ar" ? "مرفوض"         : "Rejected",  color: "bg-red-100 text-red-700" },
+                };
+                const si = BW_STATUS[req.status] ?? { label: req.status, color: "bg-muted text-muted-foreground" };
+                return (
+                  <div key={req.id} className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center shrink-0 text-xl">♻️</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <code className="font-mono text-xs font-bold text-amber-700 dark:text-amber-400">{req.request_code}</code>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${si.color}`}>{si.label}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3">
+                        <span>{req.estimated_weight_kg} كغ</span>
+                        <span className="text-green-600 font-semibold">
+                          {req.actual_payout
+                            ? `${parseInt(req.actual_payout).toLocaleString("ar-DZ")} د.ج (فعلي)`
+                            : `${parseInt(req.total_payout ?? "0").toLocaleString("ar-DZ")} د.ج (تقديري)`}
+                        </span>
+                        {req.pickup_date && <span>📅 {req.pickup_date}</span>}
+                      </div>
+                    </div>
+                    <DollarSign className="w-4 h-4 text-amber-500 shrink-0" />
                   </div>
                 );
               })}

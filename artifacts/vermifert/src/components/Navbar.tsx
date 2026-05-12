@@ -83,6 +83,7 @@ export default function Navbar() {
     { href: "/guide", label: t("nav_guide") },
     { href: "/consultation", label: t("nav_consultation") },
     { href: "/waste-collection", label: "من النفايات إلى السماد" },
+    { href: "/bio-waste", label: lang === "ar" ? "بيع مخلفاتك ♻️" : lang === "fr" ? "Vendre vos déchets" : "Sell Bio Waste" },
   ];
 
   const PRODUCTS_DROPDOWN = [

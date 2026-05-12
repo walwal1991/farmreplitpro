@@ -40,6 +40,8 @@ import AdminSensors from "@/pages/AdminSensors";
 import PaymentResult from "@/pages/PaymentResult";
 import Subscriptions from "@/pages/Subscriptions";
 import AdminSubscriptions from "@/pages/AdminSubscriptions";
+import BioWasteMarketplace from "@/pages/BioWasteMarketplace";
+import AdminBioWaste from "@/pages/AdminBioWaste";
 import ChatWidget from "@/components/ChatWidget";
 
 const queryClient = new QueryClient();
@@ -83,6 +85,8 @@ function Router() {
       <Route path="/payment/failed" component={() => <PaymentResult type="failed" />} />
       <Route path="/subscriptions" component={Subscriptions} />
       <Route path="/admin/subscriptions" component={AdminSubscriptions} />
+      <Route path="/bio-waste" component={BioWasteMarketplace} />
+      <Route path="/admin/bio-waste" component={AdminBioWaste} />
       <Route path="/donor/login" component={DonorAuth} />
       <Route path="/donor/dashboard" component={DonorDashboard} />
       <Route component={NotFound} />

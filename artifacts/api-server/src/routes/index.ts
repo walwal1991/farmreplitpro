@@ -18,6 +18,7 @@ import paymentsRouter from "./payments";
 import subscriptionsRouter from "./subscriptions";
 import notificationsRouter from "./notifications";
 import openaiRouter from "./openai";
+import bioWasteRouter from "./bio-waste";
 
 const router: IRouter = Router();
 
@@ -40,5 +41,6 @@ router.use(paymentsRouter);
 router.use(subscriptionsRouter);
 router.use(notificationsRouter);
 router.use(openaiRouter);
+router.use(bioWasteRouter);
 
 export default router;

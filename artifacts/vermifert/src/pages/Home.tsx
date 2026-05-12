@@ -212,6 +212,32 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Bio Waste CTA */}
+      <section className="py-16 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 border-t border-border/50">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="flex flex-col md:flex-row items-center gap-8 bg-gradient-to-r from-amber-700 to-yellow-600 rounded-3xl p-8 text-white">
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-full px-3 py-1 text-xs font-medium mb-4">
+                ♻️ سوق جديد
+              </div>
+              <h2 className="text-2xl font-extrabold mb-2">بيع مخلفاتك العضوية</h2>
+              <p className="text-white/80 text-sm leading-relaxed mb-4">
+                نشتري منك بقايا الطعام، القشور، المخلفات الزراعية وأكثر — بأسعار عادلة ونستلم منك أينما كنت.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4 text-xs">
+                {[["🍽️","بقايا طعام","5 د.ج/كغ"],["🥬","قشور","8 د.ج/كغ"],["☕","تفل القهوة","10 د.ج/كغ"]].map(([icon,label,price]) => (
+                  <span key={label} className="bg-white/15 border border-white/20 rounded-full px-3 py-1">{icon} {label} · {price}</span>
+                ))}
+              </div>
+              <Button asChild className="bg-white text-amber-800 hover:bg-white/90 font-bold">
+                <Link href="/bio-waste">اعرف أكثر وسجّل طلبك</Link>
+              </Button>
+            </div>
+            <div className="text-8xl hidden md:block">♻️</div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-card border-t border-border mt-auto">
         <div className="container mx-auto px-4 py-12">

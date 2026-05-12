@@ -15,6 +15,7 @@ import {
   HeartHandshake,
   Cpu,
   CalendarCheck,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NotificationBell from "./NotificationBell";
@@ -38,6 +39,7 @@ export default function AdminSidebar() {
     { href: "/admin/reviews", label: "التقييمات", icon: Star },
     { href: "/admin/enrollments", label: "تسجيلات الدورات", icon: GraduationCap },
     { href: "/admin/waste-collections", label: "جمع النفايات", icon: Leaf },
+    { href: "/admin/bio-waste", label: "سوق المخلفات", icon: ShoppingCart },
     { href: "/admin/donors", label: "المتبرعون", icon: HeartHandshake },
     { href: "/admin/sensors", label: "حساسات التربة (IoT)", icon: Cpu },
     { href: "/admin/subscriptions", label: "الاشتراكات الشهرية", icon: CalendarCheck },
