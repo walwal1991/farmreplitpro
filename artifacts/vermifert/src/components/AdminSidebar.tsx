@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -20,9 +21,32 @@ import {
 import { cn } from "@/lib/utils";
 import NotificationBell from "./NotificationBell";
 
+const API = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+
 export default function AdminSidebar() {
   const [location, setLocation] = useLocation();
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("adminToken") : null;
+  const [bioWastePending, setBioWastePending] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function fetchPending() {
+      try {
+        const res = await fetch(`${API}/api/admin/bio-waste/pending-count`, {
+          headers: { "x-admin-token": token! },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBioWastePending(data.count ?? 0);
+        }
+      } catch { /* ignore */ }
+    }
+
+    fetchPending();
+    const iv = setInterval(fetchPending, 30_000);
+    return () => clearInterval(iv);
+  }, [token]);
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
@@ -30,20 +54,20 @@ export default function AdminSidebar() {
   };
 
   const links = [
-    { href: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
-    { href: "/admin/products", label: "المنتجات", icon: Package },
-    { href: "/admin/orders", label: "الطلبات", icon: ShoppingBag },
-    { href: "/admin/consultations", label: "الاستشارات", icon: MessageSquare },
-    { href: "/admin/delivery", label: "حسابات التوصيل", icon: Truck },
-    { href: "/admin/customers", label: "العملاء", icon: Users },
-    { href: "/admin/reviews", label: "التقييمات", icon: Star },
-    { href: "/admin/enrollments", label: "تسجيلات الدورات", icon: GraduationCap },
-    { href: "/admin/waste-collections", label: "جمع النفايات", icon: Leaf },
-    { href: "/admin/bio-waste", label: "سوق المخلفات", icon: ShoppingCart },
-    { href: "/admin/donors", label: "المتبرعون", icon: HeartHandshake },
-    { href: "/admin/sensors", label: "حساسات التربة (IoT)", icon: Cpu },
-    { href: "/admin/subscriptions", label: "الاشتراكات الشهرية", icon: CalendarCheck },
-    { href: "/admin/change-password", label: "كلمة المرور", icon: KeyRound },
+    { href: "/admin",                  label: "لوحة التحكم",         icon: LayoutDashboard },
+    { href: "/admin/products",         label: "المنتجات",            icon: Package },
+    { href: "/admin/orders",           label: "الطلبات",             icon: ShoppingBag },
+    { href: "/admin/consultations",    label: "الاستشارات",          icon: MessageSquare },
+    { href: "/admin/delivery",         label: "حسابات التوصيل",      icon: Truck },
+    { href: "/admin/customers",        label: "العملاء",             icon: Users },
+    { href: "/admin/reviews",          label: "التقييمات",           icon: Star },
+    { href: "/admin/enrollments",      label: "تسجيلات الدورات",     icon: GraduationCap },
+    { href: "/admin/waste-collections",label: "جمع النفايات",        icon: Leaf },
+    { href: "/admin/bio-waste",        label: "سوق المخلفات",        icon: ShoppingCart, badge: bioWastePending },
+    { href: "/admin/donors",           label: "المتبرعون",           icon: HeartHandshake },
+    { href: "/admin/sensors",          label: "حساسات التربة (IoT)", icon: Cpu },
+    { href: "/admin/subscriptions",    label: "الاشتراكات الشهرية",  icon: CalendarCheck },
+    { href: "/admin/change-password",  label: "كلمة المرور",         icon: KeyRound },
   ];
 
   return (
@@ -59,6 +83,7 @@ export default function AdminSidebar() {
         {links.map((link) => {
           const Icon = link.icon;
           const isActive = location === link.href;
+          const badge = (link as any).badge ?? 0;
           return (
             <Link
               key={link.href}
@@ -70,8 +95,13 @@ export default function AdminSidebar() {
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
-              <Icon className="w-5 h-5" />
-              {link.label}
+              <Icon className="w-5 h-5 shrink-0" />
+              <span className="flex-1">{link.label}</span>
+              {badge > 0 && (
+                <span className="min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5 leading-none shadow-sm animate-pulse">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
             </Link>
           );
         })}

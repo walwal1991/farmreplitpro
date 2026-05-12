@@ -75,6 +75,15 @@ router.get("/customer/bio-waste", async (req, res): Promise<void> => {
   res.json(result.rows);
 });
 
+// ─── GET /api/admin/bio-waste/pending-count ───────────────────────────────
+router.get("/admin/bio-waste/pending-count", requireAdmin, async (_req, res): Promise<void> => {
+  const result = await db.execute(
+    sql`SELECT COUNT(*)::int AS count FROM bio_waste_purchases WHERE status = 'pending'`
+  );
+  const count = (result.rows[0] as { count: number }).count ?? 0;
+  res.json({ count });
+});
+
 // ─── GET /api/admin/bio-waste ──────────────────────────────────────────────
 router.get("/admin/bio-waste", requireAdmin, async (req, res): Promise<void> => {
   const status = req.query.status as string | undefined;
