@@ -224,7 +224,22 @@ export default function Navbar() {
 
         {/* Center nav links */}
         <div className="hidden md:flex items-center gap-7 text-[15px] font-medium">
-          {/* Products dropdown */}
+          {/* Home link first */}
+          {(() => {
+            const home = NAV_LINKS[0];
+            const active = location === home.href;
+            return (
+              <Link
+                key={home.href}
+                href={home.href}
+                className={active ? "text-primary border-b-2 border-primary pb-1" : "text-foreground/80 hover:text-primary transition-colors"}
+              >
+                {home.label}
+              </Link>
+            );
+          })()}
+
+          {/* Products dropdown — position 2 */}
           <div ref={dropRef} className="relative">
             <button
               onClick={() => setDropOpen((v) => !v)}
@@ -260,7 +275,8 @@ export default function Navbar() {
             )}
           </div>
 
-          {NAV_LINKS.map((l) => {
+          {/* Remaining nav links (skip Home which is already rendered) */}
+          {NAV_LINKS.slice(1).map((l) => {
             const active = location === l.href;
             return (
               <Link
