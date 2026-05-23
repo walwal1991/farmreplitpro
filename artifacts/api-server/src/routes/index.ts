@@ -19,6 +19,7 @@ import subscriptionsRouter from "./subscriptions";
 import notificationsRouter from "./notifications";
 import openaiRouter from "./openai";
 import bioWasteRouter from "./bio-waste";
+import backupRouter from "./backup";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(subscriptionsRouter);
 router.use(notificationsRouter);
 router.use(openaiRouter);
 router.use(bioWasteRouter);
+router.use(backupRouter);
 
 export default router;

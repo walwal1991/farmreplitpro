@@ -42,6 +42,7 @@ import Subscriptions from "@/pages/Subscriptions";
 import AdminSubscriptions from "@/pages/AdminSubscriptions";
 import BioWasteMarketplace from "@/pages/BioWasteMarketplace";
 import AdminBioWaste from "@/pages/AdminBioWaste";
+import AdminBackup from "@/pages/AdminBackup";
 import ChatWidget from "@/components/ChatWidget";
 
 const queryClient = new QueryClient();
@@ -87,6 +88,7 @@ function Router() {
       <Route path="/admin/subscriptions" component={AdminSubscriptions} />
       <Route path="/bio-waste" component={BioWasteMarketplace} />
       <Route path="/admin/bio-waste" component={AdminBioWaste} />
+      <Route path="/admin/backup" component={AdminBackup} />
       <Route path="/donor/login" component={DonorAuth} />
       <Route path="/donor/dashboard" component={DonorDashboard} />
       <Route component={NotFound} />

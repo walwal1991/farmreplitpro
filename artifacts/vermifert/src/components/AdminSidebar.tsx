@@ -17,6 +17,7 @@ import {
   Cpu,
   CalendarCheck,
   ShoppingCart,
+  DatabaseBackup,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NotificationBell from "./NotificationBell";
@@ -68,6 +69,7 @@ export default function AdminSidebar() {
     { href: "/admin/sensors",          label: "حساسات التربة (IoT)", icon: Cpu },
     { href: "/admin/subscriptions",    label: "الاشتراكات الشهرية",  icon: CalendarCheck },
     { href: "/admin/change-password",  label: "كلمة المرور",         icon: KeyRound },
+    { href: "/admin/backup",           label: "النسخ الاحتياطي",     icon: DatabaseBackup },
   ];
 
   return (
