@@ -61,8 +61,14 @@ function PlanCard({
 
   const monthlyEquiv = isAnnual ? Math.round(plan.price_per_month / 10) : plan.price_per_month;
 
+  const unit = plan.billing_cycle === "annual" ? "كغ" : "لتر";
+  const period = plan.billing_cycle === "annual" ? "سنة" : "شهر";
+  const fertLabel = plan.billing_cycle === "annual"
+    ? `${plan.fertilizer_kg} كغ سماد عضوي صلب / سنة`
+    : `${plan.fertilizer_kg} لتر سماد سائل عضوي / شهر`;
+
   const features = [
-    { label: `${plan.fertilizer_kg} كغ سماد ديدان عضوي/شهر`, always: true },
+    { label: fertLabel, always: true },
     { label: "نصائح زراعية شهرية", show: plan.includes_tips },
     { label: "خطة زراعية مخصصة لمحصولك", show: plan.includes_plan },
     { label: "استشارة زراعية أولوية", show: plan.includes_consultation },
@@ -389,7 +395,9 @@ export default function Subscriptions() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">كمية السماد</span>
-                  <span className="font-semibold">{selectedPlan.fertilizer_kg} كغ / شهر</span>
+                  <span className="font-semibold">
+                    {selectedPlan.fertilizer_kg} {selectedIsAnnual ? "كغ / سنة" : "لتر / شهر"}
+                  </span>
                 </div>
               </div>
               <Button type="submit" disabled={submitting} className="w-full py-5 text-base font-semibold">
