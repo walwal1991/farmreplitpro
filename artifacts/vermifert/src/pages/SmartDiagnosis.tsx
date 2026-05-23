@@ -960,8 +960,6 @@ export default function SmartDiagnosis() {
             <WeatherCard weather={weather} loading={weatherLoading} error={weatherError} />
           )}
 
-          {/* IoT Soil Moisture Widget */}
-          <IoTWidget apiBase={API} />
           </div>{/* end left column */}
 
           {/* Results + Irrigation */}
@@ -1058,12 +1056,6 @@ export default function SmartDiagnosis() {
               />
             )}
 
-            {/* Plant Growth Stages */}
-            <PlantGrowthStages
-              crop={crop}
-              selectedStage={growthStageIndex}
-              onSelectStage={(i) => { setGrowthStageIndex(i); setSubmitted(false); }}
-            />
           </div>
         </div>
       </main>
