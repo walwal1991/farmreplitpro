@@ -291,18 +291,8 @@ export default function Navbar() {
         </div>
 
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-3">
-          <div className={`leading-tight ${dir === "rtl" ? "text-right" : "text-left"}`}>
-            <div className={`flex items-baseline gap-1 ${dir === "rtl" ? "justify-end" : "justify-start"}`}>
-              <span className="text-xl font-extrabold text-primary">VermiGold</span>
-            </div>
-            <div className="text-[11px] text-muted-foreground whitespace-nowrap">
-              {lang === "ar" ? "نحو تربة أفضل... وبيئة أنظف" : lang === "fr" ? "Vers une meilleure terre" : "Towards Better Soil"}
-            </div>
-          </div>
-          <div className="w-11 h-11 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center text-primary shrink-0">
-            <Sprout className="w-6 h-6" />
-          </div>
+        <Link href="/" className="flex items-center">
+          <img src="/logo.png" alt="VermiGold DZ" className="h-14 w-auto object-contain" />
         </Link>
 
         {/* Mobile */}
