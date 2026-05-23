@@ -467,82 +467,92 @@ interface GrowthStage {
   tip: string;
   fertilizerTip: string;
   color: string;
+  solidMult: number;
+  liquidMult: number;
 }
 
 const GROWTH_STAGES: Record<string, GrowthStage[]> = {
   tomato: [
-    { icon: "🌱", name: "الإنبات", duration: "0–7 أيام", days: [0, 7], tip: "حافظ على رطوبة التربة المستمرة وحرارة 20–25°C", fertilizerTip: "لا تسميد في هذه المرحلة", color: "#86efac" },
-    { icon: "🌿", name: "الشتلة", duration: "7–21 يوم", days: [7, 21], tip: "ضوء كافٍ وري منتظم خفيف", fertilizerTip: "جرعة خفيفة من السماد السائل (50%)", color: "#4ade80" },
-    { icon: "🍃", name: "النمو الخضري", duration: "21–45 يوم", days: [21, 45], tip: "تقليم الأوراق الصفراء وتثبيت الساق", fertilizerTip: "✅ أفضل وقت لسماد الديدان الصلب — جرعة كاملة", color: "#22c55e" },
-    { icon: "🌸", name: "الإزهار", duration: "45–65 يوم", days: [45, 65], tip: "تجنّب الريّ الزائد للحفاظ على العقد", fertilizerTip: "سماد سائل خفيف كل أسبوعين", color: "#f9a8d4" },
-    { icon: "🍅", name: "الإثمار", duration: "65–95 يوم", days: [65, 95], tip: "ري منتظم لتفادي تشقق الثمار", fertilizerTip: "أوقف التسميد — ركّز على الريّ المنتظم", color: "#f97316" },
-    { icon: "🧺", name: "الحصاد", duration: "95–120 يوم", days: [95, 120], tip: "اقطف عند اكتمال اللون واليُسر", fertilizerTip: "بعد الحصاد: أضف سماد الديدان لتجديد التربة", color: "#ca8a04" },
+    { icon: "🌱", name: "الإنبات",      duration: "0–7 أيام",   days: [0,7],    tip: "حافظ على رطوبة التربة المستمرة وحرارة 20–25°C", fertilizerTip: "لا تسميد في هذه المرحلة",                        color: "#86efac", solidMult: 0,   liquidMult: 0   },
+    { icon: "🌿", name: "الشتلة",       duration: "7–21 يوم",   days: [7,21],   tip: "ضوء كافٍ وري منتظم خفيف",                        fertilizerTip: "جرعة خفيفة من السماد السائل (50%)",           color: "#4ade80", solidMult: 0,   liquidMult: 0.5 },
+    { icon: "🍃", name: "النمو الخضري", duration: "21–45 يوم",  days: [21,45],  tip: "تقليم الأوراق الصفراء وتثبيت الساق",             fertilizerTip: "✅ أفضل وقت للسماد الصلب — جرعة كاملة",        color: "#22c55e", solidMult: 1,   liquidMult: 1   },
+    { icon: "🌸", name: "الإزهار",      duration: "45–65 يوم",  days: [45,65],  tip: "تجنّب الريّ الزائد للحفاظ على العقد",             fertilizerTip: "سماد سائل خفيف كل أسبوعين",                  color: "#f9a8d4", solidMult: 0,   liquidMult: 0.5 },
+    { icon: "🍅", name: "الإثمار",      duration: "65–95 يوم",  days: [65,95],  tip: "ري منتظم لتفادي تشقق الثمار",                    fertilizerTip: "أوقف التسميد — ركّز على الريّ المنتظم",        color: "#f97316", solidMult: 0,   liquidMult: 0   },
+    { icon: "🧺", name: "الحصاد",       duration: "95–120 يوم", days: [95,120], tip: "اقطف عند اكتمال اللون واليُسر",                   fertilizerTip: "بعد الحصاد: أضف سماد الديدان لتجديد التربة", color: "#ca8a04", solidMult: 0.5, liquidMult: 0   },
   ],
   potato: [
-    { icon: "🌱", name: "الإنبات", duration: "0–14 يوم", days: [0, 14], tip: "غرس على عمق 10–15 سم", fertilizerTip: "لا تسميد قبل الإنبات", color: "#86efac" },
-    { icon: "🌿", name: "النمو الخضري", duration: "14–45 يوم", days: [14, 45], tip: "تلميع التراب حول الساق", fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة", color: "#22c55e" },
-    { icon: "🫚", name: "تكوين الدرنات", duration: "45–75 يوم", days: [45, 75], tip: "ري منتظم بدون تقطّع لتفادي التشويه", fertilizerTip: "سماد سائل خفيف كل ثلاثة أسابيع", color: "#a78bfa" },
-    { icon: "⭐", name: "النضج", duration: "75–100 يوم", days: [75, 100], tip: "قلّل الريّ تدريجياً عند اصفرار الأوراق", fertilizerTip: "أوقف التسميد", color: "#fbbf24" },
-    { icon: "🧺", name: "الحصاد", duration: "100–120 يوم", days: [100, 120], tip: "انتظر 2 أسبوع بعد جفاف الأوراق", fertilizerTip: "بعد الحصاد: سماد الديدان لتجديد التربة", color: "#ca8a04" },
+    { icon: "🌱", name: "الإنبات",        duration: "0–14 يوم",   days: [0,14],    tip: "غرس على عمق 10–15 سم",                           fertilizerTip: "لا تسميد قبل الإنبات",                        color: "#86efac", solidMult: 0,   liquidMult: 0   },
+    { icon: "🌿", name: "النمو الخضري",   duration: "14–45 يوم",  days: [14,45],   tip: "تلميع التراب حول الساق",                         fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة",           color: "#22c55e", solidMult: 1,   liquidMult: 1   },
+    { icon: "🫚", name: "تكوين الدرنات", duration: "45–75 يوم",  days: [45,75],   tip: "ري منتظم بدون تقطّع لتفادي التشويه",             fertilizerTip: "سماد سائل خفيف كل ثلاثة أسابيع",             color: "#a78bfa", solidMult: 0,   liquidMult: 0.5 },
+    { icon: "⭐", name: "النضج",          duration: "75–100 يوم", days: [75,100],  tip: "قلّل الريّ تدريجياً عند اصفرار الأوراق",         fertilizerTip: "أوقف التسميد",                                color: "#fbbf24", solidMult: 0,   liquidMult: 0   },
+    { icon: "🧺", name: "الحصاد",         duration: "100–120 يوم",days: [100,120], tip: "انتظر 2 أسبوع بعد جفاف الأوراق",                 fertilizerTip: "بعد الحصاد: سماد الديدان لتجديد التربة",      color: "#ca8a04", solidMult: 0.5, liquidMult: 0   },
   ],
   wheat: [
-    { icon: "🌱", name: "الإنبات", duration: "0–10 أيام", days: [0, 10], tip: "رطوبة مستمرة وبذر على عمق 3–5 سم", fertilizerTip: "لا تسميد — انتظر الإنبات", color: "#86efac" },
-    { icon: "🌿", name: "التفريع", duration: "10–30 يوم", days: [10, 30], tip: "ري خفيف ومنتظم", fertilizerTip: "✅ سماد الديدان الصلب — الجرعة الأولى", color: "#4ade80" },
-    { icon: "🍃", name: "النمو الخضري", duration: "30–60 يوم", days: [30, 60], tip: "مراقبة الآفات وتطبيق وقائي", fertilizerTip: "سماد سائل لدعم النمو", color: "#22c55e" },
-    { icon: "🌾", name: "طرد السنابل", duration: "60–80 يوم", days: [60, 80], tip: "ري منتظم بدون إفراط", fertilizerTip: "أوقف التسميد في هذه المرحلة", color: "#fbbf24" },
-    { icon: "✨", name: "النضج", duration: "80–100 يوم", days: [80, 100], tip: "قلّل الريّ — جفاف تدريجي", fertilizerTip: "لا تسميد", color: "#f59e0b" },
-    { icon: "🧺", name: "الحصاد", duration: "100–120 يوم", days: [100, 120], tip: "احصد عند نسبة رطوبة 14%", fertilizerTip: "بعد الحصاد: جهّز التربة بسماد الديدان", color: "#ca8a04" },
+    { icon: "🌱", name: "الإنبات",      duration: "0–10 أيام",   days: [0,10],    tip: "رطوبة مستمرة وبذر على عمق 3–5 سم",               fertilizerTip: "لا تسميد — انتظر الإنبات",                    color: "#86efac", solidMult: 0,   liquidMult: 0   },
+    { icon: "🌿", name: "التفريع",      duration: "10–30 يوم",   days: [10,30],   tip: "ري خفيف ومنتظم",                                 fertilizerTip: "✅ سماد الديدان الصلب — الجرعة الأولى",        color: "#4ade80", solidMult: 1,   liquidMult: 0   },
+    { icon: "🍃", name: "النمو الخضري", duration: "30–60 يوم",   days: [30,60],   tip: "مراقبة الآفات وتطبيق وقائي",                     fertilizerTip: "سماد سائل لدعم النمو",                        color: "#22c55e", solidMult: 0,   liquidMult: 1   },
+    { icon: "🌾", name: "طرد السنابل",  duration: "60–80 يوم",   days: [60,80],   tip: "ري منتظم بدون إفراط",                             fertilizerTip: "أوقف التسميد في هذه المرحلة",                 color: "#fbbf24", solidMult: 0,   liquidMult: 0   },
+    { icon: "✨", name: "النضج",         duration: "80–100 يوم",  days: [80,100],  tip: "قلّل الريّ — جفاف تدريجي",                       fertilizerTip: "لا تسميد",                                    color: "#f59e0b", solidMult: 0,   liquidMult: 0   },
+    { icon: "🧺", name: "الحصاد",       duration: "100–120 يوم", days: [100,120], tip: "احصد عند نسبة رطوبة 14%",                         fertilizerTip: "بعد الحصاد: جهّز التربة بسماد الديدان",       color: "#ca8a04", solidMult: 0.5, liquidMult: 0   },
   ],
   corn: [
-    { icon: "🌱", name: "الإنبات", duration: "0–10 أيام", days: [0, 10], tip: "حرارة 18–32°C مثالية للإنبات", fertilizerTip: "لا تسميد", color: "#86efac" },
-    { icon: "🌿", name: "الشتلة", duration: "10–35 يوم", days: [10, 35], tip: "ري خفيف منتظم", fertilizerTip: "✅ سماد الديدان الصلب — الجرعة الأولى", color: "#22c55e" },
-    { icon: "🍃", name: "النمو الخضري", duration: "35–65 يوم", days: [35, 65], tip: "ري وفير ومتواصل", fertilizerTip: "سماد سائل أسبوعياً", color: "#16a34a" },
-    { icon: "🌽", name: "الاهتياج", duration: "65–80 يوم", days: [65, 80], tip: "مرحلة حرجة — لا تقطع الريّ", fertilizerTip: "أوقف التسميد", color: "#f59e0b" },
-    { icon: "⭐", name: "النضج", duration: "80–100 يوم", days: [80, 100], tip: "قلّل الريّ تدريجياً", fertilizerTip: "لا تسميد", color: "#fbbf24" },
-    { icon: "🧺", name: "الحصاد", duration: "100–120 يوم", days: [100, 120], tip: "احصد عند جفاف السدى البنّي", fertilizerTip: "بعد الحصاد: سماد الديدان للدورة القادمة", color: "#ca8a04" },
+    { icon: "🌱", name: "الإنبات",      duration: "0–10 أيام",   days: [0,10],    tip: "حرارة 18–32°C مثالية للإنبات",                   fertilizerTip: "لا تسميد",                                    color: "#86efac", solidMult: 0,   liquidMult: 0   },
+    { icon: "🌿", name: "الشتلة",       duration: "10–35 يوم",   days: [10,35],   tip: "ري خفيف منتظم",                                  fertilizerTip: "✅ سماد الديدان الصلب — الجرعة الأولى",        color: "#22c55e", solidMult: 1,   liquidMult: 0   },
+    { icon: "🍃", name: "النمو الخضري", duration: "35–65 يوم",   days: [35,65],   tip: "ري وفير ومتواصل",                                 fertilizerTip: "سماد سائل أسبوعياً",                          color: "#16a34a", solidMult: 0,   liquidMult: 1   },
+    { icon: "🌽", name: "الاهتياج",     duration: "65–80 يوم",   days: [65,80],   tip: "مرحلة حرجة — لا تقطع الريّ",                     fertilizerTip: "أوقف التسميد",                                color: "#f59e0b", solidMult: 0,   liquidMult: 0   },
+    { icon: "⭐", name: "النضج",         duration: "80–100 يوم",  days: [80,100],  tip: "قلّل الريّ تدريجياً",                             fertilizerTip: "لا تسميد",                                    color: "#fbbf24", solidMult: 0,   liquidMult: 0   },
+    { icon: "🧺", name: "الحصاد",       duration: "100–120 يوم", days: [100,120], tip: "احصد عند جفاف السدى البنّي",                      fertilizerTip: "بعد الحصاد: سماد الديدان للدورة القادمة",     color: "#ca8a04", solidMult: 0.5, liquidMult: 0   },
   ],
   pepper: [
-    { icon: "🌱", name: "الإنبات", duration: "0–10 أيام", days: [0, 10], tip: "حرارة 22–28°C وضوء جيد", fertilizerTip: "لا تسميد", color: "#86efac" },
-    { icon: "🌿", name: "الشتلة", duration: "10–30 يوم", days: [10, 30], tip: "ريّ خفيف وتهوية جيدة", fertilizerTip: "سماد سائل مخفف 50%", color: "#4ade80" },
-    { icon: "🍃", name: "النمو الخضري", duration: "30–55 يوم", days: [30, 55], tip: "تقليم الأفرع الجانبية الزائدة", fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة", color: "#22c55e" },
-    { icon: "🌸", name: "الإزهار", duration: "55–75 يوم", days: [55, 75], tip: "تجنّب تغيّر الحرارة المفاجئ", fertilizerTip: "سماد سائل خفيف", color: "#f9a8d4" },
-    { icon: "🌶️", name: "الإثمار", duration: "75–100 يوم", days: [75, 100], tip: "ري منتظم لضمان نضج منتظم", fertilizerTip: "أوقف التسميد", color: "#f97316" },
-    { icon: "🧺", name: "الحصاد", duration: "100–130 يوم", days: [100, 130], tip: "اقطف عند اكتمال اللون للنوع", fertilizerTip: "بعد الحصاد: جدّد التربة بسماد الديدان", color: "#ca8a04" },
+    { icon: "🌱", name: "الإنبات",      duration: "0–10 أيام",   days: [0,10],    tip: "حرارة 22–28°C وضوء جيد",                         fertilizerTip: "لا تسميد",                                    color: "#86efac", solidMult: 0,   liquidMult: 0   },
+    { icon: "🌿", name: "الشتلة",       duration: "10–30 يوم",   days: [10,30],   tip: "ريّ خفيف وتهوية جيدة",                           fertilizerTip: "سماد سائل مخفف 50%",                          color: "#4ade80", solidMult: 0,   liquidMult: 0.5 },
+    { icon: "🍃", name: "النمو الخضري", duration: "30–55 يوم",   days: [30,55],   tip: "تقليم الأفرع الجانبية الزائدة",                  fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة",           color: "#22c55e", solidMult: 1,   liquidMult: 1   },
+    { icon: "🌸", name: "الإزهار",      duration: "55–75 يوم",   days: [55,75],   tip: "تجنّب تغيّر الحرارة المفاجئ",                    fertilizerTip: "سماد سائل خفيف",                              color: "#f9a8d4", solidMult: 0,   liquidMult: 0.5 },
+    { icon: "🌶️",name: "الإثمار",      duration: "75–100 يوم",  days: [75,100],  tip: "ري منتظم لضمان نضج منتظم",                       fertilizerTip: "أوقف التسميد",                                color: "#f97316", solidMult: 0,   liquidMult: 0   },
+    { icon: "🧺", name: "الحصاد",       duration: "100–130 يوم", days: [100,130], tip: "اقطف عند اكتمال اللون للنوع",                    fertilizerTip: "بعد الحصاد: جدّد التربة بسماد الديدان",       color: "#ca8a04", solidMult: 0.5, liquidMult: 0   },
   ],
   cucumber: [
-    { icon: "🌱", name: "الإنبات", duration: "0–7 أيام", days: [0, 7], tip: "درجة حرارة 24–29°C", fertilizerTip: "لا تسميد", color: "#86efac" },
-    { icon: "🌿", name: "الشتلة", duration: "7–21 يوم", days: [7, 21], tip: "ري خفيف وضوء كافٍ", fertilizerTip: "سماد سائل مخفف", color: "#4ade80" },
-    { icon: "🍃", name: "النمو الخضري", duration: "21–40 يوم", days: [21, 40], tip: "تدريب الكرمة وتوجيهها", fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة", color: "#22c55e" },
-    { icon: "🌸", name: "الإزهار", duration: "40–55 يوم", days: [40, 55], tip: "مساعدة التلقيح يدوياً إذا لزم", fertilizerTip: "سماد سائل أسبوعياً", color: "#fde68a" },
-    { icon: "🥒", name: "الإثمار", duration: "55–70 يوم", days: [55, 70], tip: "ري وفير ومستمر", fertilizerTip: "أوقف التسميد", color: "#16a34a" },
-    { icon: "🧺", name: "الحصاد", duration: "70–90 يوم", days: [70, 90], tip: "اقطف مبكراً لتحفيز إنتاج ثمار جديدة", fertilizerTip: "بعد الموسم: سماد الديدان للتجديد", color: "#ca8a04" },
+    { icon: "🌱", name: "الإنبات",      duration: "0–7 أيام",   days: [0,7],    tip: "درجة حرارة 24–29°C",                              fertilizerTip: "لا تسميد",                                    color: "#86efac", solidMult: 0,   liquidMult: 0   },
+    { icon: "🌿", name: "الشتلة",       duration: "7–21 يوم",   days: [7,21],   tip: "ري خفيف وضوء كافٍ",                               fertilizerTip: "سماد سائل مخفف",                              color: "#4ade80", solidMult: 0,   liquidMult: 0.5 },
+    { icon: "🍃", name: "النمو الخضري", duration: "21–40 يوم",  days: [21,40],  tip: "تدريب الكرمة وتوجيهها",                          fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة",           color: "#22c55e", solidMult: 1,   liquidMult: 1   },
+    { icon: "🌸", name: "الإزهار",      duration: "40–55 يوم",  days: [40,55],  tip: "مساعدة التلقيح يدوياً إذا لزم",                  fertilizerTip: "سماد سائل أسبوعياً",                          color: "#fde68a", solidMult: 0,   liquidMult: 1   },
+    { icon: "🥒", name: "الإثمار",      duration: "55–70 يوم",  days: [55,70],  tip: "ري وفير ومستمر",                                 fertilizerTip: "أوقف التسميد",                                color: "#16a34a", solidMult: 0,   liquidMult: 0   },
+    { icon: "🧺", name: "الحصاد",       duration: "70–90 يوم",  days: [70,90],  tip: "اقطف مبكراً لتحفيز إنتاج ثمار جديدة",            fertilizerTip: "بعد الموسم: سماد الديدان للتجديد",            color: "#ca8a04", solidMult: 0.5, liquidMult: 0   },
   ],
   fruit_tree: [
-    { icon: "😴", name: "السكون", duration: "ديسمبر–فبراير", days: [0, 60], tip: "تقليم الأغصان الميتة والضعيفة", fertilizerTip: "✅ سماد الديدان الصلب — أفضل وقت للتسميد", color: "#94a3b8" },
-    { icon: "🌸", name: "الإيراق والإزهار", duration: "مارس–أبريل", days: [60, 120], tip: "تجنّب الصقيع وريّ جيد", fertilizerTip: "سماد سائل عند بداية الإزهار", color: "#f9a8d4" },
-    { icon: "🍃", name: "النمو الخضري", duration: "أبريل–يونيو", days: [120, 180], tip: "مراقبة الآفات وتطبيق وقائي", fertilizerTip: "سماد سائل شهرياً", color: "#22c55e" },
-    { icon: "🍏", name: "تكوين الثمار", duration: "يونيو–أغسطس", days: [180, 240], tip: "تنظيف الثمار الزائدة لتضخيم الباقي", fertilizerTip: "جرعة خفيفة من سماد الديدان", color: "#a3e635" },
-    { icon: "🍎", name: "النضج والحصاد", duration: "أغسطس–أكتوبر", days: [240, 300], tip: "قلّل الريّ أسبوعين قبل الحصاد", fertilizerTip: "لا تسميد", color: "#f97316" },
+    { icon: "😴", name: "السكون",           duration: "ديسمبر–فبراير",  days: [0,60],    tip: "تقليم الأغصان الميتة والضعيفة",               fertilizerTip: "✅ سماد الديدان الصلب — أفضل وقت للتسميد",   color: "#94a3b8", solidMult: 1,   liquidMult: 0   },
+    { icon: "🌸", name: "الإيراق والإزهار", duration: "مارس–أبريل",     days: [60,120],  tip: "تجنّب الصقيع وريّ جيد",                       fertilizerTip: "سماد سائل عند بداية الإزهار",                color: "#f9a8d4", solidMult: 0,   liquidMult: 1   },
+    { icon: "🍃", name: "النمو الخضري",     duration: "أبريل–يونيو",    days: [120,180], tip: "مراقبة الآفات وتطبيق وقائي",                 fertilizerTip: "سماد سائل شهرياً",                           color: "#22c55e", solidMult: 0,   liquidMult: 1   },
+    { icon: "🍏", name: "تكوين الثمار",     duration: "يونيو–أغسطس",   days: [180,240], tip: "تنظيف الثمار الزائدة لتضخيم الباقي",          fertilizerTip: "جرعة خفيفة من سماد الديدان",                 color: "#a3e635", solidMult: 0.5, liquidMult: 0   },
+    { icon: "🍎", name: "النضج والحصاد",   duration: "أغسطس–أكتوبر",  days: [240,300], tip: "قلّل الريّ أسبوعين قبل الحصاد",               fertilizerTip: "لا تسميد",                                   color: "#f97316", solidMult: 0,   liquidMult: 0   },
   ],
   flowers: [
-    { icon: "🌱", name: "الإنبات", duration: "0–10 أيام", days: [0, 10], tip: "رطوبة مستمرة وضوء خفيف", fertilizerTip: "لا تسميد", color: "#86efac" },
-    { icon: "🌿", name: "الشتلة", duration: "10–25 يوم", days: [10, 25], tip: "انقل عند ظهور 4 أوراق حقيقية", fertilizerTip: "سماد سائل مخفف 30%", color: "#4ade80" },
-    { icon: "🍃", name: "النمو الخضري", duration: "25–50 يوم", days: [25, 50], tip: "تقليم القمم لتكثيف التفريع", fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة", color: "#22c55e" },
-    { icon: "🌸", name: "برعمة وإزهار", duration: "50–80 يوم", days: [50, 80], tip: "إزالة الأزهار الذابلة باستمرار", fertilizerTip: "سماد سائل أسبوعياً لإطالة الإزهار", color: "#e879f9" },
-    { icon: "🌻", name: "ذروة الإزهار", duration: "80–120 يوم", days: [80, 120], tip: "ري صباحاً لتفادي الأمراض الفطرية", fertilizerTip: "خفّف الجرعة إلى النصف", color: "#f59e0b" },
+    { icon: "🌱", name: "الإنبات",     duration: "0–10 أيام",  days: [0,10],   tip: "رطوبة مستمرة وضوء خفيف",                          fertilizerTip: "لا تسميد",                                    color: "#86efac", solidMult: 0,   liquidMult: 0   },
+    { icon: "🌿", name: "الشتلة",      duration: "10–25 يوم",  days: [10,25],  tip: "انقل عند ظهور 4 أوراق حقيقية",                   fertilizerTip: "سماد سائل مخفف 30%",                          color: "#4ade80", solidMult: 0,   liquidMult: 0.3 },
+    { icon: "🍃", name: "النمو الخضري",duration: "25–50 يوم",  days: [25,50],  tip: "تقليم القمم لتكثيف التفريع",                      fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة",           color: "#22c55e", solidMult: 1,   liquidMult: 1   },
+    { icon: "🌸", name: "برعمة وإزهار",duration: "50–80 يوم",  days: [50,80],  tip: "إزالة الأزهار الذابلة باستمرار",                  fertilizerTip: "سماد سائل أسبوعياً لإطالة الإزهار",          color: "#e879f9", solidMult: 0,   liquidMult: 1   },
+    { icon: "🌻", name: "ذروة الإزهار",duration: "80–120 يوم", days: [80,120], tip: "ري صباحاً لتفادي الأمراض الفطرية",                 fertilizerTip: "خفّف الجرعة إلى النصف",                       color: "#f59e0b", solidMult: 0,   liquidMult: 0.5 },
   ],
   default: [
-    { icon: "🌱", name: "الإنبات", duration: "0–10 أيام", days: [0, 10], tip: "رطوبة مناسبة وحرارة معتدلة", fertilizerTip: "لا تسميد في هذه المرحلة", color: "#86efac" },
-    { icon: "🌿", name: "النمو المبكر", duration: "10–30 يوم", days: [10, 30], tip: "ري منتظم وضوء كافٍ", fertilizerTip: "سماد سائل خفيف", color: "#22c55e" },
-    { icon: "🍃", name: "النمو الخضري", duration: "30–60 يوم", days: [30, 60], tip: "مراقبة الآفات وتغذية منتظمة", fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة", color: "#16a34a" },
-    { icon: "🌸", name: "الإزهار", duration: "60–80 يوم", days: [60, 80], tip: "تجنّب الريّ الزائد", fertilizerTip: "سماد سائل خفيف", color: "#f9a8d4" },
-    { icon: "🧺", name: "الحصاد", duration: "80–120 يوم", days: [80, 120], tip: "احصد في الوقت المناسب", fertilizerTip: "بعد الحصاد: أضف سماد الديدان لتجديد التربة", color: "#ca8a04" },
+    { icon: "🌱", name: "الإنبات",      duration: "0–10 أيام",  days: [0,10],  tip: "رطوبة مناسبة وحرارة معتدلة",                       fertilizerTip: "لا تسميد في هذه المرحلة",                     color: "#86efac", solidMult: 0,   liquidMult: 0   },
+    { icon: "🌿", name: "النمو المبكر", duration: "10–30 يوم",  days: [10,30], tip: "ري منتظم وضوء كافٍ",                               fertilizerTip: "سماد سائل خفيف",                              color: "#22c55e", solidMult: 0,   liquidMult: 0.5 },
+    { icon: "🍃", name: "النمو الخضري", duration: "30–60 يوم",  days: [30,60], tip: "مراقبة الآفات وتغذية منتظمة",                      fertilizerTip: "✅ سماد الديدان الصلب — جرعة كاملة",           color: "#16a34a", solidMult: 1,   liquidMult: 1   },
+    { icon: "🌸", name: "الإزهار",      duration: "60–80 يوم",  days: [60,80], tip: "تجنّب الريّ الزائد",                               fertilizerTip: "سماد سائل خفيف",                              color: "#f9a8d4", solidMult: 0,   liquidMult: 0.5 },
+    { icon: "🧺", name: "الحصاد",       duration: "80–120 يوم", days: [80,120],tip: "احصد في الوقت المناسب",                            fertilizerTip: "بعد الحصاد: أضف سماد الديدان لتجديد التربة", color: "#ca8a04", solidMult: 0.5, liquidMult: 0   },
   ],
 };
 
-function PlantGrowthStages({ crop }: { crop: string }) {
-  const [activeStage, setActiveStage] = useState<number | null>(null);
+function PlantGrowthStages({
+  crop,
+  selectedStage,
+  onSelectStage,
+}: {
+  crop: string;
+  selectedStage: number;
+  onSelectStage: (i: number) => void;
+}) {
   const stages = GROWTH_STAGES[crop] ?? GROWTH_STAGES.default;
+  const stage = stages[selectedStage];
 
   return (
     <div className="rounded-2xl border border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/20 p-5 space-y-4">
@@ -558,67 +568,70 @@ function PlantGrowthStages({ crop }: { crop: string }) {
 
       {/* Timeline */}
       <div className="relative">
-        {/* connecting line */}
         <div className="absolute top-6 right-6 left-6 h-0.5 bg-green-200 dark:bg-green-800 z-0" />
-
         <div className="relative z-10 flex justify-between gap-1">
-          {stages.map((stage, i) => (
+          {stages.map((s, i) => (
             <button
               key={i}
-              onClick={() => setActiveStage(activeStage === i ? null : i)}
-              className="flex flex-col items-center gap-1.5 flex-1 group"
+              onClick={() => onSelectStage(i)}
+              className="flex flex-col items-center gap-1.5 flex-1"
             >
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all shadow-sm
-                  ${activeStage === i
-                    ? "scale-110 shadow-md border-transparent"
+                  ${selectedStage === i
+                    ? "scale-110 shadow-md border-transparent ring-2 ring-offset-1"
                     : "bg-white dark:bg-card border-green-200 dark:border-green-700 hover:scale-105"
                   }`}
-                style={activeStage === i ? { backgroundColor: stage.color, borderColor: stage.color } : {}}
+                style={selectedStage === i
+                  ? { backgroundColor: s.color, borderColor: s.color, ringColor: s.color }
+                  : {}}
               >
-                {stage.icon}
+                {s.icon}
               </div>
-              <p className={`text-[9px] font-medium text-center leading-tight transition-colors ${activeStage === i ? "text-green-700 dark:text-green-300 font-bold" : "text-muted-foreground"}`}>
-                {stage.name}
+              <p className={`text-[9px] font-medium text-center leading-tight transition-colors ${selectedStage === i ? "font-bold" : "text-muted-foreground"}`}
+                style={selectedStage === i ? { color: s.color } : {}}>
+                {s.name}
               </p>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Detail panel */}
-      {activeStage !== null && (
+      {/* Detail panel for selected stage */}
+      {stage && (
         <div
           className="rounded-xl p-4 space-y-3 border transition-all"
-          style={{ backgroundColor: `${stages[activeStage].color}18`, borderColor: `${stages[activeStage].color}40` }}
+          style={{ backgroundColor: `${stage.color}18`, borderColor: `${stage.color}40` }}
         >
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{stages[activeStage].icon}</span>
-            <div>
-              <p className="font-bold text-sm" style={{ color: stages[activeStage].color }}>{stages[activeStage].name}</p>
-              <p className="text-xs text-muted-foreground">{stages[activeStage].duration}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{stage.icon}</span>
+              <div>
+                <p className="font-bold text-sm" style={{ color: stage.color }}>{stage.name}</p>
+                <p className="text-xs text-muted-foreground">{stage.duration}</p>
+              </div>
+            </div>
+            <div className="text-[10px] font-bold px-2 py-1 rounded-full"
+              style={{ backgroundColor: `${stage.color}25`, color: stage.color }}>
+              {stage.solidMult === 0 && stage.liquidMult === 0 ? "بدون تسميد" :
+               stage.solidMult === 1 && stage.liquidMult === 1 ? "جرعة كاملة" :
+               stage.solidMult >= 1 ? "صلب كامل" :
+               stage.liquidMult >= 1 ? "سائل كامل" : "جرعة مخففة"}
             </div>
           </div>
-
           <div className="space-y-2">
             <div className="flex items-start gap-2 bg-white/60 dark:bg-white/5 rounded-lg px-3 py-2">
               <span className="text-sm mt-0.5">💡</span>
-              <p className="text-xs text-foreground/80 leading-relaxed">{stages[activeStage].tip}</p>
+              <p className="text-xs text-foreground/80 leading-relaxed">{stage.tip}</p>
             </div>
-            <div className="flex items-start gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: `${stages[activeStage].color}20` }}>
+            <div className="flex items-start gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: `${stage.color}20` }}>
               <span className="text-sm mt-0.5">🌿</span>
-              <p className="text-xs font-medium leading-relaxed" style={{ color: stages[activeStage].color }}>
-                {stages[activeStage].fertilizerTip}
+              <p className="text-xs font-medium leading-relaxed" style={{ color: stage.color }}>
+                {stage.fertilizerTip}
               </p>
             </div>
           </div>
         </div>
-      )}
-
-      {activeStage === null && (
-        <p className="text-xs text-muted-foreground text-center py-1">
-          اضغط على أي مرحلة لعرض التفاصيل والتوصيات
-        </p>
       )}
     </div>
   );
@@ -646,6 +659,8 @@ function buildRecommendations(
   liquidProducts: ReturnType<typeof useListProducts>["data"],
   lang: Lang,
   t: (k: string) => string,
+  solidMult: number,
+  liquidMult: number,
 ): Recommendation[] {
   const recs: Recommendation[] = [];
   const units = areaSqm / 100;
@@ -658,7 +673,8 @@ function buildRecommendations(
   if (["tomato", "potato", "pepper", "cucumber"].includes(crop)) solidDosePerUnit *= 1.3;
   if (["wheat", "corn"].includes(crop)) solidDosePerUnit *= 1.1;
 
-  const solidKg = Math.ceil(solidDosePerUnit * units);
+  const solidKgBase = Math.ceil(solidDosePerUnit * units);
+  const solidKg = Math.ceil(solidKgBase * solidMult);
 
   const solidFrequency =
     ph < 6 ? t("diag_freq_3w") :
@@ -671,19 +687,20 @@ function buildRecommendations(
     t("diag_note_neutral");
 
   const solid = solidProducts?.[0];
-  if (solid) {
+  if (solid && solidKg > 0) {
     recs.push({ productId: solid.id, name: solid.name, price: solid.price, unit: solid.unit, imageUrl: solid.imageUrl, quantityNeeded: solidKg, frequency: solidFrequency, note: solidNote });
   }
 
-  let liquidL = Math.ceil(units);
-  if (["tomato", "pepper", "cucumber", "flowers"].includes(crop)) liquidL = Math.ceil(units * 1.5);
+  let liquidLBase = Math.ceil(units);
+  if (["tomato", "pepper", "cucumber", "flowers"].includes(crop)) liquidLBase = Math.ceil(units * 1.5);
+  const liquidL = Math.ceil(liquidLBase * liquidMult);
 
   const liquidFrequency =
     ["tomato", "pepper", "cucumber"].includes(crop) ? t("diag_freq_2w") :
     t("diag_freq_3w");
 
   const liquid = liquidProducts?.[0];
-  if (liquid) {
+  if (liquid && liquidL > 0) {
     recs.push({ productId: liquid.id, name: liquid.name, price: liquid.price, unit: liquid.unit, imageUrl: liquid.imageUrl, quantityNeeded: liquidL, frequency: liquidFrequency, note: t("diag_liquid_note") });
   }
 
@@ -733,6 +750,20 @@ export default function SmartDiagnosis() {
   const [irrigationSystem, setIrrigationSystem] = useState("auto");
   const [submitted, setSubmitted] = useState(false);
 
+  // Growth stage state — default to the first "full dose" stage
+  const [growthStageIndex, setGrowthStageIndex] = useState(() => {
+    const stages = GROWTH_STAGES["tomato"];
+    return stages.findIndex(s => s.solidMult >= 1) ?? 0;
+  });
+
+  // Reset growth stage index when crop changes (pick the first full-dose stage or 0)
+  useEffect(() => {
+    const stages = GROWTH_STAGES[crop] ?? GROWTH_STAGES.default;
+    const bestIdx = stages.findIndex(s => s.solidMult >= 1);
+    setGrowthStageIndex(bestIdx >= 0 ? bestIdx : 0);
+    setSubmitted(false);
+  }, [crop]);
+
   // Weather state
   const [cityInput, setCityInput] = useState("");
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -758,10 +789,18 @@ export default function SmartDiagnosis() {
   const solidProducts = useMemo(() => products?.filter((p) => p.category === "solid" && p.active) ?? [], [products]);
   const liquidProducts = useMemo(() => products?.filter((p) => p.category === "liquid" && p.active) ?? [], [products]);
 
+  // Derive multipliers from the selected growth stage
+  const currentStages = GROWTH_STAGES[crop] ?? GROWTH_STAGES.default;
+  const currentStage = currentStages[growthStageIndex] ?? currentStages[0];
+
   const recommendations = useMemo(() => {
     if (!submitted) return [];
-    return buildRecommendations(soilType, parseFloat(ph) || 7, parseFloat(area) || 100, crop, solidProducts, liquidProducts, lang, t as (k: string) => string);
-  }, [submitted, soilType, ph, area, crop, solidProducts, liquidProducts, lang]);
+    return buildRecommendations(
+      soilType, parseFloat(ph) || 7, parseFloat(area) || 100, crop,
+      solidProducts, liquidProducts, lang, t as (k: string) => string,
+      currentStage.solidMult, currentStage.liquidMult,
+    );
+  }, [submitted, soilType, ph, area, crop, solidProducts, liquidProducts, lang, currentStage]);
 
   const totalCost = useMemo(() => recommendations.reduce((s, r) => s + r.price * r.quantityNeeded, 0), [recommendations]);
 
@@ -783,6 +822,8 @@ export default function SmartDiagnosis() {
     });
     toast({ title: t("diag_added"), description: t("diag_added_desc") });
   };
+
+  const noFertilizerNeeded = currentStage.solidMult === 0 && currentStage.liquidMult === 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -828,7 +869,7 @@ export default function SmartDiagnosis() {
                   </Label>
                   <select
                     value={crop}
-                    onChange={(e) => { setCrop(e.target.value); setSubmitted(false); }}
+                    onChange={(e) => setCrop(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     {CROPS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -841,6 +882,32 @@ export default function SmartDiagnosis() {
                     {t("diag_area")}
                   </Label>
                   <Input id="area" type="number" min="1" value={area} onChange={(e) => { setArea(e.target.value); setSubmitted(false); }} dir="ltr" />
+                </div>
+
+                {/* Growth Stage Picker */}
+                <div className="space-y-2 col-span-2">
+                  <Label className="flex items-center gap-1.5 text-sm font-medium">
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                    مرحلة النمو الحالية
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {currentStages.map((s, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => { setGrowthStageIndex(i); setSubmitted(false); }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                          growthStageIndex === i
+                            ? "text-white shadow-sm border-transparent"
+                            : "bg-background border-input text-muted-foreground hover:border-green-300 hover:text-green-700"
+                        }`}
+                        style={growthStageIndex === i ? { backgroundColor: s.color, borderColor: s.color } : {}}
+                      >
+                        <span>{s.icon}</span>
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2 col-span-2">
@@ -906,6 +973,15 @@ export default function SmartDiagnosis() {
                   {t("diag_result_title")}
                 </h2>
 
+                {/* Stage badge */}
+                <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2">
+                  <span className="text-xl">{currentStage.icon}</span>
+                  <div>
+                    <p className="text-xs text-white/60">التوصية مبنية على مرحلة النمو</p>
+                    <p className="text-sm font-bold text-amber-300">{currentStage.name} — {currentStage.duration}</p>
+                  </div>
+                </div>
+
                 <div className="space-y-3">
                   {recommendations.map((r) => (
                     <div key={r.productId} className="bg-white/10 rounded-xl p-4 space-y-2">
@@ -944,6 +1020,21 @@ export default function SmartDiagnosis() {
                   {t("diag_add_cart")}
                 </Button>
               </div>
+            ) : submitted && noFertilizerNeeded ? (
+              <div className="rounded-2xl border-2 p-6 space-y-3" style={{ borderColor: `${currentStage.color}60`, backgroundColor: `${currentStage.color}10` }}>
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{currentStage.icon}</span>
+                  <div>
+                    <p className="font-bold text-base" style={{ color: currentStage.color }}>{currentStage.name}</p>
+                    <p className="text-xs text-muted-foreground">{currentStage.duration}</p>
+                  </div>
+                </div>
+                <p className="font-bold text-sm text-foreground/80">{currentStage.fertilizerTip}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  💡 {currentStage.tip}
+                </p>
+                <p className="text-xs text-muted-foreground">غيّر مرحلة النمو لمعرفة التوصية الخاصة بكل مرحلة.</p>
+              </div>
             ) : submitted && recommendations.length === 0 ? (
               <div className="rounded-2xl border border-border/60 bg-card p-8 text-center text-muted-foreground">
                 <p className="text-lg">{t("diag_no_products")}</p>
@@ -968,7 +1059,11 @@ export default function SmartDiagnosis() {
             )}
 
             {/* Plant Growth Stages */}
-            <PlantGrowthStages crop={crop} />
+            <PlantGrowthStages
+              crop={crop}
+              selectedStage={growthStageIndex}
+              onSelectStage={(i) => { setGrowthStageIndex(i); setSubmitted(false); }}
+            />
           </div>
         </div>
       </main>
