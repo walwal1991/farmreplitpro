@@ -748,6 +748,7 @@ export default function SmartDiagnosis() {
   const [area, setArea] = useState("1000");
   const [crop, setCrop] = useState("tomato");
   const [irrigationSystem, setIrrigationSystem] = useState("auto");
+  const [fertilizerType, setFertilizerType] = useState<"both" | "solid" | "liquid">("both");
   const [submitted, setSubmitted] = useState(false);
 
   // Growth stage state — default to the first "full dose" stage
@@ -789,18 +790,21 @@ export default function SmartDiagnosis() {
   const solidProducts = useMemo(() => products?.filter((p) => p.category === "solid" && p.active) ?? [], [products]);
   const liquidProducts = useMemo(() => products?.filter((p) => p.category === "liquid" && p.active) ?? [], [products]);
 
-  // Derive multipliers from the selected growth stage
+  // Derive multipliers from the selected growth stage + fertilizer type filter
   const currentStages = GROWTH_STAGES[crop] ?? GROWTH_STAGES.default;
   const currentStage = currentStages[growthStageIndex] ?? currentStages[0];
+
+  const effectiveSolidMult = fertilizerType === "liquid" ? 0 : currentStage.solidMult;
+  const effectiveLiquidMult = fertilizerType === "solid" ? 0 : currentStage.liquidMult;
 
   const recommendations = useMemo(() => {
     if (!submitted) return [];
     return buildRecommendations(
       soilType, parseFloat(ph) || 7, parseFloat(area) || 100, crop,
       solidProducts, liquidProducts, lang, t as (k: string) => string,
-      currentStage.solidMult, currentStage.liquidMult,
+      effectiveSolidMult, effectiveLiquidMult,
     );
-  }, [submitted, soilType, ph, area, crop, solidProducts, liquidProducts, lang, currentStage]);
+  }, [submitted, soilType, ph, area, crop, solidProducts, liquidProducts, lang, effectiveSolidMult, effectiveLiquidMult]);
 
   const totalCost = useMemo(() => recommendations.reduce((s, r) => s + r.price * r.quantityNeeded, 0), [recommendations]);
 
@@ -905,6 +909,36 @@ export default function SmartDiagnosis() {
                       >
                         <span>{s.icon}</span>
                         {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fertilizer Type Selector */}
+                <div className="space-y-2 col-span-2">
+                  <Label className="flex items-center gap-1.5 text-sm font-medium">
+                    <FlaskConical className="w-4 h-4 text-amber-600" />
+                    نوع السماد
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: "both",   label: "كلاهما",     icon: "🌿", desc: "صلب + سائل" },
+                      { value: "solid",  label: "سماد صلب",   icon: "🪨", desc: "Vermicompost" },
+                      { value: "liquid", label: "سماد سائل",  icon: "💧", desc: "مستخلص سائل" },
+                    ] as const).map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => { setFertilizerType(opt.value); setSubmitted(false); }}
+                        className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl text-sm font-medium border-2 transition-all ${
+                          fertilizerType === opt.value
+                            ? "bg-amber-50 dark:bg-amber-900/20 border-amber-500 text-amber-800 dark:text-amber-300 shadow-sm"
+                            : "bg-background border-input text-muted-foreground hover:border-amber-300 hover:text-amber-700"
+                        }`}
+                      >
+                        <span className="text-lg">{opt.icon}</span>
+                        <span className="font-semibold text-xs leading-tight">{opt.label}</span>
+                        <span className="text-[10px] opacity-60">{opt.desc}</span>
                       </button>
                     ))}
                   </div>
