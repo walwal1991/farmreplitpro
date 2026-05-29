@@ -36,8 +36,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   "/api/img",
-  express.static(path.resolve(process.cwd(), "..", "..", "attached_assets", "generated_images"), {
-    maxAge: "1d",
+  express.static(path.resolve(process.cwd(), "public", "img"), {
+    maxAge: "7d",
   }),
 );
 
