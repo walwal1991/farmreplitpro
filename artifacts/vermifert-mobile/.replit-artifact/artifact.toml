@@ -18,9 +18,19 @@ localPort = 24365
 [services.development]
 run = "pnpm --filter @workspace/vermifert-mobile run dev"
 
-[services.production]
-build = [ "pnpm", "--filter", "@workspace/vermifert-mobile", "run", "build" ]
-run = [ "pnpm", "--filter", "@workspace/vermifert-mobile", "run", "serve" ]
+[services.production.build]
+args = ["pnpm", "--filter", "@workspace/vermifert-mobile", "run", "build"]
+
+[services.production.build.env]
+NODE_ENV = "production"
+
+[services.production.run]
+args = ["pnpm", "--filter", "@workspace/vermifert-mobile", "run", "serve"]
+
+[services.production.run.env]
+PORT = "24365"
+BASE_PATH = "/vermifert-mobile/"
+NODE_ENV = "production"
 
 [services.env]
 PORT = "24365"
