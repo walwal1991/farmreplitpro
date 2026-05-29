@@ -5,20 +5,16 @@ import { Buffer } from "node:buffer";
 const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
 const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined;
 
-if (!apiKey) {
-  throw new Error("OPENAI_API_KEY must be set.");
+function getClient(): OpenAI {
+  if (!apiKey) throw new Error("OPENAI_API_KEY must be set.");
+  return new OpenAI({ apiKey, baseURL });
 }
-
-export const openai = new OpenAI({
-  apiKey,
-  baseURL,
-});
 
 export async function generateImageBuffer(
   prompt: string,
   size: "1024x1024" | "512x512" | "256x256" = "1024x1024"
 ): Promise<Buffer> {
-  const response = await openai.images.generate({
+  const response = await getClient().images.generate({
     model: "gpt-image-1",
     prompt,
     size,
@@ -40,7 +36,7 @@ export async function editImages(
     )
   );
 
-  const response = await openai.images.edit({
+  const response = await getClient().images.edit({
     model: "gpt-image-1",
     image: images,
     prompt,
