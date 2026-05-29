@@ -17,17 +17,13 @@ localPort = 20617
 [services.development]
 run = "pnpm --filter @workspace/vermifert run dev"
 
-[services.production.build]
-args = ["pnpm", "--filter", "@workspace/vermifert", "run", "build"]
+[services.production.run]
+args = ["pnpm", "--filter", "@workspace/vermifert", "run", "serve"]
 
-[services.production.build.env]
+[services.production.run.env]
 PORT = "20617"
 BASE_PATH = "/"
 NODE_ENV = "production"
-
-[services.production]
-publicDir = "artifacts/vermifert/dist/public"
-serve = "static"
 
 [[services.production.rewrites]]
 from = "/*"

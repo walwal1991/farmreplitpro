@@ -50,13 +50,4 @@ app.use(
 
 app.use("/api", router);
 
-// Serve frontend static files in production
-if (process.env.NODE_ENV === "production") {
-  const frontendDist = path.resolve(process.cwd(), "artifacts/vermifert/dist/public");
-  app.use(express.static(frontendDist, { maxAge: "1d" }));
-  app.get(/.*/, (_req, res) => {
-    res.sendFile(path.join(frontendDist, "index.html"));
-  });
-}
-
 export default app;
